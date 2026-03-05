@@ -1,0 +1,58 @@
+<h3 class="mb-4">FAQ Management</h3>
+
+<!-- Add FAQ -->
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header text-gold">Add FAQ</div>
+  <div class="card-body">
+    <form method="POST" action="/admin/faq/add">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="mb-2"><input type="text" name="question" class="form-control bg-dark text-light border-secondary" placeholder="Question" required></div>
+      <div class="mb-2"><textarea name="answer" class="form-control bg-dark text-light border-secondary" rows="3" placeholder="Answer (HTML allowed)" required></textarea></div>
+      <button type="submit" class="btn btn-gold"><i class="fas fa-plus me-1"></i>Add</button>
+    </form>
+  </div>
+</div>
+
+<!-- FAQ Table -->
+<div class="table-responsive">
+  <table class="table table-dark table-hover table-sm">
+    <thead><tr><th>ID</th><th>Question</th><th>Actions</th></tr></thead>
+    <tbody>
+      <% if (faqs && faqs.length) { %>
+        <% faqs.forEach(f => { %>
+          <tr>
+            <td><%= f.id %></td>
+            <td><%= f.question %></td>
+            <td>
+              <button class="btn btn-sm btn-outline-gold me-1" data-bs-toggle="modal" data-bs-target="#edit-f-<%= f.id %>"><i class="fas fa-edit"></i></button>
+              <form method="POST" action="/admin/faq/delete" class="d-inline" onsubmit="return confirm('Delete?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="id" value="<%= f.id %>">
+                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+
+          <div class="modal fade" id="edit-f-<%= f.id %>" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary"><h5 class="modal-title text-gold">Edit FAQ</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <form method="POST" action="/admin/faq/edit">
+                  <div class="modal-body">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="id" value="<%= f.id %>">
+                    <div class="mb-2"><input type="text" name="question" class="form-control bg-dark text-light border-secondary" value="<%= f.question %>" required></div>
+                    <div class="mb-2"><textarea name="answer" class="form-control bg-dark text-light border-secondary" rows="5" required><%= f.answer %></textarea></div>
+                  </div>
+                  <div class="modal-footer border-secondary"><button type="submit" class="btn btn-gold">Save</button></div>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="3" class="text-center text-muted">No FAQ entries.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,119 @@
+<%
+  /**
+   * Left menu partial — replicates V4's build_main_menu() from body_functions.php
+   * Structure: each menu category has a button + collapsible inner with items
+   * Must match exact V4 HTML for CSS to apply correctly.
+   *
+   * Data source: res.locals.menus (loaded globally from mw_menu_items DB table)
+   * Falls back to hardcoded defaults only if DB menus are unavailable.
+   */
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+
+  /* ---------- Menu slug map (must match V4 CSS class names) ---------- */
+  var menuSlugMap = {
+    1: 'menunews', 2: 'menuaccount', 3: 'menugameguide', 4: 'menuinteractive',
+    5: 'menumedia', 6: 'menuforums', 7: 'menucommunity', 8: 'menusupport'
+  };
+
+  /* ---------- Build final menuCategories array ---------- */
+  var menuCategories = [];
+
+  if (typeof menus !== 'undefined' && menus && Object.keys(menus).length > 0) {
+    // DB-sourced menus (from mw_menu_items via global middleware)
+    var menuKeys = Object.keys(menus).map(Number).sort(function(a,b){return a-b;});
+    menuKeys.forEach(function(menuId) {
+      var g = menus[menuId];
+      menuCategories.push({
+        idx: menuId,
+        slug: g.slug || menuSlugMap[menuId] || ('menu' + menuId),
+        name: g.name || ('Menu ' + menuId),
+        items: (g.items || []).map(function(it) {
+          return { link: it.link, label: it.link_title };
+        })
+      });
+    });
+  } else {
+    // Hardcoded fallback (only if DB menus not loaded)
+    menuCategories = [
+      { idx: 1, slug: 'menunews', name: 'News', items: [
+        { link: '/', label: 'Home' },
+        { link: '/server', label: 'Server Info' }
+      ]},
+      { idx: 2, slug: 'menuaccount', name: 'Account', items:
+        (typeof user !== 'undefined' && user) ? [
+          { link: '/account', label: 'My Account' },
+          { link: '/account/manage', label: 'Settings' },
+          { link: '/account/characters', label: 'Characters' },
+          { link: '/account/transactions', label: 'Transactions' }
+        ] : [
+          { link: '/auth/login', label: 'Login' },
+          { link: '/auth/register', label: 'Register' }
+        ]
+      },
+      { idx: 4, slug: 'menuinteractive', name: 'Interactive', items: [
+        { link: '/server/topkills', label: 'Top Kills' },
+        { link: '/server/chars', label: 'Characters' },
+        { link: '/server/online', label: 'Players Online' },
+        { link: '/server/realmstatus', label: 'Realm Status' },
+        { link: '/server/stats', label: 'Server Statistics' }
+      ]},
+      { idx: 7, slug: 'menucommunity', name: 'Community', items: [
+        { link: '/donate', label: 'Donate' },
+        { link: '/vote', label: 'Vote' },
+        { link: '/shop', label: 'Shop' }
+      ]},
+      { idx: 8, slug: 'menusupport', name: 'Support', items: [
+        { link: '/support/faq', label: 'FAQ' }
+      ]}
+    ];
+  }
+
+  var containerIdx = 0;
+%>
+<% menuCategories.forEach(function(cat) {
+  if (!cat.items || cat.items.length === 0) return;
+  containerIdx++;
+  var menuId = cat.idx - 1;
+  // First two + forums open by default
+  var isOpen = (cat.idx <= 2 || cat.idx === 6);
+%>
+                                    <div id="<%= cat.slug %>">
+                                      <div onclick="javascript:toggleNewMenu(<%= menuId %>);" class="<%= isOpen ? 'menu-button-on' : 'menu-button-off' %>" id="<%= cat.slug %>-button">
+                                        <span class="<%= cat.slug %>-icon-<%= isOpen ? 'on' : 'off' %>" id="<%= cat.slug %>-icon">&nbsp;</span><a class="<%= cat.slug %>-header-<%= isOpen ? 'on' : 'off' %>" id="<%= cat.slug %>-header"><em>Menu item</em></a><a id="<%= cat.slug %>-collapse" class="<%= isOpen ? 'leftmenu-minuslink' : 'leftmenu-pluslink' %>"></a><span class="menuentry-rightborder"></span>
+                                      </div>
+                                      <div id="<%= cat.slug %>-inner" style="<%= isOpen ? '' : 'display:none;' %>">
+                                        <script type="text/javascript">
+                                            if (typeof menuCookie !== 'undefined' && menuCookie[<%= menuId %>] == 0) {
+                                                document.getElementById("<%= cat.slug %>-inner").style.display = "none";
+                                                document.getElementById("<%= cat.slug %>-button").className = "menu-button-off";
+                                                document.getElementById("<%= cat.slug %>-collapse").className = "leftmenu-pluslink";
+                                                document.getElementById("<%= cat.slug %>-icon").className = "<%= cat.slug %>-icon-off";
+                                                document.getElementById("<%= cat.slug %>-header").className = "<%= cat.slug %>-header-off";
+                                            } else {
+                                                document.getElementById("<%= cat.slug %>-inner").style.display = "block";
+                                                document.getElementById("<%= cat.slug %>-button").className = "menu-button-on";
+                                                document.getElementById("<%= cat.slug %>-collapse").className = "leftmenu-minuslink";
+                                                document.getElementById("<%= cat.slug %>-icon").className = "<%= cat.slug %>-icon-on";
+                                                document.getElementById("<%= cat.slug %>-header").className = "<%= cat.slug %>-header-on";
+                                            }
+                                        </script>
+                                        <div class="leftmenu-cont-top"></div>
+                                        <div class="leftmenu-cont-mid">
+                                          <div class="m-left">
+                                            <div class="m-right">
+                                              <div class="leftmenu-cnt" id="menucontainer<%= containerIdx %>">
+                                                <ul class="mainnav">
+                                                  <li style="position:relative;" id="menufiller<%= containerIdx %>">
+<% cat.items.forEach(function(item) { %>
+                                                <div><a class="menufiller" href="<%= item.link %>"><%= item.label %></a></div>
+<% }); %>
+                                                  </li>
+                                                </ul>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div class="leftmenu-cont-bot"></div>
+                                      </div>
+                                    </div>
+<% }); %>

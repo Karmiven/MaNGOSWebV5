@@ -1,0 +1,70 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<!-- Statistics — V4 Blizzlike Style -->
+<br>
+<%- include('../../partials/builddiv_start', { type: 1, title: 'Statistics' }) %>
+<center>
+
+<% if (totalChars === 0) { %>
+  0 Characters
+<% } else { %>
+<center>
+
+<table width="90%">
+  <tr>
+    <td colspan="2" align="left" style="padding-left: 20px;">
+      <img src="<%= tp %>/images/stat/battlegrounds-alliance.jpg" alt="Alliance" />
+    </td>
+    <td colspan="2" align="right" style="padding-right: 20px;">
+      <img src="<%= tp %>/images/stat/battlegrounds-horde.jpg" alt="Horde" />
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="left" style="padding-left: 20px;">
+      Alliance: <%= numAlly %> (<%= pcAlly %>%)
+    </td>
+    <td colspan="2" align="right" style="padding-right: 20px;">
+      Horde: <%= numHorde %> (<%= pcHorde %>%)
+    </td>
+  </tr>
+  <tr>
+    <td align="left"><img onmouseover="ddrivetip('Human')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/1-0.gif" alt="" /></td>
+    <td align="left"><%= rc[1] || 0 %> (<%= racePc[1] || 0 %>%)</td>
+    <td align="right"><%= rc[2] || 0 %> (<%= racePc[2] || 0 %>%)</td>
+    <td align="right"><img onmouseover="ddrivetip('Orc')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/2-0.gif" alt="" /></td>
+  </tr>
+  <tr>
+    <td align="left"><img onmouseover="ddrivetip('Dwarf')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/3-0.gif" alt="" /></td>
+    <td align="left"><%= rc[3] || 0 %> (<%= racePc[3] || 0 %>%)</td>
+    <td align="right"><%= rc[5] || 0 %> (<%= racePc[5] || 0 %>%)</td>
+    <td align="right"><img onmouseover="ddrivetip('Undead')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/5-0.gif" alt="" /></td>
+  </tr>
+  <tr>
+    <td align="left"><img onmouseover="ddrivetip('Night Elf')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/4-0.gif" alt="" /></td>
+    <td align="left"><%= rc[4] || 0 %> (<%= racePc[4] || 0 %>%)</td>
+    <td align="right"><%= rc[6] || 0 %> (<%= racePc[6] || 0 %>%)</td>
+    <td align="right"><img onmouseover="ddrivetip('Tauren')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/6-0.gif" alt="" /></td>
+  </tr>
+  <tr>
+    <td align="left"><img onmouseover="ddrivetip('Gnome')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/7-0.gif" alt="" /></td>
+    <td align="left"><%= rc[7] || 0 %> (<%= racePc[7] || 0 %>%)</td>
+    <td align="right"><%= rc[8] || 0 %> (<%= racePc[8] || 0 %>%)</td>
+    <td align="right"><img onmouseover="ddrivetip('Troll')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/8-0.gif" alt="" /></td>
+  </tr>
+  <tr>
+    <td align="left"><img onmouseover="ddrivetip('Draenei')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/11-0.gif" alt="" /></td>
+    <td align="left"><%= rc[11] || 0 %> (<%= racePc[11] || 0 %>%)</td>
+    <td align="right"><%= rc[10] || 0 %> (<%= racePc[10] || 0 %>%)</td>
+    <td align="right"><img onmouseover="ddrivetip('Blood Elf')" onmouseout="hideddrivetip()" src="<%= tp %>/images/stat/10-0.gif" alt="" /></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="left" style="padding-left: 20px;"></td>
+    <td colspan="2" align="right" style="padding-right: 20px;"></td>
+  </tr>
+</table>
+</center>
+<% } %>
+
+</center>
+<%- include('../../partials/builddiv_end') %>

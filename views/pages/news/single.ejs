@@ -1,0 +1,21 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<!-- Single News Article -->
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: item.title }) %>
+
+<div style="padding: 10px 20px;">
+  <div style="margin-bottom: 8px; color: #7d5c1b; font: 11px 'trebuchet ms', verdana, arial, sans-serif;">
+    Posted by: <b><%= item.authorName || 'Admin' %></b> &mdash; <%= typeof helpers !== 'undefined' ? helpers.formatDate(item.post_time) : '' %>
+  </div>
+  <div class="blog-post">
+    <%- (item.message || '').replace(/\r\n|\r|\n/g, '<br>') %>
+  </div>
+</div>
+
+<%- include('../../partials/builddiv_end') %>
+
+<div style="margin-top: 10px;">
+  <a href="/news/archive">&laquo; Back to News Archives</a> | <a href="/">Back to Homepage</a>
+</div>

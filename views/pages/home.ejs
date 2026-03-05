@@ -1,0 +1,90 @@
+
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var defaultOpen = 3;
+%>
+<!-- ===== NEWS MODULE (V4-exact) ===== -->
+<div style="margin-left: -29px">
+<div id="module-container">
+<div style="width:470px;"></div>
+<img style="margin-top: -55px;margin-bottom: 30px;" src="<%= tp %>/images/banner_top.png" alt="" width="470"/>
+</div>
+<div class="module-container">
+<% if (typeof news !== 'undefined' && news && news.length) { %>
+  <% news.forEach(function(item, idx) {
+    var postnum = idx + 1;
+    var hl = (postnum % 2 === 0) ? 'alt' : '';
+    var topicId = item.id;
+  %>
+  <script type="text/javascript">
+    var postId<%= postnum %> = "<%= topicId %>";
+  </script>
+  <div class="news-expand" id="news<%= topicId %>">
+    <div class="news-border-left"></div>
+    <div class="news-border-right"></div>
+    <div class="news-listing">
+      <div onclick="javascript:toggleEntry('<%= topicId %>','<%= hl %>')" onmouseout="javascript:this.style.background='none'" onmouseover="javascript:this.style.background='#EEDB99'" class="hoverContainer">
+        <div>
+          <div class="news-top">
+            <ul>
+              <li class="item-icon">
+                <img border="0" alt="new-post" src="<%= tp %>/images/news-contests.gif"/>
+              </li>
+              <li class="news-entry">
+                <h1>
+                  <a href="javascript:void(0);"><%= item.title %></a>
+                </h1>
+                <span class="user">Posted by: <b><%= item.authorName || 'Admin' %></b> |</span>&nbsp;<span class="posted-date"><%= typeof helpers !== 'undefined' ? helpers.formatDate(item.post_time) : '' %></span>
+              </li>
+              <li class="news-entry-date">
+                <span><strong><%= typeof helpers !== 'undefined' ? helpers.formatDate(item.post_time) : '' %></strong></span>
+              </li>
+              <li class="news-toggle">
+                <a href="javascript:toggleEntry('<%= topicId %>','<%= hl %>')"><img src="<%= tp %>/images/pixel001.gif" alt=""/></a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="news-item">
+      <blockquote>
+        <dl>
+          <dd>
+            <ul>
+              <li>
+                <div class="letter-box0"></div>
+                <div class="blog-post">
+                  <%- (item.message || '').replace(/\r\n|\r|\n/g, '<br>') %>
+                </div>
+              </li>
+            </ul>
+          </dd>
+        </dl>
+      </blockquote>
+    </div>
+  </div>
+  <script type="text/javascript"><!--
+    var position = <%= postnum %>;
+    var localId = postId<%= postnum %>;
+    var cookieState = getcookie("news"+localId);
+    var defOpen = "<%= (postnum > defaultOpen ? '0' : '1') %>";
+    if ((cookieState == 1) || (position==1 && cookieState!='0') || (defOpen == '1' && cookieState!='0')) {
+    } else {
+      document.getElementById("news"+localId).className = "news-collapse"+"<%= hl %>";
+    }
+  --></script>
+  <% }); %>
+<% } else { %>
+  <div style="padding:20px; text-align:center; color:#333; font-size:12px;">
+    No news posted yet.
+  </div>
+<% } %>
+</div>
+
+<div class="news-archive-link">
+  <div class="news-archive-button">
+    <a href="/news/archive"><span>News Archives</span></a>
+  </div>
+</div>
+</div>

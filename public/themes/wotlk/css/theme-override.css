@@ -1,0 +1,13 @@
+/* WotLK (Wrath of the Lich King) Theme Override — Icy blue, frostbitten */
+/* WotLK is the base/default theme — minimal overrides needed since 
+   the base V4 CSS already has the correct blue color scheme. */
+
+/* Subtle ice-blue accent enhancements */
+.subheader-bar .sh-mid {
+  background: linear-gradient(to bottom, #0a4a6a, #05374a) !important;
+}
+
+/* Icy faction badges */
+.faction-badge.faction-alliance {
+  background: #1a5aaa !important;
+}

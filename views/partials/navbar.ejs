@@ -1,0 +1,61 @@
+<nav class="navbar navbar-expand-lg navbar-dark wow-navbar">
+  <div class="container">
+    <a class="navbar-brand font-cinzel text-gold" href="/">
+      <i class="fas fa-crown me-2"></i><%= typeof siteConfig !== 'undefined' && siteConfig.site_title ? siteConfig.site_title : 'MaNGOSWebV5' %>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="/"><i class="fas fa-home me-1"></i> Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/server"><i class="fas fa-server me-1"></i> Server</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="fas fa-gamepad me-1"></i> Game
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li><a class="dropdown-item" href="/server/online">Players Online</a></li>
+            <li><a class="dropdown-item" href="/server/topkills">Top Kills</a></li>
+            <li><a class="dropdown-item" href="/server/realmstatus">Realm Status</a></li>
+            <li><a class="dropdown-item" href="/server/chars">Character Search</a></li>
+            <li><a class="dropdown-item" href="/server/stats">Statistics</a></li>
+          </ul>
+        </li>
+        <% if (typeof user !== 'undefined' && user) { %>
+          <li class="nav-item"><a class="nav-link" href="/shop"><i class="fas fa-store me-1"></i> Shop</a></li>
+          <li class="nav-item"><a class="nav-link" href="/vote"><i class="fas fa-vote-yea me-1"></i> Vote</a></li>
+          <li class="nav-item"><a class="nav-link" href="/donate"><i class="fas fa-hand-holding-usd me-1"></i> Donate</a></li>
+        <% } %>
+        <li class="nav-item"><a class="nav-link" href="/support"><i class="fas fa-life-ring me-1"></i> Support</a></li>
+      </ul>
+      <ul class="navbar-nav">
+        <% if (typeof user !== 'undefined' && user) { %>
+          <li class="nav-item">
+            <span class="nav-link text-gold"><i class="fas fa-coins me-1"></i> <%= user.webPoints %> pts</span>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              <i class="fas fa-user me-1"></i> <%= user.username %>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+              <li><a class="dropdown-item" href="/account"><i class="fas fa-tachometer-alt me-1"></i> Dashboard</a></li>
+              <li><a class="dropdown-item" href="/account/manage"><i class="fas fa-cog me-1"></i> Settings</a></li>
+              <li><a class="dropdown-item" href="/account/characters"><i class="fas fa-hat-wizard me-1"></i> Characters</a></li>
+              <li><a class="dropdown-item" href="/account/transactions"><i class="fas fa-receipt me-1"></i> Transactions</a></li>
+              <% if (user.isAdmin) { %>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-warning" href="/admin"><i class="fas fa-crown me-1"></i> Admin Panel</a></li>
+              <% } %>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="fas fa-sign-out-alt me-1"></i> Logout</a></li>
+            </ul>
+          </li>
+        <% } else { %>
+          <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="fas fa-sign-in-alt me-1"></i> Login</a></li>
+          <li class="nav-item"><a class="nav-link btn btn-sm btn-gold ms-2" href="/auth/register">Register</a></li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</nav>

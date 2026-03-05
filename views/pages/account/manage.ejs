@@ -1,0 +1,65 @@
+<!-- Account Settings — V4 Blizzlike Style -->
+<div class="subheader-bar">
+  <div class="sh-left"></div>
+  <div class="sh-mid"><b>Account Settings</b></div>
+  <div class="sh-right"></div>
+</div>
+
+<table cellspacing="0" cellpadding="0" style="width:100%;">
+<tr>
+<!-- Change Password -->
+<td style="vertical-align:top; width:50%; padding-right:6px;">
+  <table class="blizz-table" style="width:100%;">
+    <tr><th>Change Password</th></tr>
+    <tr><td>
+      <form method="POST" action="/account/change-password" class="blizz-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Current Password</label>
+        <input type="password" name="current_password" required>
+        <label>New Password</label>
+        <input type="password" name="new_password" required minlength="6">
+        <label>Confirm New Password</label>
+        <input type="password" name="confirm_password" required>
+        <div style="margin-top:8px;"><button type="submit" class="btn-blizz">Change Password</button></div>
+      </form>
+    </td></tr>
+  </table>
+</td>
+<!-- Change Email -->
+<td style="vertical-align:top; width:50%; padding-left:6px;">
+  <table class="blizz-table" style="width:100%;">
+    <tr><th>Change Email</th></tr>
+    <tr><td>
+      <p style="color:#888; font-size:12px;">Current: <b><%= user.email %></b></p>
+      <form method="POST" action="/account/change-email" class="blizz-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Password</label>
+        <input type="password" name="password" required>
+        <label>New Email</label>
+        <input type="email" name="new_email" required>
+        <div style="margin-top:8px;"><button type="submit" class="btn-blizz">Change Email</button></div>
+      </form>
+    </td></tr>
+  </table>
+</td>
+</tr>
+</table>
+
+<!-- Change Expansion -->
+<div style="margin-top:10px;">
+  <table class="blizz-table" style="width:50%;">
+    <tr><th>Change Expansion</th></tr>
+    <tr><td>
+      <p style="color:#888; font-size:12px;">Current: <b><%= user.expansion === 2 ? 'Wrath of the Lich King' : user.expansion === 1 ? 'The Burning Crusade' : 'Classic' %></b></p>
+      <form method="POST" action="/account/change-expansion" class="blizz-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <select name="expansion" style="width:100%; padding:4px; background:#0a1929; color:#ccc; border:1px solid #1a3a5c;">
+          <option value="0" <%= user.expansion === 0 ? 'selected' : '' %>>Classic</option>
+          <option value="1" <%= user.expansion === 1 ? 'selected' : '' %>>The Burning Crusade</option>
+          <option value="2" <%= user.expansion === 2 ? 'selected' : '' %>>Wrath of the Lich King</option>
+        </select>
+        <div style="margin-top:8px;"><button type="submit" class="btn-blizz">Update Expansion</button></div>
+      </form>
+    </td></tr>
+  </table>
+</div>

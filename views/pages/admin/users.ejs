@@ -1,0 +1,136 @@
+<h3 class="mb-4">User Management</h3>
+
+<!-- Search -->
+<form class="row g-2 mb-4" method="GET" action="/admin/users">
+  <div class="col-auto">
+    <input type="text" name="search" class="form-control bg-dark text-light border-secondary" placeholder="Search username..." value="<%= search || '' %>">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-gold" type="submit"><i class="fas fa-search me-1"></i>Search</button>
+  </div>
+  <% if (search) { %>
+    <div class="col-auto"><a href="/admin/users" class="btn btn-secondary">Clear</a></div>
+  <% } %>
+</form>
+
+<!-- Users Table -->
+<div class="table-responsive">
+  <table class="table table-dark table-hover table-sm">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Level</th>
+        <th>Expansion</th>
+        <th>Last IP</th>
+        <th>Points</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (users && users.length) { %>
+        <% users.forEach(u => { %>
+          <tr>
+            <td><%= u.id %></td>
+            <td><%= u.username %></td>
+            <td><%= u.email %></td>
+            <td>
+              <% if (u.account_level >= 4) { %>
+                <span class="badge bg-danger">Super Admin</span>
+              <% } else if (u.account_level >= 3) { %>
+                <span class="badge bg-warning text-dark">Admin</span>
+              <% } else if (u.account_level === 5) { %>
+                <span class="badge bg-dark">Banned</span>
+              <% } else { %>
+                <span class="badge bg-secondary">User (<%= u.account_level %>)</span>
+              <% } %>
+            </td>
+            <td><%= u.expansion %></td>
+            <td><%= u.last_ip %></td>
+            <td><%= u.web_points || 0 %></td>
+            <td>
+              <button class="btn btn-sm btn-outline-gold" data-bs-toggle="modal" data-bs-target="#edit-<%= u.id %>">
+                <i class="fas fa-edit"></i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Edit Modal -->
+          <div class="modal fade" id="edit-<%= u.id %>" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                  <h5 class="modal-title text-gold"><%= u.username %></h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <!-- Set Level -->
+                  <form method="POST" action="/admin/users/edit" class="mb-3">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="account_id" value="<%= u.id %>">
+                    <input type="hidden" name="action" value="set_level">
+                    <input type="hidden" name="page" value="<%= page %>">
+                    <div class="input-group input-group-sm">
+                      <select name="account_level" class="form-select bg-dark text-light border-secondary">
+                        <option value="1" <%= u.account_level==1?'selected':'' %>>1 - User</option>
+                        <option value="2" <%= u.account_level==2?'selected':'' %>>2 - VIP</option>
+                        <option value="3" <%= u.account_level==3?'selected':'' %>>3 - Admin</option>
+                        <option value="4" <%= u.account_level==4?'selected':'' %>>4 - Super Admin</option>
+                        <option value="5" <%= u.account_level==5?'selected':'' %>>5 - Banned</option>
+                      </select>
+                      <button class="btn btn-gold" type="submit">Set Level</button>
+                    </div>
+                  </form>
+
+                  <!-- Change Password -->
+                  <form method="POST" action="/admin/users/edit" class="mb-3">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="account_id" value="<%= u.id %>">
+                    <input type="hidden" name="action" value="change_password">
+                    <div class="input-group input-group-sm">
+                      <input type="text" name="new_password" class="form-control bg-dark text-light border-secondary" placeholder="New password">
+                      <button class="btn btn-warning" type="submit">Set Pass</button>
+                    </div>
+                  </form>
+
+                  <!-- Ban/Unban -->
+                  <div class="d-flex gap-2">
+                    <form method="POST" action="/admin/users/edit" class="flex-grow-1">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="account_id" value="<%= u.id %>">
+                      <input type="hidden" name="action" value="ban">
+                      <input type="text" name="ban_reason" class="form-control form-control-sm bg-dark text-light border-secondary mb-1" placeholder="Reason">
+                      <button class="btn btn-sm btn-danger w-100" type="submit"><i class="fas fa-ban"></i> Ban</button>
+                    </form>
+                    <form method="POST" action="/admin/users/edit">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="account_id" value="<%= u.id %>">
+                      <input type="hidden" name="action" value="unban">
+                      <button class="btn btn-sm btn-success" type="submit"><i class="fas fa-check"></i> Unban</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="8" class="text-center text-muted">No users found.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<% if (totalPages > 1) { %>
+  <nav>
+    <ul class="pagination pagination-sm justify-content-center">
+      <% for (let p = 1; p <= totalPages; p++) { %>
+        <li class="page-item <%= page == p ? 'active' : '' %>">
+          <a class="page-link bg-dark text-gold border-secondary" href="/admin/users?page=<%= p %>&search=<%= search || '' %>"><%= p %></a>
+        </li>
+      <% } %>
+    </ul>
+  </nav>
+<% } %>

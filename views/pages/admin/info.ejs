@@ -1,0 +1,48 @@
+<h3 class="mb-4">System Information</h3>
+
+<div class="row">
+  <div class="col-md-6 mb-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header text-gold">Server</div>
+      <div class="card-body">
+        <table class="table table-dark table-sm mb-0">
+          <tr><td class="text-muted">Node.js</td><td><%= nodeVersion %></td></tr>
+          <tr><td class="text-muted">Platform</td><td><%= platform %></td></tr>
+          <tr><td class="text-muted">Uptime</td><td><%= uptime %></td></tr>
+          <tr><td class="text-muted">Heap Used</td><td><%= Math.round(memUsage.heapUsed / 1024 / 1024) %> MB</td></tr>
+          <tr><td class="text-muted">Heap Total</td><td><%= Math.round(memUsage.heapTotal / 1024 / 1024) %> MB</td></tr>
+          <tr><td class="text-muted">RSS</td><td><%= Math.round(memUsage.rss / 1024 / 1024) %> MB</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 mb-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header text-gold">CMS Database</div>
+      <div class="card-body">
+        <table class="table table-dark table-sm mb-0">
+          <% if (dbVersion && dbVersion.db_version) { %>
+            <tr><td class="text-muted">DB Version</td><td><%= dbVersion.db_version %></td></tr>
+            <% if (dbVersion.db_update_date) { %><tr><td class="text-muted">Last Update</td><td><%= dbVersion.db_update_date %></td></tr><% } %>
+          <% } else { %>
+            <tr><td class="text-muted" colspan="2">No version info</td></tr>
+          <% } %>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header text-gold">Environment</div>
+  <div class="card-body">
+    <table class="table table-dark table-sm mb-0">
+      <tr><td class="text-muted">CMS DB</td><td><%= process.env.CMS_DB_NAME || 'mangosweb' %></td></tr>
+      <tr><td class="text-muted">Auth DB</td><td><%= process.env.AUTH_DB_NAME || 'acore_auth' %></td></tr>
+      <tr><td class="text-muted">Char DB</td><td><%= process.env.CHAR_DB_NAME || 'acore_characters' %></td></tr>
+      <tr><td class="text-muted">World DB</td><td><%= process.env.WORLD_DB_NAME || 'acore_world' %></td></tr>
+      <tr><td class="text-muted">SOAP</td><td><%= process.env.SOAP_HOST || 'N/A' %>:<%= process.env.SOAP_PORT || 'N/A' %></td></tr>
+    </table>
+  </div>
+</div>

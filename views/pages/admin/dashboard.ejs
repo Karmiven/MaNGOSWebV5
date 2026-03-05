@@ -1,0 +1,65 @@
+<h3 class="mb-4">Dashboard</h3>
+
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="card bg-dark border-secondary text-center">
+      <div class="card-body">
+        <div class="display-5 text-gold"><%= totalAccounts %></div>
+        <div class="text-muted">Accounts</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card bg-dark border-secondary text-center">
+      <div class="card-body">
+        <div class="display-5 text-gold"><%= totalChars %></div>
+        <div class="text-muted">Characters</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card bg-dark border-secondary text-center">
+      <div class="card-body">
+        <div class="display-5 text-success"><%= onlinePlayers %></div>
+        <div class="text-muted">Online Now</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card bg-dark border-secondary text-center">
+      <div class="card-body">
+        <div class="display-5 text-info"><%= totalNews %></div>
+        <div class="text-muted">News Posts</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6 mb-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header text-gold">Quick Actions</div>
+      <div class="list-group list-group-flush">
+        <a href="/admin/users" class="list-group-item list-group-item-action bg-dark text-light border-secondary"><i class="fas fa-users me-2"></i>Manage Users</a>
+        <a href="/admin/news" class="list-group-item list-group-item-action bg-dark text-light border-secondary"><i class="fas fa-newspaper me-2"></i>Manage News</a>
+        <a href="/admin/shop" class="list-group-item list-group-item-action bg-dark text-light border-secondary"><i class="fas fa-shopping-cart me-2"></i>Manage Shop</a>
+        <a href="/admin/siteconfig" class="list-group-item list-group-item-action bg-dark text-light border-secondary"><i class="fas fa-cog me-2"></i>Site Config</a>
+        <a href="/admin/gamemail" class="list-group-item list-group-item-action bg-dark text-light border-secondary"><i class="fas fa-envelope me-2"></i>Send Game Mail</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header text-gold">Online Stats</div>
+      <div class="card-body">
+        <% if (onlineStats) { %>
+          <p>Alliance: <span class="text-primary"><%= onlineStats.alliance || 0 %></span></p>
+          <p>Horde: <span class="text-danger"><%= onlineStats.horde || 0 %></span></p>
+          <p class="mb-0">Unique IPs: <span class="text-info"><%= onlineStats.uniqueIPs || 0 %></span></p>
+        <% } else { %>
+          <p class="text-muted mb-0">No stats available.</p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>

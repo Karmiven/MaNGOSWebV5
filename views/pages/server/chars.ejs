@@ -1,0 +1,83 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<!-- Character Search — V4 Blizzlike Style -->
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Characters' }) %>
+
+<style type="text/css">
+  a.server { border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; font-weight: bold; }
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+</style>
+
+<!-- Search Form -->
+<div style="padding:5px 0; margin-bottom:5px;">
+  <form method="GET" action="/server/chars" style="display:inline;">
+    <input type="text" name="q" placeholder="Search character name..." value="<%= query %>" style="padding:3px; width:200px;">
+    <input type="submit" value="Search" class="btn-blizz">
+  </form>
+</div>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="left" colspan="6">Pages: <%- pagesStr %></td>
+  </tr>
+  <tr>
+    <td class="rankingHeader" align="center" colspan="6" nowrap="nowrap">Realm: <%= realmName %></td>
+  </tr>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">
+      <%
+        var qs = query ? 'q=' + encodeURIComponent(query) + '&' : '';
+        var sortLink, sortArrow;
+        if (sort === 'lvlasc') {
+          sortLink = '/server/chars?' + qs + 'sort=lvldesc';
+          sortArrow = '⇩';
+        } else {
+          sortLink = '/server/chars?' + qs + 'sort=lvlasc';
+          sortArrow = '⇧';
+        }
+      %>
+      <a style="color: #C7C7C7; text-decoration: none" href="<%= sortLink %>"><%= sortArrow %></a>
+      <a style="color: #C7C7C7;" href="<%= sortLink %>">Lvl</a>
+    </td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Zone</td>
+  </tr>
+<% if (characters.length) { %>
+  <% characters.forEach(function(item, idx) {
+    var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+    var num = (page - 1) * 25 + idx + 1;
+  %>
+  <tr>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= num %></b></td>
+    <td class="<%= rowClass %>"><b style="color: rgb(35, 67, 3);"><center><%= item.name %></center></b></td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.raceName(item.race) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/race/<%= item.race %>-<%= item.gender || 0 %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.className(item.class) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/class/<%= item.class %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= item.level %></b></td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(35, 67, 3);"><%= item.zoneName || 'Unknown zone' %></b></td>
+  </tr>
+  <% }); %>
+<% } else { %>
+  <tr>
+    <td class="serverStatus1" colspan="6" align="center" style="padding:15px;">No characters found.</td>
+  </tr>
+<% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>

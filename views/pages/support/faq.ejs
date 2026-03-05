@@ -1,0 +1,21 @@
+<!-- FAQ — V4 Blizzlike Style -->
+<div class="subheader-bar">
+  <div class="sh-left"></div>
+  <div class="sh-mid"><b>Frequently Asked Questions</b></div>
+  <div class="sh-right"></div>
+</div>
+
+<% if (faqs && faqs.length > 0) { %>
+  <% faqs.forEach((faq, i) => { %>
+    <div style="margin-bottom:8px;">
+      <div class="news-expand" onclick="toggleEntry('faq<%= i %>')" style="cursor:pointer; background:#0a1929; padding:6px 10px; border:1px solid #1a3a5c; color:#d0a803; font-weight:bold;">
+        ▸ <%= faq.question %>
+      </div>
+      <div id="faq<%= i %>" style="display:none; background:#040d1a; padding:10px 12px; border:1px solid #1a3a5c; border-top:none; color:#ccc;">
+        <%- faq.answer %>
+      </div>
+    </div>
+  <% }) %>
+<% } else { %>
+  <p style="color:#888; text-align:center; padding:30px 0;">No FAQ entries yet.</p>
+<% } %>

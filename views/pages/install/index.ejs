@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaNGOSWebV5 - Installation</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: #0d1117; color: #e6e6e6; }
+    .text-gold { color: #F8B700 !important; }
+    .btn-gold { background: #F8B700; color: #000; border: none; font-weight: 600; }
+    .btn-gold:hover { background: #e0a500; color: #000; }
+    .install-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; }
+    .step-indicator .step { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin: 0 4px; background: #21262d; color: #8b949e; font-weight: bold; }
+    .step-indicator .step.active { background: #F8B700; color: #000; }
+    .step-indicator .step.done { background: #238636; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container py-5" style="max-width: 800px;">
+    <div class="text-center mb-4">
+      <h2 class="text-gold">MaNGOSWebV5</h2>
+      <p class="text-muted">Installation Wizard</p>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="text-center mb-4 step-indicator">
+      <span class="step" id="si-1">1</span>
+      <span class="step" id="si-2">2</span>
+      <span class="step" id="si-3">3</span>
+      <span class="step" id="si-4">4</span>
+    </div>
+
+    <!-- Alert -->
+    <div id="alert-box" class="alert d-none" role="alert"></div>
+
+    <!-- Step 1: Welcome -->
+    <div class="install-card p-4 mb-4 step-panel" id="step-1">
+      <h4 class="text-gold mb-3">Welcome</h4>
+      <p>This wizard will guide you through setting up MaNGOSWebV5 for your AzerothCore server.</p>
+      <p>You will need:</p>
+      <ul>
+        <li>MySQL database credentials</li>
+        <li>AzerothCore database names (auth, characters, world)</li>
+        <li>SOAP access credentials</li>
+        <li>A desired admin username and password</li>
+      </ul>
+      <button class="btn btn-gold" onclick="goStep(2)">Begin <i class="fas fa-arrow-right ms-1"></i></button>
+    </div>
+
+    <!-- Step 2: Database Configuration -->
+    <div class="install-card p-4 mb-4 step-panel d-none" id="step-2">
+      <h4 class="text-gold mb-3">Database Configuration</h4>
+
+      <h6 class="text-gold mt-3">CMS Database</h6>
+      <p class="text-muted small">A new database for the website data. It will be created if it doesn't exist.</p>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4"><input type="text" id="cms_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
+        <div class="col-md-2"><input type="text" id="cms_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
+        <div class="col-md-2"><input type="text" id="cms_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="mangosweb" placeholder="DB Name"></div>
+        <div class="col-md-2"><input type="text" id="cms_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
+        <div class="col-md-2"><input type="password" id="cms_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
+      </div>
+      <button class="btn btn-sm btn-outline-info mb-3" onclick="testDb('cms')"><i class="fas fa-plug me-1"></i>Test CMS Connection</button>
+      <span id="cms-result" class="ms-2 small"></span>
+
+      <h6 class="text-gold mt-3">Auth Database</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4"><input type="text" id="auth_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
+        <div class="col-md-2"><input type="text" id="auth_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
+        <div class="col-md-2"><input type="text" id="auth_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore_auth" placeholder="DB Name"></div>
+        <div class="col-md-2"><input type="text" id="auth_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
+        <div class="col-md-2"><input type="password" id="auth_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
+      </div>
+      <button class="btn btn-sm btn-outline-info mb-3" onclick="testDb('auth')"><i class="fas fa-plug me-1"></i>Test Auth Connection</button>
+      <span id="auth-result" class="ms-2 small"></span>
+
+      <h6 class="text-gold mt-3">Characters Database</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4"><input type="text" id="char_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
+        <div class="col-md-2"><input type="text" id="char_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
+        <div class="col-md-2"><input type="text" id="char_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore_characters" placeholder="DB Name"></div>
+        <div class="col-md-2"><input type="text" id="char_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
+        <div class="col-md-2"><input type="password" id="char_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
+      </div>
+
+      <h6 class="text-gold mt-3">World Database</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4"><input type="text" id="world_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
+        <div class="col-md-2"><input type="text" id="world_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
+        <div class="col-md-2"><input type="text" id="world_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore_world" placeholder="DB Name"></div>
+        <div class="col-md-2"><input type="text" id="world_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
+        <div class="col-md-2"><input type="password" id="world_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
+      </div>
+
+      <div class="d-flex justify-content-between mt-3">
+        <button class="btn btn-secondary" onclick="goStep(1)"><i class="fas fa-arrow-left me-1"></i>Back</button>
+        <button class="btn btn-gold" onclick="goStep(3)">Next <i class="fas fa-arrow-right ms-1"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 3: Admin & SOAP -->
+    <div class="install-card p-4 mb-4 step-panel d-none" id="step-3">
+      <h4 class="text-gold mb-3">Admin Account & SOAP</h4>
+
+      <h6 class="text-gold">Admin Account</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4"><input type="text" id="admin_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="admin" placeholder="Username"></div>
+        <div class="col-md-4"><input type="password" id="admin_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Password"></div>
+        <div class="col-md-4"><input type="email" id="admin_email" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Email"></div>
+      </div>
+
+      <h6 class="text-gold mt-3">Site Settings</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-md-12"><input type="text" id="site_title" class="form-control form-control-sm bg-dark text-light border-secondary" value="My WoW Server" placeholder="Site Title"></div>
+      </div>
+
+      <h6 class="text-gold mt-3">SOAP Configuration</h6>
+      <p class="text-muted small">Used to execute in-game commands (send mail, items, etc.)</p>
+      <div class="row g-2 mb-3">
+        <div class="col-md-4"><input type="text" id="soap_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
+        <div class="col-md-2"><input type="text" id="soap_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="7878" placeholder="Port"></div>
+        <div class="col-md-3"><input type="text" id="soap_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="admin" placeholder="User"></div>
+        <div class="col-md-3"><input type="password" id="soap_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
+      </div>
+
+      <div class="d-flex justify-content-between mt-3">
+        <button class="btn btn-secondary" onclick="goStep(2)"><i class="fas fa-arrow-left me-1"></i>Back</button>
+        <button class="btn btn-gold" onclick="goStep(4)">Next <i class="fas fa-arrow-right ms-1"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 4: Install -->
+    <div class="install-card p-4 mb-4 step-panel d-none" id="step-4">
+      <h4 class="text-gold mb-3">Install</h4>
+      <p>Ready to install MaNGOSWebV5. This will:</p>
+      <ul>
+        <li>Create required CMS tables</li>
+        <li>Set up the admin account with SRP6 authentication</li>
+        <li>Configure realm settings</li>
+        <li>Generate the <code>.env</code> configuration file</li>
+      </ul>
+      <div id="install-progress" class="d-none mb-3">
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar bg-gold" role="progressbar" style="width: 0%"></div>
+        </div>
+        <p class="text-muted small mt-2" id="install-status">Starting...</p>
+      </div>
+      <div class="d-flex justify-content-between">
+        <button class="btn btn-secondary" onclick="goStep(3)" id="btn-back-4"><i class="fas fa-arrow-left me-1"></i>Back</button>
+        <button class="btn btn-gold btn-lg" id="btn-install" onclick="runInstall()">
+          <i class="fas fa-download me-1"></i>Install Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentStep = 1;
+
+    function goStep(n) {
+      document.querySelectorAll('.step-panel').forEach(p => p.classList.add('d-none'));
+      document.getElementById('step-' + n).classList.remove('d-none');
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('si-' + i);
+        el.classList.remove('active', 'done');
+        if (i < n) el.classList.add('done');
+        else if (i === n) el.classList.add('active');
+      }
+      currentStep = n;
+    }
+
+    async function testDb(prefix) {
+      const data = {
+        host: document.getElementById(prefix + '_host').value,
+        port: document.getElementById(prefix + '_port').value,
+        user: document.getElementById(prefix + '_user').value,
+        password: document.getElementById(prefix + '_pass').value,
+        database: document.getElementById(prefix + '_db').value
+      };
+      const el = document.getElementById(prefix + '-result');
+      el.textContent = 'Testing...';
+      el.className = 'ms-2 small text-warning';
+      try {
+        const resp = await fetch('/install/test-db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        el.textContent = result.message;
+        el.className = 'ms-2 small ' + (result.success ? 'text-success' : 'text-danger');
+      } catch (err) {
+        el.textContent = err.message;
+        el.className = 'ms-2 small text-danger';
+      }
+    }
+
+    async function runInstall() {
+      const btn = document.getElementById('btn-install');
+      const progress = document.getElementById('install-progress');
+      const status = document.getElementById('install-status');
+      const bar = progress.querySelector('.progress-bar');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Installing...';
+      document.getElementById('btn-back-4').disabled = true;
+      progress.classList.remove('d-none');
+      bar.style.width = '20%';
+      status.textContent = 'Connecting to databases...';
+
+      const fields = ['cms_host','cms_port','cms_user','cms_pass','cms_db',
+        'auth_host','auth_port','auth_user','auth_pass','auth_db',
+        'char_host','char_port','char_user','char_pass','char_db',
+        'world_host','world_port','world_user','world_pass','world_db',
+        'site_title','admin_user','admin_pass','admin_email',
+        'soap_host','soap_port','soap_user','soap_pass'];
+      const data = {};
+      fields.forEach(f => data[f] = document.getElementById(f).value);
+
+      bar.style.width = '40%';
+      status.textContent = 'Running installation...';
+
+      try {
+        const resp = await fetch('/install/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        bar.style.width = '100%';
+
+        if (result.success) {
+          status.textContent = result.message;
+          showAlert('success', '<i class="fas fa-check-circle me-1"></i>' + result.message + ' <a href="/" class="alert-link">Go to Homepage</a>');
+          btn.innerHTML = '<i class="fas fa-check me-1"></i>Done!';
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (err) {
+        bar.style.width = '100%';
+        bar.classList.remove('bg-gold');
+        bar.classList.add('bg-danger');
+        status.textContent = 'Error: ' + err.message;
+        showAlert('danger', '<i class="fas fa-times-circle me-1"></i>Installation failed: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-redo me-1"></i>Retry';
+        document.getElementById('btn-back-4').disabled = false;
+      }
+    }
+
+    function showAlert(type, msg) {
+      const el = document.getElementById('alert-box');
+      el.className = 'alert alert-' + type;
+      el.innerHTML = msg;
+    }
+  </script>
+</body>
+</html>

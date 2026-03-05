@@ -1,0 +1,28 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var _type = typeof type !== 'undefined' ? type : 0;
+  var _title = typeof title !== 'undefined' ? title : 'No title set';
+%>
+<% if (_type === 1) { %>
+<!-- builddiv type 1: content-parting header -->
+<div style="width: 659px; height: 29px; background: url('<%= tp %>/images/content-parting.jpg') no-repeat;">
+  <div style="padding: 2px 0px 0px 23px;">
+    <font style="font-family: 'Times New Roman', Times, serif; color: #640909;"><h2><%= _title %></h2></font>
+  </div>
+</div>
+<div style="background: url('<%= tp %>/images/light.jpg') repeat; border-width: 1px; border-color: #000000; border-bottom-style: solid; margin: 0px 0px 5px 0px">
+<div class="contentdiv">
+<% } else if (_title && _title !== 'No title set') { %>
+<!-- builddiv type 0: content-parting2 header -->
+<div style="width: 659px; height: 29px; background: url('<%= tp %>/images/content-parting2.jpg') no-repeat;">
+  <div style="padding: 2px 0px 0px 23px;">
+    <font style="font-family: 'Times New Roman', Times, serif; color: #640909;"><h2><%= _title %></h2></font>
+  </div>
+</div>
+<div style="background: url('<%= tp %>/images/light.jpg') repeat; border-width: 1px; border-color: #000000; border-bottom-style: solid; margin: 0px 0px 5px 0px">
+<div class="contentdiv">
+<% } else { %>
+<!-- builddiv type 0: no title, just light bg -->
+<div style="background: url('<%= tp %>/images/light.jpg') repeat; border-width: 1px; border-color: #000000; border-top-style: solid; border-bottom-style: solid; margin: 4px 0px 5px 0px">
+<div class="contentdiv">
+<% } %>

@@ -1,0 +1,49 @@
+<h3 class="mb-4">Ban List</h3>
+
+<div class="table-responsive">
+  <table class="table table-dark table-hover table-sm">
+    <thead>
+      <tr>
+        <th>Account ID</th>
+        <th>Ban Date</th>
+        <th>Unban Date</th>
+        <th>Banned By</th>
+        <th>Reason</th>
+        <th>Active</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (bans && bans.length) { %>
+        <% bans.forEach(ban => { %>
+          <tr>
+            <td><%= ban.id %></td>
+            <td><%= helpers.formatDate(new Date(ban.bandate * 1000)) %></td>
+            <td><%= ban.unbandate ? helpers.formatDate(new Date(ban.unbandate * 1000)) : 'Permanent' %></td>
+            <td><%= ban.bannedby %></td>
+            <td><%= ban.banreason %></td>
+            <td>
+              <% if (ban.active) { %>
+                <span class="badge bg-danger">Active</span>
+              <% } else { %>
+                <span class="badge bg-secondary">Expired</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (ban.active) { %>
+                <form method="POST" action="/admin/users/edit" class="d-inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <input type="hidden" name="account_id" value="<%= ban.id %>">
+                  <input type="hidden" name="action" value="unban">
+                  <button class="btn btn-sm btn-outline-success"><i class="fas fa-check me-1"></i>Unban</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="7" class="text-center text-muted">No bans found.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

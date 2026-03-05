@@ -1,0 +1,69 @@
+<h3 class="mb-4">Vote Sites</h3>
+
+<!-- Add Site -->
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header text-gold">Add Vote Site</div>
+  <div class="card-body">
+    <form method="POST" action="/admin/vote/add">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="row g-2">
+        <div class="col-md-2"><input type="text" name="hostname" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Site Name" required></div>
+        <div class="col-md-3"><input type="url" name="votelink" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Vote URL" required></div>
+        <div class="col-md-3"><input type="url" name="image_url" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Image URL"></div>
+        <div class="col-md-1"><input type="number" name="points" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Pts" required></div>
+        <div class="col-md-2"><input type="number" name="reset_time" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Reset (hrs)" value="12"></div>
+        <div class="col-md-1"><button type="submit" class="btn btn-sm btn-gold w-100">Add</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sites Table -->
+<div class="table-responsive">
+  <table class="table table-dark table-hover table-sm">
+    <thead><tr><th>ID</th><th>Name</th><th>Vote Link</th><th>Points</th><th>Reset (hrs)</th><th>Actions</th></tr></thead>
+    <tbody>
+      <% if (sites && sites.length) { %>
+        <% sites.forEach(s => { %>
+          <tr>
+            <td><%= s.id %></td>
+            <td><%= s.hostname %></td>
+            <td class="text-truncate" style="max-width:200px"><a href="<%= s.votelink %>" target="_blank" class="text-info"><%= s.votelink %></a></td>
+            <td class="text-gold"><%= s.points %></td>
+            <td><%= s.reset_time %></td>
+            <td>
+              <button class="btn btn-sm btn-outline-gold me-1" data-bs-toggle="modal" data-bs-target="#edit-v-<%= s.id %>"><i class="fas fa-edit"></i></button>
+              <form method="POST" action="/admin/vote/delete" class="d-inline" onsubmit="return confirm('Delete?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="id" value="<%= s.id %>">
+                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+
+          <div class="modal fade" id="edit-v-<%= s.id %>" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary"><h5 class="modal-title text-gold">Edit Vote Site</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <form method="POST" action="/admin/vote/edit">
+                  <div class="modal-body">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="id" value="<%= s.id %>">
+                    <div class="mb-2"><label class="small text-muted">Name</label><input type="text" name="hostname" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= s.hostname %>"></div>
+                    <div class="mb-2"><label class="small text-muted">Vote URL</label><input type="url" name="votelink" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= s.votelink %>"></div>
+                    <div class="mb-2"><label class="small text-muted">Image URL</label><input type="url" name="image_url" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= s.image_url || '' %>"></div>
+                    <div class="mb-2"><label class="small text-muted">Points</label><input type="number" name="points" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= s.points %>"></div>
+                    <div class="mb-2"><label class="small text-muted">Reset (hours)</label><input type="number" name="reset_time" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= s.reset_time %>"></div>
+                  </div>
+                  <div class="modal-footer border-secondary"><button type="submit" class="btn btn-gold">Save</button></div>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="6" class="text-center text-muted">No vote sites.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,234 @@
+/* MaNGOSWebV5 - Main Stylesheet */
+/* WoW-inspired dark theme with gold accents */
+
+/* ===== Fonts ===== */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Open+Sans:wght@300;400;600&display=swap');
+
+/* ===== CSS Variables ===== */
+:root {
+  --gold: #F8B700;
+  --gold-dark: #c99500;
+  --gold-light: #ffd44d;
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-card: #1c2128;
+  --border-color: #30363d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --alliance: #3c8dbc;
+  --horde: #c0392b;
+}
+
+/* ===== Base ===== */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Open Sans', sans-serif;
+  min-height: 100vh;
+}
+
+a { color: var(--gold); text-decoration: none; }
+a:hover { color: var(--gold-light); }
+
+::selection {
+  background: var(--gold);
+  color: #000;
+}
+
+/* ===== Typography ===== */
+.font-cinzel { font-family: 'Cinzel', serif; }
+.text-gold { color: var(--gold) !important; }
+.text-alliance { color: var(--alliance) !important; }
+.text-horde { color: var(--horde) !important; }
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Cinzel', serif;
+}
+
+/* ===== Gold Button ===== */
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #000;
+  border: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  color: #000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(248, 183, 0, 0.3);
+}
+.btn-gold:active { transform: translateY(0); }
+
+.btn-outline-gold {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: transparent;
+}
+.btn-outline-gold:hover {
+  background: var(--gold);
+  color: #000;
+}
+
+/* ===== Cards ===== */
+.wow-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.wow-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.wow-card .card-header {
+  background: rgba(248, 183, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ===== Navbar ===== */
+.navbar-wow {
+  background: rgba(13, 17, 23, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-color);
+}
+.navbar-wow .nav-link {
+  color: var(--text-secondary) !important;
+  font-weight: 500;
+  transition: color 0.2s;
+  padding: 0.5rem 1rem;
+}
+.navbar-wow .nav-link:hover,
+.navbar-wow .nav-link.active {
+  color: var(--gold) !important;
+}
+.navbar-wow .navbar-brand {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: var(--gold) !important;
+  font-size: 1.4rem;
+}
+
+/* ===== Footer ===== */
+.footer-wow {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ===== Tables ===== */
+.table-dark {
+  --bs-table-bg: var(--bg-card);
+  --bs-table-border-color: var(--border-color);
+  --bs-table-hover-bg: rgba(248, 183, 0, 0.05);
+}
+
+/* ===== Forms ===== */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 0.2rem rgba(248, 183, 0, 0.15);
+}
+
+/* ===== Flash Messages ===== */
+.flash-message {
+  animation: flashIn 0.3s ease-out;
+}
+@keyframes flashIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Faction Badges ===== */
+.badge-alliance {
+  background: var(--alliance);
+  color: #fff;
+}
+.badge-horde {
+  background: var(--horde);
+  color: #fff;
+}
+
+/* ===== Progress Bars ===== */
+.progress {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+.progress-bar.bg-gold {
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold)) !important;
+}
+
+/* ===== Pagination ===== */
+.page-link {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+.page-link:hover {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+.page-item.active .page-link {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+}
+
+/* ===== Accordion (FAQ) ===== */
+.accordion-button:not(.collapsed) {
+  background: rgba(248, 183, 0, 0.1);
+  color: var(--gold);
+  box-shadow: none;
+}
+.accordion-button::after {
+  filter: invert(1);
+}
+.accordion-button:focus {
+  box-shadow: 0 0 0 0.2rem rgba(248, 183, 0, 0.15);
+}
+
+/* ===== Modal ===== */
+.modal-content {
+  border: 1px solid var(--border-color);
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-dark); }
+
+/* ===== Sidebar (Home) ===== */
+.sidebar-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+.sidebar-card .card-header {
+  background: rgba(248, 183, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--gold);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .display-4 { font-size: 2rem; }
+  .display-5 { font-size: 1.5rem; }
+  .display-6 { font-size: 1.2rem; }
+}
+
+/* ===== Loading Spinner ===== */
+.spinner-gold {
+  color: var(--gold);
+}
+
+/* ===== Tooltips ===== */
+.tooltip-inner {
+  background: var(--bg-card);
+  border: 1px solid var(--gold);
+  color: var(--text-primary);
+}

@@ -1,0 +1,53 @@
+<!-- Character Services — V4 Blizzlike Style -->
+<div class="subheader-bar">
+  <div class="sh-left"></div>
+  <div class="sh-mid"><b>Character Services</b></div>
+  <div class="sh-right"></div>
+</div>
+
+<p><b style="color:#d0a803;"><%= ext ? ext.web_points : 0 %></b> Web Points available</p>
+
+<% if (characters && characters.length) { %>
+  <table class="blizz-table" style="width:100%;">
+    <tr><th colspan="4">Your Characters</th></tr>
+    <% characters.forEach((c, i) => { %>
+      <tr class="<%= i % 2 === 0 ? 'pvpboxrow' : 'pvpboxrowalt' %>">
+        <td style="width:200px;">
+          <b><%= c.name %></b><br>
+          <span style="font-size:11px; color:#888;"><%= Character.raceName(c.race) %> <%= Character.className(c.class) %> — Lv.<%= c.level %></span>
+        </td>
+        <td>
+          <% if (!c.online) { %>
+            <form method="POST" action="/account/rename" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="guid" value="<%= c.guid %>">
+              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Rename <%= c.name %> for <%= config.rename_cost || 0 %> pts?')">Rename (<%= config.rename_cost || 0 %>)</button>
+            </form>
+            <form method="POST" action="/account/customize" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="guid" value="<%= c.guid %>">
+              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Customize <%= c.name %> for <%= config.customize_cost || 0 %> pts?')">Customize (<%= config.customize_cost || 0 %>)</button>
+            </form>
+            <form method="POST" action="/account/racechange" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="guid" value="<%= c.guid %>">
+              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Race change <%= c.name %> for <%= config.racechange_cost || 0 %> pts?')">Race (<%= config.racechange_cost || 0 %>)</button>
+            </form>
+            <form method="POST" action="/account/factionchange" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="guid" value="<%= c.guid %>">
+              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Faction change <%= c.name %> for <%= config.factionchange_cost || 0 %> pts?')">Faction (<%= config.factionchange_cost || 0 %>)</button>
+            </form>
+          <% } else { %>
+            <span style="color:#da4;">⚠ Character must be offline</span>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+  </table>
+<% } else { %>
+  <table class="blizz-table" style="width:100%;">
+    <tr><th>Your Characters</th></tr>
+    <tr><td style="text-align:center; padding:30px; color:#888;">No characters found.</td></tr>
+  </table>
+<% } %>

@@ -1,0 +1,225 @@
+<h3 class="mb-4">Site Configuration</h3>
+
+<form method="POST" action="/admin/siteconfig">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <!-- General -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">General</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label text-muted">Site Title</label>
+          <input type="text" name="site_title" class="form-control bg-dark text-light border-secondary" value="<%= config.site_title || '' %>">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label text-muted">Site Email</label>
+          <input type="email" name="site_email" class="form-control bg-dark text-light border-secondary" value="<%= config.site_email || '' %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label text-muted">Emulator</label>
+          <select name="emulator" class="form-select bg-dark text-light border-secondary">
+            <option value="azerothcore" <%= config.emulator=='azerothcore'?'selected':'' %>>AzerothCore</option>
+            <option value="trinitycore" <%= config.emulator=='trinitycore'?'selected':'' %>>TrinityCore</option>
+            <option value="cmangos" <%= config.emulator=='cmangos'?'selected':'' %>>CMaNGOS</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label text-muted">Template</label>
+          <select name="templates" class="form-control bg-dark text-light border-secondary">
+            <% (availableThemes || []).forEach(function(t) { %>
+              <option value="<%= t %>" <%= (config.templates || 'wotlk') === t ? 'selected' : '' %>><%= t %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label text-muted">Default Realm ID</label>
+          <input type="number" name="default_realm_id" class="form-control bg-dark text-light border-secondary" value="<%= config.default_realm_id || 1 %>">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">Language</div>
+    <div class="card-body row g-3">
+      <div class="col-md-6">
+        <label class="form-label text-muted">Default Language</label>
+        <input type="text" name="default_lang" class="form-control bg-dark text-light border-secondary" value="<%= config.default_lang || 'en' %>">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted">Available Languages (comma-separated)</label>
+        <input type="text" name="available_lang" class="form-control bg-dark text-light border-secondary" value="<%= config.available_lang || 'en' %>">
+      </div>
+    </div>
+  </div>
+
+  <!-- External Links -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">External Links</div>
+    <div class="card-body row g-3">
+      <div class="col-md-6">
+        <label class="form-label text-muted">Armory URL</label>
+        <input type="text" name="site_armory" class="form-control bg-dark text-light border-secondary" value="<%= config.site_armory || '' %>">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label text-muted">Forums URL</label>
+        <input type="text" name="site_forums" class="form-control bg-dark text-light border-secondary" value="<%= config.site_forums || '' %>">
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Front Page -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">Front Page Modules</div>
+    <div class="card-body row g-3">
+      <%
+        var fpModules = [
+          { key: 'fp_serverinfo',      label: 'Server Info' },
+          { key: 'fp_realm_status',    label: 'Realm Status' },
+          { key: 'fp_players_online',  label: 'Players Online' },
+          { key: 'fp_vote_banner',     label: 'Vote Banner' },
+          { key: 'fp_newbie_guide',    label: 'Newbie Guide' },
+          { key: 'fp_hitcounter',      label: 'Hit Counter' },
+          { key: 'site_notice_enable', label: 'Site Notice' },
+        ];
+      %>
+      <% fpModules.forEach(function(m) { %>
+        <div class="col-md-2">
+          <label class="form-label text-muted"><%= m.label %></label>
+          <select name="<%= m.key %>" class="form-select form-select-sm bg-dark text-light border-secondary">
+            <option value="1" <%= config[m.key]=='1'?'selected':'' %>>On</option>
+            <option value="0" <%= config[m.key]!='1'?'selected':'' %>>Off</option>
+          </select>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Modules -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">Modules</div>
+    <div class="card-body row g-3">
+      <%
+        var modules = [
+          { key: 'module_online_list',   label: 'Online List' },
+          { key: 'module_voting',        label: 'Voting' },
+          { key: 'module_fp_ssotd',      label: 'SSOTD' },
+          { key: 'module_news_items',    label: 'News Items #', type: 'number' },
+          { key: 'module_news_open',     label: 'News Open #', type: 'number' },
+          { key: 'enable_debugging',     label: 'Debug Mode' },
+        ];
+      %>
+      <% modules.forEach(function(m) { %>
+        <div class="col-md-2">
+          <label class="form-label text-muted"><%= m.label %></label>
+          <% if (m.type === 'number') { %>
+            <input type="number" name="<%= m.key %>" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= config[m.key] || 0 %>">
+          <% } else { %>
+            <select name="<%= m.key %>" class="form-select form-select-sm bg-dark text-light border-secondary">
+              <option value="1" <%= config[m.key]=='1'?'selected':'' %>>On</option>
+              <option value="0" <%= config[m.key]!='1'?'selected':'' %>>Off</option>
+            </select>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Registration -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">Registration</div>
+    <div class="card-body row g-3">
+      <div class="col-md-2">
+        <label class="form-label text-muted">Enabled</label>
+        <select name="reg_enabled" class="form-select form-select-sm bg-dark text-light border-secondary">
+          <option value="1" <%= (config.reg_enabled=='1' || config.reg_enabled===1)?'selected':'' %>>Yes</option>
+          <option value="0" <%= (config.reg_enabled!='1' && config.reg_enabled!==1)?'selected':'' %>>No</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted">Activation</label>
+        <select name="reg_activation" class="form-select form-select-sm bg-dark text-light border-secondary">
+          <option value="1" <%= (config.reg_activation=='1' || config.reg_activation===1)?'selected':'' %>>Yes</option>
+          <option value="0" <%= (config.reg_activation!='1' && config.reg_activation!==1)?'selected':'' %>>No</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted">Invite Key</label>
+        <select name="reg_key_enable" class="form-select form-select-sm bg-dark text-light border-secondary">
+          <option value="1" <%= (config.reg_key_enable=='1' || config.reg_key_enable===1)?'selected':'' %>>Yes</option>
+          <option value="0" <%= (config.reg_key_enable!='1' && config.reg_key_enable!==1)?'selected':'' %>>No</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted">Password Change</label>
+        <select name="allow_user_pass_change" class="form-select form-select-sm bg-dark text-light border-secondary">
+          <option value="1" <%= (config.allow_user_pass_change=='1' || config.allow_user_pass_change===1)?'selected':'' %>>Yes</option>
+          <option value="0" <%= (config.allow_user_pass_change!='1' && config.allow_user_pass_change!==1)?'selected':'' %>>No</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted">Email Change</label>
+        <select name="allow_user_email_change" class="form-select form-select-sm bg-dark text-light border-secondary">
+          <option value="1" <%= (config.allow_user_email_change=='1' || config.allow_user_email_change===1)?'selected':'' %>>Yes</option>
+          <option value="0" <%= (config.allow_user_email_change!='1' && config.allow_user_email_change!==1)?'selected':'' %>>No</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-muted">Default Expansion</label>
+        <select name="reg_default_expansion" class="form-select form-select-sm bg-dark text-light border-secondary">
+          <option value="0" <%= config.reg_default_expansion=='0'?'selected':'' %>>Classic</option>
+          <option value="1" <%= config.reg_default_expansion=='1'?'selected':'' %>>TBC</option>
+          <option value="2" <%= config.reg_default_expansion=='2'?'selected':'' %>>WotLK</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-muted">Max Accounts/IP</label>
+        <input type="number" name="reg_acc_per_ip" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= config.reg_acc_per_ip || 5 %>">
+      </div>
+    </div>
+  </div>
+
+  <!-- Character Services -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">Character Services</div>
+    <div class="card-body row g-3">
+      <%
+        var charServices = [
+          { key: 'module_char_rename',         label: 'Rename',         costKey: 'rename_cost' },
+          { key: 'module_char_customize',      label: 'Customize',      costKey: 'customize_cost' },
+          { key: 'module_char_race_change',    label: 'Race Change',    costKey: 'racechange_cost' },
+          { key: 'module_char_faction_change', label: 'Faction Change', costKey: 'factionchange_cost' },
+        ];
+      %>
+      <% charServices.forEach(function(s) { %>
+        <div class="col-md-3" style="border-left:2px solid #333; padding-left:12px;">
+          <div class="mb-2">
+            <label class="form-label text-muted"><%= s.label %></label>
+            <select name="<%= s.key %>" class="form-select form-select-sm bg-dark text-light border-secondary">
+              <option value="1" <%= (config[s.key]=='1' || config[s.key]===1)?'selected':'' %>>Enabled</option>
+              <option value="0" <%= (config[s.key]!='1' && config[s.key]!==1)?'selected':'' %>>Disabled</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label text-muted">Cost (pts)</label>
+            <input type="number" name="<%= s.costKey %>" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= config[s.costKey] || 0 %>">
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- PayPal -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header text-gold">PayPal</div>
+    <div class="card-body">
+      <label class="form-label text-muted">PayPal Email</label>
+      <input type="email" name="paypal_email" class="form-control bg-dark text-light border-secondary" value="<%= config.paypal_email || '' %>">
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-gold btn-lg"><i class="fas fa-save me-1"></i>Save Configuration</button>
+</form>

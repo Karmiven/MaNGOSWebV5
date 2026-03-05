@@ -1,0 +1,73 @@
+<h3 class="mb-4">News Management</h3>
+
+<!-- Add News -->
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header text-gold">Add News</div>
+  <div class="card-body">
+    <form method="POST" action="/admin/news/add">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="mb-3">
+        <input type="text" name="title" class="form-control bg-dark text-light border-secondary" placeholder="Title" required>
+      </div>
+      <div class="mb-3">
+        <textarea name="message" class="form-control bg-dark text-light border-secondary" rows="4" placeholder="Content (HTML allowed)" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-gold"><i class="fas fa-plus me-1"></i>Post News</button>
+    </form>
+  </div>
+</div>
+
+<!-- News List -->
+<div class="table-responsive">
+  <table class="table table-dark table-hover table-sm">
+    <thead><tr><th>ID</th><th>Title</th><th>Author</th><th>Date</th><th>Actions</th></tr></thead>
+    <tbody>
+      <% if (news && news.length) { %>
+        <% news.forEach(n => { %>
+          <tr>
+            <td><%= n.id %></td>
+            <td><%= n.title %></td>
+            <td><%= n.author_name || n.author %></td>
+            <td><%= helpers.formatDate(n.date || n.created_at) %></td>
+            <td>
+              <button class="btn btn-sm btn-outline-gold me-1" data-bs-toggle="modal" data-bs-target="#edit-n-<%= n.id %>"><i class="fas fa-edit"></i></button>
+              <form method="POST" action="/admin/news/delete" class="d-inline" onsubmit="return confirm('Delete?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="id" value="<%= n.id %>">
+                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+
+          <div class="modal fade" id="edit-n-<%= n.id %>" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                  <h5 class="modal-title text-gold">Edit News</h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="/admin/news/edit">
+                  <div class="modal-body">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="id" value="<%= n.id %>">
+                    <div class="mb-3">
+                      <input type="text" name="title" class="form-control bg-dark text-light border-secondary" value="<%= n.title %>" required>
+                    </div>
+                    <div class="mb-3">
+                      <textarea name="message" class="form-control bg-dark text-light border-secondary" rows="6" required><%= n.message || n.content %></textarea>
+                    </div>
+                  </div>
+                  <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-gold">Save</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="5" class="text-center text-muted">No news posts.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

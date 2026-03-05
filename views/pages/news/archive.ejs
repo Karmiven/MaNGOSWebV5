@@ -1,0 +1,67 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<!-- News Archive — V4 Blizzlike Style -->
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'News Archives' }) %>
+
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+</style>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="left" colspan="4">
+      Pages: <% for (var i = 1; i <= pag.totalPages; i++) { %>
+        <% if (i === pag.page) { %>
+          <b><%= i %></b>
+        <% } else { %>
+          <a style="color: #C7C7C7;" href="/news/archive?page=<%= i %>"><%= i %></a>
+        <% } %>
+      <% } %>
+    </td>
+  </tr>
+  <tr>
+    <td class="rankingHeader" align="center" width="32">&nbsp;</td>
+    <td class="rankingHeader" align="left">Subject</td>
+    <td class="rankingHeader" align="center" width="120">Author</td>
+    <td class="rankingHeader" align="center" width="140">Date</td>
+  </tr>
+  <tr>
+    <td colspan="4" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
+  <% if (news && news.length) { %>
+    <% news.forEach(function(item, idx) {
+      var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+    %>
+    <tr>
+      <td class="<%= rowClass %>" align="center">
+        <img src="<%= tp %>/images/news-contests.gif" height="18" width="18" alt=""/>
+      </td>
+      <td class="<%= rowClass %>">
+        <a href="/news/<%= item.id %>"><b style="color: rgb(35, 67, 3);"><%= item.title %></b></a>
+      </td>
+      <td class="<%= rowClass %>" align="center">
+        <b style="color: rgb(102, 13, 2);"><%= item.authorName || 'Admin' %></b>
+      </td>
+      <td class="<%= rowClass %>" align="center">
+        <b style="color: rgb(35, 67, 3);"><%= typeof helpers !== 'undefined' ? helpers.formatDate(item.post_time) : '' %></b>
+      </td>
+    </tr>
+    <% }); %>
+  <% } else { %>
+    <tr>
+      <td class="serverStatus1" colspan="4" align="center" style="padding:20px;">No news found.</td>
+    </tr>
+  <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>

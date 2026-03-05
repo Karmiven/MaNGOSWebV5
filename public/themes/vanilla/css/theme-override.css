@@ -1,0 +1,82 @@
+/* Vanilla (Classic) Theme Override — Warm earthy browns & gold */
+
+/* Page backgrounds — warm sepia tone */
+body {
+  background-color: #1a0e00 !important;
+}
+
+#page-bg-top {
+  background-color: #2a1a08 !important;
+}
+
+/* Top navigation — warm brown */
+.topnav-wrapper,
+#topnav-bg {
+  background-color: #3b2210 !important;
+}
+
+/* Gold accents stay but slightly warmer */
+.subheader-bar .sh-mid {
+  background: linear-gradient(to bottom, #5c3a12, #3b2210) !important;
+  color: #f4c400 !important;
+}
+
+.blizz-table th {
+  background: #3b2210 !important;
+  color: #f4c400 !important;
+}
+
+/* Left menu — brown tint */
+.leftmenu-cont-mid {
+  background-color: #1a0e00 !important;
+}
+
+.menu-button-on,
+.menu-button-off {
+  background-color: #2a1a08 !important;
+}
+
+/* PvP rows — brown tones */
+.pvpboxrow {
+  background-color: #1a0e00 !important;
+}
+.pvpboxrowalt {
+  background-color: #221408 !important;
+}
+
+/* Inner boxes — parchment warm */
+.inner-login-box {
+  background: #1a0e00 !important;
+  border-color: #5c3a12 !important;
+}
+
+/* Buttons — warm gold */
+.btn-blizz {
+  background: linear-gradient(to bottom, #8b6914, #5c3a12) !important;
+  border-color: #5c3a12 !important;
+}
+.btn-blizz:hover {
+  background: linear-gradient(to bottom, #a67c17, #8b6914) !important;
+}
+
+/* Links — warm amber */
+a {
+  color: #c99700 !important;
+}
+
+/* Login box */
+#loginbox {
+  background-color: rgba(26, 14, 0, 0.9) !important;
+}
+
+/* News headers — brown */
+.blog-header-bg {
+  background-color: #3b2210 !important;
+}
+
+/* Right sidebar boxes */
+#q-links,
+.newcommer,
+#box2, #box3 {
+  border-color: #5c3a12 !important;
+}

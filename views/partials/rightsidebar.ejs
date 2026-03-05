@@ -1,0 +1,124 @@
+<%
+  /**
+   * Right sidebar partial — replicates V4's body_right.php
+   * Only shown on frontpage (controlled by main layout)
+   */
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+
+<!-- QuickLinks -->
+<div id="q-links">
+<h3>Quick Links</h3>
+<ul>
+<li>
+<a href="/account/manage">My Account</a>
+</li>
+<li class="e">
+<a href="/auth/register">Register</a>
+</li>
+<li>
+<a href="/server/realmstatus">Realm Status</a>
+</li>
+<li class="e">
+<a href="/support/faq">FAQ</a>
+</li>
+<li>
+<a href="/support/howtoplay">How to Play</a>
+</li>
+<li class="e">
+<a href="/server/commands">Commands</a>
+</li>
+</ul></div>
+<span class="gfxhook"></span>
+<hr>
+
+<!-- VoteLinks -->
+<div id="box3">
+<h3>Vote for Us</h3>
+<ul>
+<li><div>
+<center>
+  <a href="/vote"><img src="<%= tp %>/images/vote.png" width="264" height="247" onerror="this.style.display='none';" /></a>
+</center>
+Vote for our server and earn rewards!<br />
+</div></li>
+</ul></div>
+<span class="gfxhook"></span>
+<hr>
+
+<!-- Newcomers section -->
+<div id="rightbox">
+<div class="newcommer">
+<h4>New Players</h4>
+<p style="margin-bottom: -1px;">
+Welcome to our World of Warcraft server!
+</p>
+<ul>
+<li>&nbsp; <a href="/support/howtoplay">How to Connect</a>
+</li>
+<li>&nbsp; <a href="/support/faq">Frequently Asked Questions</a>
+</li>
+</ul>
+</div>
+</div>
+
+<!-- Server Information -->
+<% if (typeof serverInfo !== 'undefined' && serverInfo) { %>
+<div id="box3">
+<h3>Server Information</h3>
+<ul>
+
+<li><div>
+&nbsp;
+</div></li>
+
+<li><div>
+<b>Realm name:</b>&nbsp;<%= serverInfo.name %>
+</div></li>
+
+<li><div>
+<b>Realmstatus:</b>&nbsp;<% if (serverInfo.online) { %>
+  <img src="<%= tp %>/images/uparrow2.gif" height="15" alt="Online" style="vertical-align:middle;" /> <font color="#23430a">Online</font>
+<% } else { %>
+  <img src="<%= tp %>/images/downarrow2.gif" height="15" alt="Offline" style="vertical-align:middle;" /> <font color="#cc2200">Offline</font>
+<% } %>
+</div></li>
+
+<li><div>
+<b>Online:</b>&nbsp;
+<a href="/server/online"><%= serverInfo.onlineCount %></a>
+ (<a href="/server/online">Playermap</a>)
+</div></li>
+
+<li><div>
+<b>Server IP:</b>&nbsp;<%= serverInfo.address %>
+</div></li>
+
+<li><div>
+<b>Type:</b>&nbsp;<%= serverInfo.type %>
+</div></li>
+
+<li><div>
+<b>Language:</b>&nbsp;<%= serverInfo.language %>
+</div></li>
+
+<li><div>
+<b>Population:</b>&nbsp;<% if (serverInfo.population === 'High') { %><font color="#cc2200"><%= serverInfo.population %></font><% } else if (serverInfo.population === 'Medium') { %><font color="#ccaa00"><%= serverInfo.population %></font><% } else { %><font color="#23aa0a"><%= serverInfo.population %></font><% } %>
+</div></li>
+
+<li><div>
+<b>Accounts:</b>&nbsp;<%= serverInfo.totalAccounts %>
+</div></li>
+
+<li><div>
+<b>Characters:</b>&nbsp;<%= serverInfo.totalChars %>
+</div></li>
+
+<li><div>
+&nbsp;
+</div></li>
+
+</ul></div>
+<span class="gfxhook"></span>
+<hr>
+<% } %>

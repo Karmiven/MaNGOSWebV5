@@ -1,0 +1,48 @@
+<h3 class="mb-4">Character Tools</h3>
+
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header text-gold">Character Actions</div>
+  <div class="card-body">
+    <form method="POST" action="/admin/chartools">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label text-muted">Character GUID</label>
+          <input type="number" name="guid" class="form-control bg-dark text-light border-secondary" placeholder="Enter GUID" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label text-muted">Action</label>
+          <select name="action" class="form-select bg-dark text-light border-secondary">
+            <option value="rename">Flag for Rename</option>
+            <option value="customize">Flag for Customization</option>
+            <option value="reset_talents">Reset Talents</option>
+            <option value="reset_flags">Clear All Flags</option>
+            <option value="delete">Delete Character</option>
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-gold w-100" onclick="if(this.form.action.value==='delete') return confirm('Are you sure?')"><i class="fas fa-bolt me-1"></i>Execute</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-header text-gold">At Login Flags Reference</div>
+  <div class="card-body">
+    <table class="table table-dark table-sm mb-0">
+      <thead><tr><th>Flag</th><th>Value</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>RENAME</td><td>1</td><td>Force character name change at next login</td></tr>
+        <tr><td>RESET_SPELLS</td><td>2</td><td>Reset spells</td></tr>
+        <tr><td>RESET_TALENTS</td><td>4</td><td>Reset talents</td></tr>
+        <tr><td>CUSTOMIZE</td><td>8</td><td>Open character customization screen</td></tr>
+        <tr><td>RESET_PET_TALENTS</td><td>16</td><td>Reset pet talents</td></tr>
+        <tr><td>FIRST_LOGIN</td><td>32</td><td>First login flag</td></tr>
+        <tr><td>CHANGE_FACTION</td><td>64</td><td>Faction change</td></tr>
+        <tr><td>CHANGE_RACE</td><td>128</td><td>Race change</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>

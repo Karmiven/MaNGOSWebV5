@@ -1,0 +1,160 @@
+
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var step = typeof currentStep !== 'undefined' ? currentStep : 1;
+%>
+<!-- Registration Page — V4 Multi-Step Style -->
+<div align="right" style="z-index:2;position:relative;">
+  <img src="<%= tp %>/images/wowlogo2.gif" style="margin-top:-82px;padding-right:8px;" onerror="this.style.display='none'">
+</div>
+<div align="right" style="z-index:1;position:relative;">
+  <img src="<%= tp %>/images/account-creation.gif" style="margin-top:-30px;" onerror="this.style.display='none'">
+</div>
+
+<!-- Step Indicator -->
+<div style="text-align:center; margin:10px 0 15px; font:12px arial,helvetica,sans-serif;">
+  <span style="<%= step === 1 ? 'color:#d0a803; font-weight:bold;' : 'color:#666;' %>">1. Agreement</span>
+  &nbsp;&raquo;&nbsp;
+  <span style="<%= step === 2 ? 'color:#d0a803; font-weight:bold;' : 'color:#666;' %>">2. Account Creation</span>
+  &nbsp;&raquo;&nbsp;
+  <span style="<%= step === 3 ? 'color:#d0a803; font-weight:bold;' : 'color:#666;' %>">3. Complete</span>
+</div>
+
+<% if (step === 1) { %>
+<!-- STEP 1: Agreement / Terms of Service -->
+<style type="text/css">
+  .tos-box { background:#FEF5DA; border:1px solid #D0CBAF; padding:10px; margin:5px 0; font-size:11px; color:#605033; max-height:200px; overflow-y:auto; }
+</style>
+<div style="padding:0 8px 0 14px;">
+  <h3 style="margin:5px 0; font:small-caps 18px georgia,serif; color:#1e4378;">Terms of Service</h3>
+  <div class="tos-box">
+    <p>By creating an account on this server, you agree to the following terms:</p>
+    <ul>
+      <li>You will not use any exploits, hacks, or cheating software.</li>
+      <li>You will not harass, abuse, or threaten other players.</li>
+      <li>You understand this is a private server and is not affiliated with Blizzard Entertainment.</li>
+      <li>The administration reserves the right to suspend or terminate your account at any time.</li>
+      <li>You are responsible for the security of your own account.</li>
+      <li>Account sharing is not allowed and done at your own risk.</li>
+    </ul>
+    <p>Breaking any of these rules may result in immediate account suspension or permanent ban.</p>
+  </div>
+  <form method="POST" action="/auth/register">
+    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+    <input type="hidden" name="step" value="1">
+    <div style="margin-top:12px; text-align:center;">
+      <label style="font-size:12px; cursor:pointer;">
+        <input type="checkbox" id="agreeTerms" required>
+        <b>I agree to the Terms of Service</b>
+      </label>
+    </div>
+    <div style="margin-top:10px; text-align:center;">
+      <input type="submit" value="Continue &raquo;" class="btn-blizz" onclick="if(!document.getElementById('agreeTerms').checked){alert('Please accept the Terms of Service.');return false;}">
+    </div>
+  </form>
+</div>
+
+<% } else if (step === 2) { %>
+<!-- STEP 2: Account Creation Form -->
+<style type="text/css">
+  p.nm, p.wm { margin: 0; margin-top: 3px; padding: 3px; }
+  p.nm { background-color: #FEF5DA; border-right: 1px solid #D0CBAF; border-bottom: 1px solid #D0CBAF; color: #605033; }
+  p.wm { background-color: #FBD8D7; border-right: 1px solid #DCBFB4; border-bottom: 1px solid #DCBFB4; color: #6A0D0B; }
+  #regform label { display: block; margin-top: 1em; font-weight: bold; }
+</style>
+<script type="text/javascript">
+var MIN_LOGIN_L = 3, MAX_LOGIN_L = 16, MIN_PASS_L = 6, MAX_PASS_L = 32;
+function check_login(){
+  var v = document.getElementById('r_login').value;
+  var t = document.getElementById('t_login');
+  if (!v || v.length < MIN_LOGIN_L || v.length > MAX_LOGIN_L || !v.match(/^[A-Za-z0-9]+$/)) {
+    t.innerHTML = 'Username must be '+MIN_LOGIN_L+'-'+MAX_LOGIN_L+' characters (letters and numbers only)!';
+    t.style.display = 'block'; return false;
+  } else { t.style.display = 'none'; return true; }
+}
+function check_pass(){
+  var v = document.getElementById('r_pass').value;
+  var t = document.getElementById('t_pass');
+  if (!v || v.length < MIN_PASS_L || v.length > MAX_PASS_L) {
+    t.innerHTML = 'Password must be '+MIN_PASS_L+'-'+MAX_PASS_L+' characters!';
+    t.style.display = 'block'; return false;
+  } else { t.style.display = 'none'; return true; }
+}
+function check_cpass(){
+  var v1 = document.getElementById('r_pass').value;
+  var v2 = document.getElementById('r_cpass').value;
+  var t = document.getElementById('t_cpass');
+  if (!v2 || v1 !== v2) {
+    t.innerHTML = 'Passwords do not match!';
+    t.style.display = 'block'; return false;
+  } else { t.style.display = 'none'; return true; }
+}
+function check_email(){
+  var v = document.getElementById('r_email').value;
+  var t = document.getElementById('t_email');
+  if (!v || !v.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    t.innerHTML = 'Please enter a valid email address!';
+    t.style.display = 'block'; return false;
+  } else { t.style.display = 'none'; return true; }
+}
+function check_all(){
+  var ok = true;
+  if (!check_login()) ok = false;
+  if (!check_pass()) ok = false;
+  if (!check_cpass()) ok = false;
+  if (!check_email()) ok = false;
+  return ok;
+}
+</script>
+<div style="padding-left:8px; padding-right: 14px">
+  <form method="POST" action="/auth/register" name="regform" id="regform" onsubmit="return check_all();">
+    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+    <input type="hidden" name="step" value="2">
+
+    <label for="r_login">Username:</label>
+    <input type="text" id="r_login" name="username" size="40" maxlength="16" onblur="check_login();" autocomplete="username"/>
+    <p id="t_login" style="display:none;" class="wm"></p>
+
+    <label for="r_pass">Password:</label>
+    <input type="password" id="r_pass" name="password" size="40" maxlength="32" onblur="check_pass();" autocomplete="new-password"/>
+    <p id="t_pass" style="display:none;" class="wm"></p>
+
+    <label for="r_cpass">Confirm Password:</label>
+    <input type="password" id="r_cpass" name="password2" size="40" maxlength="32" onblur="check_cpass();" autocomplete="new-password"/>
+    <p id="t_cpass" style="display:none;" class="wm"></p>
+
+    <label for="r_email">Email:</label>
+    <input type="text" id="r_email" name="email" size="40" maxlength="50" onblur="check_email();" autocomplete="email"/>
+    <p id="t_email" style="display:none;" class="wm"></p>
+
+    <% if (typeof config !== 'undefined' && (config.reg_key_enable === '1' || config.reg_key_enable === 1)) { %>
+      <label for="r_key">Registration Key:</label>
+      <input type="text" id="r_key" name="reg_key" size="40" maxlength="50"/>
+    <% } %>
+
+    <div style="margin-top:15px; text-align:center;">
+      <input type="submit" value="Create Account" class="btn-blizz">
+    </div>
+  </form>
+</div>
+
+<% } else if (step === 3) { %>
+<!-- STEP 3: Registration Complete -->
+<div style="padding:20px; text-align:center;">
+  <h3 style="color:#234303; font:small-caps 18px georgia,serif;">Account Created Successfully!</h3>
+  <% if (typeof regMessage !== 'undefined' && regMessage) { %>
+    <p style="font-size:12px; color:#605033;"><%= regMessage %></p>
+  <% } else { %>
+    <p style="font-size:12px; color:#605033;">Your account has been created. You can now log in.</p>
+  <% } %>
+  <div style="margin-top:15px;">
+    <a href="/auth/login" class="btn-blizz" style="text-decoration:none; padding:5px 20px;">Login &raquo;</a>
+  </div>
+</div>
+<% } %>
+
+<% if (step !== 3) { %>
+<div style="margin-top:15px; font-size:11px; padding-left:8px;">
+  Already have an account? <a href="/auth/login">Login</a>
+</div>
+<% } %>

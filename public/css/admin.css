@@ -1,0 +1,74 @@
+/* MaNGOSWebV5 - Admin Panel Styles */
+
+/* ===== Sidebar ===== */
+.admin-sidebar {
+  background: #0d1117;
+  border-right: 1px solid #30363d;
+  min-height: 100vh;
+  width: 250px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding-top: 1rem;
+  overflow-y: auto;
+  z-index: 100;
+}
+.admin-sidebar .sidebar-brand {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  color: #F8B700;
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+  display: block;
+  text-decoration: none;
+  border-bottom: 1px solid #30363d;
+  margin-bottom: 0.5rem;
+}
+.admin-sidebar .nav-link {
+  color: #8b949e;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 0;
+  transition: all 0.15s;
+}
+.admin-sidebar .nav-link:hover {
+  color: #F8B700;
+  background: rgba(248, 183, 0, 0.05);
+}
+.admin-sidebar .nav-link.active {
+  color: #F8B700;
+  background: rgba(248, 183, 0, 0.1);
+  border-left: 3px solid #F8B700;
+}
+.admin-sidebar .nav-link i {
+  width: 20px;
+  text-align: center;
+  margin-right: 8px;
+}
+.admin-sidebar .sidebar-section {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #484f58;
+  padding: 0.75rem 1rem 0.25rem;
+  margin-top: 0.5rem;
+}
+
+/* ===== Main Content ===== */
+.admin-content {
+  margin-left: 250px;
+  padding: 1.5rem;
+  min-height: 100vh;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 992px) {
+  .admin-sidebar {
+    width: 100%;
+    min-height: auto;
+    position: relative;
+  }
+  .admin-content {
+    margin-left: 0;
+  }
+}

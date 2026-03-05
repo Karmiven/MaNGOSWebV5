@@ -1,0 +1,97 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+
+  function parseTime(number) {
+    var d = Math.floor(number / 3600 / 24);
+    var h = Math.floor((number % (3600 * 24)) / 3600);
+    var m = Math.floor((number % 3600) / 60);
+    var s = Math.floor((number % 3600) % 60);
+    return { d: d, h: h, m: m, s: s };
+  }
+  function printTime(t) {
+    var parts = [];
+    if (t.d > 0) parts.push(t.d + ' Days');
+    if (t.h > 0) parts.push(t.h + ' Hours');
+    if (t.m > 0) parts.push(t.m + ' Minutes');
+    if (t.s > 0) parts.push(t.s + ' Seconds');
+    return parts.join(', ');
+  }
+  function populationView(pop) {
+    if (pop <= 0) return 'Offline';
+    if (pop <= 5) return 'Low';
+    if (pop <= 20) return 'Medium';
+    return 'High';
+  }
+%>
+<!-- Realm Status — V4 Blizzlike Style -->
+<%- include('../../partials/builddiv_start', { type: 0, title: '' }) %>
+
+<style type="text/css">
+  td.serverStatus1 { border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+</style>
+
+<div style="padding:10px 20px 10px 20px;">
+  The realm status on this page reflects the current status of our realms. If a realm is shown as
+  <img src="<%= tp %>/images/uparrow2.gif" style="vertical-align: bottom;" height="19" width="18" alt=""/> <b style="color: rgb(35, 67, 3);">Up</b>
+  it is available and accepting connections. If a realm shows
+  <img src="<%= tp %>/images/downarrow2.gif" style="vertical-align: bottom;" height="19" width="18" alt=""/> <b style="color: rgb(102, 13, 2);">Down</b>
+  it is currently unavailable.
+</div>
+<br/><br/>
+
+<%- include('../../partials/subheader', { subheader: 'Realm Status' }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="left" nowrap="nowrap" width="53"><div align="center">Status</div></td>
+    <td align="left" nowrap="nowrap" class="rankingHeader"><div align="center">Uptime</div></td>
+    <td align="left" nowrap="nowrap" class="rankingHeader">Realm Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Type</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Population</td>
+  </tr>
+  <tr>
+    <td colspan="5" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
+<% realms.forEach(function(item, idx) {
+  var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+  var statusImg = item.online ? tp + '/images/uparrow2.gif' : tp + '/images/downarrow2.gif';
+%>
+  <tr>
+    <td class="<%= rowClass %>" align="center">
+      <img src="<%= statusImg %>" height="18" width="18" alt=""/>
+    </td>
+    <td width="168" class="<%= rowClass %>">
+      <div align="center">
+        <% if (item.uptimeSeconds > 1) { %>
+          <%= printTime(parseTime(item.uptimeSeconds)) %>
+        <% } %>
+      </div>
+    </td>
+    <td width="802" class="<%= rowClass %>">
+      <b style="color: rgb(35, 67, 3);"><%= item.name %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color: rgb(102, 13, 2);"><%= item.typeName %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color: rgb(35, 67, 3);">
+        <% if (item.online && item.population > 0) { %>
+          <%= item.population %> (<%= populationView(item.population) %>)
+        <% } else if (item.online) { %>
+          <%= populationView(0) %>
+        <% } %>
+      </b>
+    </td>
+  </tr>
+<% }); %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>

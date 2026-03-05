@@ -1,0 +1,272 @@
+<!-- Account Dashboard — V4 CMS Style -->
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Account' }) %>
+
+<!-- ========== Account Info ========== -->
+<table width="550" align="center">
+  <tr><td>
+    <%- include('../../partials/subheader', { subheader: 'Account Info' }) %>
+    <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;">
+      <tr><td>
+        <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= themePath %>/images/light3.jpg');">
+          <tr><td>
+            <table border="0" cellspacing="0" cellpadding="4" width="540">
+              <tr>
+                <td align="right" valign="top" width="25%"><b>Account Status:</b></td>
+                <td align="left" valign="top" width="25%"><b><font color="green">Active</font></b></td>
+                <td align="right" valign="top" width="25%"><b>Vote Count:</b></td>
+                <td align="left" valign="top" width="25%"><%= ext ? ext.total_votes : 0 %></td>
+              </tr>
+              <tr>
+                <td align="right" valign="top"><b>Registration Date:</b></td>
+                <td align="left" valign="top"><%= helpers.formatDate(user.joinDate) %></td>
+                <td align="right" valign="top"><b>Webpoint Balance:</b></td>
+                <td align="left" valign="top"><%= user.webPoints %></td>
+              </tr>
+              <tr>
+                <td align="right" valign="top"><b>Last Login:</b></td>
+                <td align="left" valign="top"><%= helpers.formatDate(user.lastLogin) %></td>
+                <td align="right" valign="top"><b>Earned/Spent:</b></td>
+                <td align="left" valign="top"><%= ext ? ext.points_earned : 0 %> / <%= ext ? ext.points_spent : 0 %></td>
+              </tr>
+              <tr>
+                <td align="right" valign="top"><b>Expansion:</b></td>
+                <td align="left" valign="top"><%= user.expansion === 2 ? 'WotLK' : user.expansion === 1 ? 'TBC' : 'Classic' %></td>
+                <td align="right" valign="top"><b>Total Donations:</b></td>
+                <td align="left" valign="top">$<%= ext ? ext.total_donations : 0 %></td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<br><br>
+
+<!-- ========== Account Options (icon grid) ========== -->
+<table width="550" align="center">
+  <tr><td>
+    <%- include('../../partials/subheader', { subheader: 'Account Options' }) %>
+    <table width="550" align="center" style="border-width:1px; border-style:dotted; border-color:#928058;">
+      <tr><td>
+        <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= themePath %>/images/light3.jpg');">
+          <tr><td>
+            <table width="540" align="center">
+              <tr>
+                <td width="36"><img src="<%= themePath %>/images/account/icon-5.png" alt=""></td>
+                <td><a href="#account-settings">Account Settings</a></td>
+                <td width="36"><img src="<%= themePath %>/images/account/icon-1.png" alt=""></td>
+                <td><a href="/account/characters">Character Customization</a></td>
+              </tr>
+              <tr>
+                <td width="36"><img src="<%= themePath %>/images/account/icon-6.png" alt=""></td>
+                <td><a href="/account/transactions">My Donate Transactions</a></td>
+                <td width="36"><img src="<%= themePath %>/images/account/icon-2.png" alt=""></td>
+                <td><a href="/account/characters">Race Change</a></td>
+              </tr>
+              <tr>
+                <td width="36"><img src="<%= themePath %>/images/account/icon-3.png" alt=""></td>
+                <td><a href="/account/characters">Character Rename</a></td>
+                <td width="36"><img src="<%= themePath %>/images/account/icon-4.png" alt=""></td>
+                <td><a href="/account/characters">Faction Change</a></td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<br><br>
+
+<!-- ========== Account Settings (merged from /account/manage) ========== -->
+<a id="account-settings"></a>
+<table width="550" align="center">
+  <tr><td>
+    <%- include('../../partials/subheader', { subheader: 'General Info' }) %>
+    <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;">
+      <tr><td>
+        <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= themePath %>/images/light3.jpg');">
+          <tr><td>
+            <table border="0" cellspacing="0" cellpadding="4">
+              <tr>
+                <td align="right" valign="top" width="40%">
+                  <font face="arial,helvetica" size="-1"><b>Username</b></font>
+                </td>
+                <td align="left">
+                  <input type="text" size="30" disabled value="<%= user.username %>">
+                </td>
+              </tr>
+              <tr>
+                <td align="right" valign="top">
+                  <font face="arial,helvetica" size="-1"><b>Email</b></font>
+                </td>
+                <td align="left">
+                  <input type="text" size="30" disabled value="<%= user.email %>">
+                </td>
+              </tr>
+            </table>
+
+            <!-- Change Password -->
+            <form method="POST" action="/account/change-password">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <table border="0" cellspacing="0" cellpadding="4">
+                <tr>
+                  <td align="right" valign="top" width="40%">
+                    <font face="arial,helvetica" size="-1"><b>Current Password</b></font>
+                  </td>
+                  <td align="left">
+                    <input type="password" name="current_password" size="30">
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right" valign="top">
+                    <font face="arial,helvetica" size="-1"><b>New Password</b></font>
+                  </td>
+                  <td align="left">
+                    <input type="password" name="new_password" size="30" minlength="6">
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right" valign="top">
+                    <font face="arial,helvetica" size="-1"><b>Confirm Password</b></font>
+                  </td>
+                  <td align="left">
+                    <input type="password" name="confirm_password" size="30">
+                  </td>
+                </tr>
+              </table>
+              <div align="center">
+                <button type="submit" class="btn-blizz" style="padding:6px 24px;">Change Password</button>
+              </div>
+            </form>
+
+            <hr style="border:none; border-top:1px dotted #928058; margin:8px 0;">
+
+            <!-- Change Expansion -->
+            <form method="POST" action="/account/change-expansion">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <table border="0" cellspacing="0" cellpadding="4">
+                <tr>
+                  <td align="right" valign="top" width="40%">
+                    <font face="arial,helvetica" size="-1"><b>Expansion</b></font>
+                  </td>
+                  <td align="left">
+                    <select name="expansion" style="padding:2px;">
+                      <option value="2" <%= user.expansion === 2 ? 'selected' : '' %>>WotLK</option>
+                      <option value="1" <%= user.expansion === 1 ? 'selected' : '' %>>TBC</option>
+                      <option value="0" <%= user.expansion === 0 ? 'selected' : '' %>>Classic</option>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+              <div align="center">
+                <button type="submit" class="btn-blizz" style="padding:6px 24px;">Update Expansion</button>
+              </div>
+            </form>
+            <br>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<br>
+
+<!-- ========== Change Email (separate form) ========== -->
+<table width="550" align="center">
+  <tr><td>
+    <%- include('../../partials/subheader', { subheader: 'Change Email' }) %>
+    <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;">
+      <tr><td>
+        <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= themePath %>/images/light3.jpg');">
+          <tr><td>
+            <form method="POST" action="/account/change-email">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <table border="0" cellspacing="0" cellpadding="4">
+                <tr>
+                  <td align="right" valign="top" width="40%">
+                    <font face="arial,helvetica" size="-1"><b>Current Email</b></font>
+                  </td>
+                  <td align="left">
+                    <input type="text" size="30" disabled value="<%= user.email %>">
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right" valign="top">
+                    <font face="arial,helvetica" size="-1"><b>Password</b></font>
+                  </td>
+                  <td align="left">
+                    <input type="password" name="password" size="30" required>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="right" valign="top">
+                    <font face="arial,helvetica" size="-1"><b>New Email</b></font>
+                  </td>
+                  <td align="left">
+                    <input type="email" name="new_email" size="30" required>
+                  </td>
+                </tr>
+              </table>
+              <br>
+              <div align="center">
+                <button type="submit" class="btn-blizz" style="padding:6px 24px;">Change Email</button>
+              </div>
+              <br>
+            </form>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<br><br>
+
+<!-- ========== My Characters ========== -->
+<table width="550" align="center">
+  <tr><td>
+    <%- include('../../partials/subheader', { subheader: 'My Characters' }) %>
+    <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;">
+      <tr><td>
+        <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= themePath %>/images/light3.jpg');">
+          <% if (characters && characters.length) { %>
+            <tr style="background:#05374a;">
+              <td style="padding:4px 8px; color:#d0a803;"><b>Name</b></td>
+              <td style="padding:4px 8px; color:#d0a803;"><b>Race</b></td>
+              <td style="padding:4px 8px; color:#d0a803;"><b>Class</b></td>
+              <td style="padding:4px 8px; color:#d0a803;"><b>Level</b></td>
+              <td style="padding:4px 8px; color:#d0a803;"><b>Zone</b></td>
+              <td style="padding:4px 8px; color:#d0a803;"><b>Status</b></td>
+            </tr>
+            <% characters.forEach((c, i) => { %>
+              <tr style="background:<%= i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.05)' %>;">
+                <td style="padding:3px 8px;"><b><%= c.name %></b></td>
+                <td style="padding:3px 8px;"><%= Character.raceName(c.race) %></td>
+                <td style="padding:3px 8px;"><%= Character.className(c.class) %></td>
+                <td style="padding:3px 8px;"><%= c.level %></td>
+                <td style="padding:3px 8px; color:#666;"><%= c.zoneName %></td>
+                <td style="padding:3px 8px;">
+                  <% if (c.online) { %>
+                    <img src="<%= themePath %>/images/uparrow2.gif" height="18" width="18" alt="Online" style="vertical-align:bottom;"> <b style="color:rgb(35,67,3);">Online</b>
+                  <% } else { %>
+                    <img src="<%= themePath %>/images/downarrow2.gif" height="18" width="18" alt="Offline" style="vertical-align:bottom;"> <b style="color:rgb(102,13,2);">Offline</b>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No characters found.</td></tr>
+          <% } %>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+
+<%- include('../../partials/builddiv_end') %>

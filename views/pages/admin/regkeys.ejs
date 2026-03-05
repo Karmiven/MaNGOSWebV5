@@ -1,0 +1,50 @@
+<h3 class="mb-4">Registration Keys</h3>
+
+<!-- Generate Keys -->
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header text-gold">Generate Keys</div>
+  <div class="card-body">
+    <form method="POST" action="/admin/regkeys/generate" class="row g-2">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="col-auto">
+        <input type="number" name="count" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Count" value="1" min="1" max="50">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-gold"><i class="fas fa-key me-1"></i>Generate</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Keys Table -->
+<div class="table-responsive">
+  <table class="table table-dark table-hover table-sm">
+    <thead><tr><th>ID</th><th>Key</th><th>Used</th><th>Actions</th></tr></thead>
+    <tbody>
+      <% if (keys && keys.length) { %>
+        <% keys.forEach(k => { %>
+          <tr>
+            <td><%= k.id %></td>
+            <td><code class="text-gold"><%= k.key %></code></td>
+            <td>
+              <% if (k.used) { %>
+                <span class="badge bg-secondary">Used</span>
+              <% } else { %>
+                <span class="badge bg-success">Available</span>
+              <% } %>
+            </td>
+            <td>
+              <form method="POST" action="/admin/regkeys/delete" class="d-inline" onsubmit="return confirm('Delete?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="id" value="<%= k.id %>">
+                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="4" class="text-center text-muted">No registration keys.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,18 @@
+<h3 class="mb-4">Error Log</h3>
+
+<div class="mb-3">
+  <form method="POST" action="/admin/errorlog/clear" onsubmit="return confirm('Clear the error log?')">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash me-1"></i>Clear Log</button>
+  </form>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-body">
+    <% if (logContent && logContent.trim()) { %>
+      <pre class="text-light mb-0" style="white-space: pre-wrap; max-height: 600px; overflow-y: auto; font-size: 0.8rem;"><%= logContent %></pre>
+    <% } else { %>
+      <p class="text-muted mb-0">Error log is empty.</p>
+    <% } %>
+  </div>
+</div>

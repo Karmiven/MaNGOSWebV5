@@ -1,0 +1,29 @@
+<h3 class="mb-4">Send Game Mail</h3>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-body">
+    <form method="POST" action="/admin/gamemail">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="mb-3">
+        <label class="form-label text-muted">Character Name</label>
+        <input type="text" name="character" class="form-control bg-dark text-light border-secondary" placeholder="Character name" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted">Subject</label>
+        <input type="text" name="subject" class="form-control bg-dark text-light border-secondary" placeholder="Mail subject" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted">Message</label>
+        <textarea name="message" class="form-control bg-dark text-light border-secondary" rows="5" placeholder="Mail body" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-gold"><i class="fas fa-paper-plane me-1"></i>Send Mail</button>
+    </form>
+  </div>
+</div>
+
+<div class="card bg-dark border-secondary mt-4">
+  <div class="card-header text-gold">Note</div>
+  <div class="card-body text-muted">
+    <p class="mb-0">Game mail is sent via SOAP. Ensure your SOAP credentials are configured in the <code>.env</code> file (SOAP_HOST, SOAP_PORT, SOAP_USER, SOAP_PASS). The character must exist in the game database.</p>
+  </div>
+</div>

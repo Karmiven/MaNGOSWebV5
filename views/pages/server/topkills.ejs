@@ -1,0 +1,98 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  // Split players by faction
+  var alliancePlayers = [];
+  var hordePlayers = [];
+  if (typeof players !== 'undefined' && players.length) {
+    players.forEach(function(p) {
+      if (Character.factionForRace(p.race) === 'Alliance') {
+        alliancePlayers.push(p);
+      } else {
+        hordePlayers.push(p);
+      }
+    });
+  }
+%>
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus0 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px; }
+</style>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Top Kills' }) %>
+
+<!-- ========== Alliance ========== -->
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td align="center" colspan="6"><img src="<%= tp %>/images/banners/alliance.jpg" alt="Alliance"></td>
+  </tr>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="30">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="50">Level</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Honorable Kills</td>
+  </tr>
+  <tr>
+    <td colspan="6" style="background:url('<%= tp %>/images/shadow.gif');"><img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""></td>
+  </tr>
+  <% if (alliancePlayers.length) { %>
+    <% alliancePlayers.forEach(function(p, i) { var rc = (i + 1) % 2; %>
+      <tr>
+        <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= i + 1 %></b></td>
+        <td class="serverStatus<%= rc %>"><b style="color:rgb(35,67,3);"><center><%= p.name %></center></b></td>
+        <td class="serverStatus<%= rc %>" align="center"><%= Character.raceName(p.race) %></td>
+        <td class="serverStatus<%= rc %>" align="center"><%= Character.className(p.class) %></td>
+        <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= p.level %></b></td>
+        <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(35,67,3);"><%= p.totalkills.toLocaleString() %></b></td>
+      </tr>
+    <% }); %>
+  <% } else { %>
+    <tr><td class="serverStatus1" colspan="6" align="center" style="padding:10px;">No Alliance players found.</td></tr>
+  <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<br>
+
+<!-- ========== Horde ========== -->
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td align="center" colspan="6"><img src="<%= tp %>/images/banners/horde.jpg" alt="Horde"></td>
+  </tr>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="30">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="50">Level</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Honorable Kills</td>
+  </tr>
+  <tr>
+    <td colspan="6" style="background:url('<%= tp %>/images/shadow.gif');"><img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""></td>
+  </tr>
+  <% if (hordePlayers.length) { %>
+    <% hordePlayers.forEach(function(p, i) { var rc = (i + 1) % 2; %>
+      <tr>
+        <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= i + 1 %></b></td>
+        <td class="serverStatus<%= rc %>"><b style="color:rgb(35,67,3);"><center><%= p.name %></center></b></td>
+        <td class="serverStatus<%= rc %>" align="center"><%= Character.raceName(p.race) %></td>
+        <td class="serverStatus<%= rc %>" align="center"><%= Character.className(p.class) %></td>
+        <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= p.level %></b></td>
+        <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(35,67,3);"><%= p.totalkills.toLocaleString() %></b></td>
+      </tr>
+    <% }); %>
+  <% } else { %>
+    <tr><td class="serverStatus1" colspan="6" align="center" style="padding:10px;">No Horde players found.</td></tr>
+  <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>

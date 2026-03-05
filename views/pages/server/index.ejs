@@ -1,0 +1,47 @@
+
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<!-- Server Information — V4 Blizzlike Style -->
+<div class="subheader-bar">
+  <div class="sh-left"><img src="<%= tp %>/images/subheader/subheader-left-sword.gif" alt="" style="border:0;" onerror="this.parentElement.style.display='none';"></div>
+  <div class="sh-mid"><b>Server Information</b></div>
+  <div class="sh-right"><img src="<%= tp %>/images/subheader/subheader-right.gif" alt="" style="border:0;" onerror="this.parentElement.style.display='none';"></div>
+</div>
+
+<% realms.forEach(function(r) { %>
+  <table class="blizz-table" style="margin-bottom:15px;">
+    <tr>
+      <th colspan="2" style="font-size:13px;"><%= r.name %></th>
+    </tr>
+    <tr>
+      <td style="width:150px;"><b>Status</b></td>
+      <td>
+        <% if (r.online) { %>
+          <img src="<%= tp %>/images/stat/up_arrow.gif" alt="Online" style="vertical-align:middle; border:0;">
+          <span class="status-online">Online</span>
+        <% } else { %>
+          <img src="<%= tp %>/images/stat/down_arrow.gif" alt="Offline" style="vertical-align:middle; border:0;">
+          <span class="status-offline">Offline</span>
+        <% } %>
+      </td>
+    </tr>
+    <tr><td><b>Players Online</b></td><td><%= r.onlineCount %></td></tr>
+    <tr><td><b>Total Characters</b></td><td><%= r.totalChars %></td></tr>
+    <tr><td><b>Uptime</b></td><td><%= r.uptime %></td></tr>
+    <tr><td><b>Type</b></td><td><%= r.typeName %></td></tr>
+    <tr><td><b>Realmlist</b></td><td><%= r.address %>:<%= r.port %></td></tr>
+  </table>
+<% }); %>
+
+<div class="subheader-bar">
+  <div class="sh-left"></div>
+  <div class="sh-mid"><b>Quick Navigation</b></div>
+  <div class="sh-right"></div>
+</div>
+<ul style="list-style:none; padding:0; margin:0;">
+  <li><a href="/server/online" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Players Online</a></li>
+  <li><a href="/server/topkills" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Top Kills</a></li>
+  <li><a href="/server/stats" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Statistics</a></li>
+  <li><a href="/server/chars" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Search Characters</a></li>
+</ul>

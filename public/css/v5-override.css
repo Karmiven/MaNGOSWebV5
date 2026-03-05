@@ -1,0 +1,307 @@
+/**********************************************************************/
+/*  MaNGOSWebV5 — Overrides for V5-specific elements                  */
+/*  Loaded AFTER the V4 theme CSS files                               */
+/**********************************************************************/
+
+/* ===== Fixed Layout Stability ===== */
+/* Prevent layout shifts between pages by fixing key dimensions */
+body {
+  margin: 0;
+  padding: 0;
+}
+#shared_topnav {
+  background: #072540 url('../images/topnav/bg.gif') 50% 0;
+  border-bottom: 1px solid black;
+}
+#hp {
+  width: 955px !important;
+}
+#navwrapper {
+  width: 157px !important;
+  min-width: 157px;
+}
+#nav {
+  width: 157px !important;
+}
+#mainwrapper {
+  vertical-align: top;
+}
+
+/* ===== Flash Messages ===== */
+.flash-message {
+  padding: 8px 15px;
+  margin: 8px 0;
+  border: 1px solid;
+  font-size: 11px;
+  font-family: arial, helvetica, sans-serif;
+}
+.flash-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+.flash-error {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+.flash-info {
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+  color: #0c5460;
+}
+
+/* ===== Blizzlike Forms ===== */
+.blizz-form input[type="text"],
+.blizz-form input[type="password"],
+.blizz-form input[type="email"],
+.blizz-form input[type="number"],
+.blizz-form select,
+.blizz-form textarea {
+  background-color: #f5f0e1;
+  border: 1px solid #8e7c56;
+  color: #333;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: arial, helvetica, sans-serif;
+}
+.blizz-form input:focus,
+.blizz-form select:focus,
+.blizz-form textarea:focus {
+  border-color: #d0a803;
+  outline: none;
+  box-shadow: 0 0 3px rgba(208,168,3,0.3);
+}
+.blizz-form label {
+  font-weight: bold;
+  color: #333;
+  font-size: 11px;
+}
+.blizz-form .form-row {
+  margin-bottom: 8px;
+}
+.blizz-form .form-row label {
+  display: block;
+  margin-bottom: 3px;
+}
+
+/* ===== Blizzlike Buttons ===== */
+.btn-blizz {
+  background-color: #3a2a0a;
+  border: 1px solid #5c4523;
+  color: #ffd100;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 4px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-blizz:hover {
+  background-color: #5c4523;
+  border-color: #ffd100;
+  color: #fff;
+}
+
+/* ===== Blizzlike Tables ===== */
+.blizz-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-family: arial, helvetica, sans-serif;
+}
+.blizz-table th {
+  background: #05374a;
+  color: #fff;
+  font-weight: bold;
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid #38464d;
+}
+.blizz-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #ddd;
+  color: #333;
+}
+.blizz-table tr:nth-child(even) td {
+  background: rgba(0,0,0,0.03);
+}
+.blizz-table tr:hover td {
+  background: rgba(0,0,0,0.06);
+}
+.blizz-table a { color: #1e4378; font-weight: bold; }
+.blizz-table a:hover { color: #c60000; }
+
+/* ===== Subheader (blue bar with swords) ===== */
+.subheader-bar {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  height: 20px;
+}
+.subheader-bar .sh-left {
+  width: 24px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.subheader-bar .sh-mid {
+  flex: 1;
+  background-color: #05374a;
+  height: 20px;
+  line-height: 20px;
+  padding-left: 5px;
+}
+.subheader-bar .sh-mid b { color: white; font-size: 11px; }
+.subheader-bar .sh-right {
+  width: 10px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ===== Metal Border ===== */
+.metal-border { width: 100%; margin: 5px 0; }
+.metal-border .mb-top { display: flex; }
+.metal-border .mb-top-left { width: 12px; height: 12px; }
+.metal-border .mb-top-mid { flex: 1; height: 12px; }
+.metal-border .mb-top-right { width: 12px; height: 12px; }
+.metal-border .mb-mid { display: flex; }
+.metal-border .mb-left { width: 12px; }
+.metal-border .mb-content { flex: 1; }
+.metal-border .mb-right { width: 12px; }
+.metal-border .mb-bot { display: flex; }
+.metal-border .mb-bot-left { width: 12px; height: 11px; }
+.metal-border .mb-bot-mid { flex: 1; height: 11px; }
+.metal-border .mb-bot-right { width: 12px; height: 11px; }
+
+/* ===== Content Div (module wrapper like V4) ===== */
+.content-parting {
+  width: 100%;
+  height: 29px;
+  padding: 2px 0 0 23px;
+}
+.content-parting h2 {
+  font-family: "Times New Roman", Times, serif;
+  color: #640909;
+  font-size: 14px;
+}
+
+/* ===== Faction Badges ===== */
+.badge-alliance {
+  background-color: #00133b;
+  color: #6fa8ff;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+}
+.badge-horde {
+  background-color: #3d0000;
+  color: #ff6b6b;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* ===== Pagination ===== */
+.pagination {
+  display: flex;
+  gap: 4px;
+  margin: 10px 0;
+  justify-content: center;
+  list-style: none;
+  padding: 0;
+}
+.pagination a, .pagination span {
+  padding: 3px 8px;
+  border: 1px solid #5c4523;
+  background-color: #3a2a0a;
+  color: #ffd100;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: bold;
+}
+.pagination a:hover { border-color: #ffd100; color: #fff; }
+.pagination .current {
+  background: #5c4523;
+  color: #ffd100;
+}
+
+/* ===== Server Info Table (inline in sidebar) ===== */
+.srv-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 10px;
+  font-size: 11px;
+  color: #ddd;
+  font-weight: normal;
+}
+.srv-info-row b { color: #fff; }
+.status-online { color: #234303; font-weight: bold; }
+.status-offline { color: #660d02; font-weight: bold; }
+
+/* ===== Various V5 helpers ===== */
+.text-gold { color: #d0a803; }
+.text-center { text-align: center; }
+.mt-10 { margin-top: 10px; }
+.mb-10 { margin-bottom: 10px; }
+.clearfix::after { content: ""; display: table; clear: both; }
+
+/* ===== Login page special (transparent-bg for inner pages) ===== */
+.inner-login-box {
+  width: 350px;
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid #b7842c;
+  background: #f5f0e1;
+}
+.inner-login-box h3 {
+  font-family: "Times New Roman", Times, serif;
+  color: #640909;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+.inner-login-box input[type="text"],
+.inner-login-box input[type="password"],
+.inner-login-box input[type="email"] {
+  width: 100%;
+  padding: 4px 6px;
+  margin-bottom: 10px;
+  border: 1px solid #8e7c56;
+  background: #fff;
+  font-size: 12px;
+}
+.inner-login-box label {
+  display: block;
+  font-weight: bold;
+  color: #333;
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+
+/* ===== Left Sidebar Menu Fixes ===== */
+/* Ensure menu items stack properly without overlapping */
+a.menufiller,
+a.menufiller:link,
+a.menufiller:visited {
+  line-height: 15px;
+  box-sizing: content-box;
+  overflow: hidden;
+}
+/* Each menu item wrapper needs explicit block flow */
+.leftmenu-cnt ul.mainnav li > div {
+  display: block;
+  overflow: hidden;
+  height: 15px;
+}
+/* Hide the <em>Menu item</em> placeholder text in category headers */
+.menu-button-on em,
+.menu-button-off em {
+  visibility: hidden;
+  font-size: 0;
+  line-height: 0;
+}
+/* Ensure category inner containers don't collapse */
+#menunews-inner, #menugameguide-inner, #menuinteractive-inner,
+#menucommunity-inner, #menuaccount-inner, #menusupport-inner,
+#menumedia-inner, #menuforums-inner {
+  overflow: hidden;
+}

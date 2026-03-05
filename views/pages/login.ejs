@@ -1,0 +1,25 @@
+
+<!-- Login Page — V4 Blizzlike Style -->
+<div class="subheader-bar">
+  <div class="sh-left"></div>
+  <div class="sh-mid"><b>Account Login</b></div>
+  <div class="sh-right"></div>
+</div>
+
+<div class="inner-login-box blizz-form">
+  <h3>Login to Your Account</h3>
+  <form method="POST" action="/auth/login">
+    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+    <label>Username</label>
+    <input type="text" name="username" required autofocus autocomplete="username">
+    <label>Password</label>
+    <input type="password" name="password" required autocomplete="current-password">
+    <div style="margin-top:10px;">
+      <input type="submit" value="Login" class="btn-blizz">
+    </div>
+  </form>
+  <div style="margin-top:15px; font-size:11px;">
+    <a href="/auth/restore">Forgot password?</a> |
+    <a href="/auth/register">Create Account</a>
+  </div>
+</div>

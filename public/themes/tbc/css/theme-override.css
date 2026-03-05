@@ -1,0 +1,91 @@
+/* TBC (The Burning Crusade) Theme Override — Green/Fel energy, purple accents */
+
+/* Page backgrounds — dark green/fel */
+body {
+  background-color: #0a1200 !important;
+}
+
+#page-bg-top {
+  background-color: #0f1a04 !important;
+}
+
+/* Top navigation — dark green */
+.topnav-wrapper,
+#topnav-bg {
+  background-color: #1a3a0a !important;
+}
+
+/* Gold accents shift to fel green */
+.subheader-bar .sh-mid {
+  background: linear-gradient(to bottom, #2a5a10, #1a3a0a) !important;
+  color: #7fff00 !important;
+}
+
+.blizz-table th {
+  background: #1a3a0a !important;
+  color: #7fff00 !important;
+}
+
+/* Left menu — dark fel */
+.leftmenu-cont-mid {
+  background-color: #0a1200 !important;
+}
+
+.menu-button-on,
+.menu-button-off {
+  background-color: #0f1a04 !important;
+}
+
+/* PvP rows — green tones */
+.pvpboxrow {
+  background-color: #0a1200 !important;
+}
+.pvpboxrowalt {
+  background-color: #0f1a04 !important;
+}
+
+/* Inner boxes — fel glow */
+.inner-login-box {
+  background: #0a1200 !important;
+  border-color: #2a5a10 !important;
+}
+
+/* Buttons — fel green */
+.btn-blizz {
+  background: linear-gradient(to bottom, #3a7a14, #1a3a0a) !important;
+  border-color: #2a5a10 !important;
+  color: #fff !important;
+}
+.btn-blizz:hover {
+  background: linear-gradient(to bottom, #4a9a1a, #2a5a10) !important;
+}
+
+/* Links — fel green */
+a {
+  color: #5ac800 !important;
+}
+
+/* Login box */
+#loginbox {
+  background-color: rgba(10, 18, 0, 0.9) !important;
+}
+
+/* News headers — dark fel */
+.blog-header-bg {
+  background-color: #1a3a0a !important;
+}
+
+/* Right sidebar boxes */
+#q-links,
+.newcommer,
+#box2, #box3 {
+  border-color: #2a5a10 !important;
+}
+
+/* Signature purple accents for TBC */
+.faction-badge.faction-alliance {
+  background: #6622aa !important;
+}
+.faction-badge.faction-horde {
+  background: #aa2266 !important;
+}
