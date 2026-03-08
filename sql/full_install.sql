@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS `mw_realm` (
   `ra_port` int(11) DEFAULT 7878,
   `ra_user` varchar(100) DEFAULT '',
   `ra_pass` varchar(255) DEFAULT '',
+  `info_refresh_interval` int(11) DEFAULT 5,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_realm` (`realm_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

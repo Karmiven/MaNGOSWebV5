@@ -46,6 +46,19 @@
             <div class="col-md-3"><input type="password" name="ra_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Pass" value="<%= cfg.ra_pass || '' %>"></div>
           </div>
 
+          <h6 class="text-gold mt-3">Server Info Refresh</h6>
+          <div class="row g-2 mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Refresh Interval (.server info)</label>
+              <select name="info_refresh_interval" class="form-select form-select-sm bg-dark text-light border-secondary">
+                <option value="1" <%= (cfg.info_refresh_interval||5)==1?'selected':'' %>>1 minute</option>
+                <option value="2" <%= (cfg.info_refresh_interval||5)==2?'selected':'' %>>2 minutes</option>
+                <option value="5" <%= (cfg.info_refresh_interval||5)==5?'selected':'' %>>5 minutes</option>
+                <option value="10" <%= (cfg.info_refresh_interval||5)==10?'selected':'' %>>10 minutes</option>
+              </select>
+            </div>
+          </div>
+
           <button type="submit" class="btn btn-gold"><i class="fas fa-save me-1"></i>Save</button>
         </form>
       </div>

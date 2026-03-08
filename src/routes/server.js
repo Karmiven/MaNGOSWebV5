@@ -54,16 +54,22 @@ const SERVER_CACHE_TTL = 60000; // 60 seconds
 async function getServerData() {
   const now = Date.now();
   if (_serverCache && (now - _serverCacheTime) < SERVER_CACHE_TTL) return _serverCache;
-  const realms = await Realm.getAll();
+  const realms = await Realm.getEnabled();
   const realmData = [];
   for (const realm of realms) {
     const online = await Realm.checkStatus(realm.address, realm.port);
     const uptime = online ? await Realm.getUptime(realm.id) : 0;
     const onlineCount = online ? await Character.countOnline() : 0;
     const totalChars = await Character.countTotal();
+    let serverInfo = null;
+    if (online) {
+      try { serverInfo = await Realm.getServerInfo(realm.id); } catch(e) {}
+    }
     realmData.push({
       ...realm, online, uptime: Realm.formatUptime(uptime),
-      onlineCount, totalChars, typeName: Realm.typeName(realm.icon)
+      uptimeSeconds: uptime,
+      onlineCount, totalChars, typeName: Realm.typeName(realm.icon),
+      serverInfo
     });
   }
   _serverCache = realmData;
@@ -104,32 +110,6 @@ router.get('/topkills', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* GET /server/realmstatus — Realm Status */
-router.get('/realmstatus', async (req, res, next) => {
-  try {
-    const realms = await Realm.getAll();
-    const status = [];
-
-    for (const realm of realms) {
-      const online = await Realm.checkStatus(realm.address, realm.port);
-      const uptimeSeconds = online ? await Realm.getUptime(realm.id) : 0;
-      const population = online ? await Character.countOnline() : 0;
-      status.push({
-        ...realm, online,
-        uptimeSeconds,
-        uptime: Realm.formatUptime(uptimeSeconds),
-        typeName: Realm.typeName(realm.icon),
-        population
-      });
-    }
-
-    res.render('pages/server/realmstatus', {
-      title: 'Realm Status',
-      realms: status, helpers
-    });
-  } catch (err) { next(err); }
-});
-
 /* GET /server/chars — Search Characters */
 router.get('/chars', async (req, res, next) => {
   try {
@@ -141,7 +121,7 @@ router.get('/chars', async (req, res, next) => {
     let totalChars = 0;
 
     // Get realm info
-    const realms = await Realm.getAll();
+    const realms = await Realm.getEnabled();
     const realmName = realms.length ? realms[0].name : 'Realm';
 
     if (query.length >= 2) {

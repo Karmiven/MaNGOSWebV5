@@ -10,6 +10,17 @@ const Realm = {
     return rows;
   },
 
+  /** Get only site-enabled realms (filters by mw_realm.site_enabled) */
+  async getEnabled() {
+    const [rows] = await db.auth.query(
+      `SELECT r.id, r.name, r.address, r.port, r.icon, r.timezone, r.population, r.gamebuild
+       FROM realmlist r
+       INNER JOIN ${db.cmsDbName}.mw_realm c ON c.realm_id = r.id AND c.site_enabled = 1
+       ORDER BY r.id`
+    );
+    return rows;
+  },
+
   /** Get realm by ID */
   async findById(id) {
     const [rows] = await db.auth.query(
@@ -97,6 +108,60 @@ const Realm = {
     if (h) parts.push(`${h}h`);
     parts.push(`${m}m`);
     return parts.join(' ');
+  },
+
+  /* ---- Server Info via SOAP (.server info) ---- */
+  _serverInfoCache: {},
+  _serverInfoCacheTime: {},
+
+  /**
+   * Fetch `.server info` via SOAP, parse and cache it.
+   * Returns { uptime, activeSessions, maxQueue, connPeak, serverDiff, raw }
+   */
+  async getServerInfo(realmId) {
+    const now = Date.now();
+    const cfg = await this.getRealmConfig(realmId);
+    if (!cfg || !cfg.ra_user || !cfg.ra_pass) return null;
+    const ttl = ((cfg.info_refresh_interval || 5) * 60 * 1000);
+    if (this._serverInfoCache[realmId] && (now - (this._serverInfoCacheTime[realmId] || 0)) < ttl) {
+      return this._serverInfoCache[realmId];
+    }
+    try {
+      const SoapService = require('../services/soap');
+      const host = cfg.db_char_host || '127.0.0.1';
+      const raw = await SoapService.executeRaw(host, cfg.ra_port || 7878, cfg.ra_user, cfg.ra_pass, '.server info');
+      const info = this.parseServerInfo(raw);
+      this._serverInfoCache[realmId] = info;
+      this._serverInfoCacheTime[realmId] = now;
+      return info;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /** Parse `.server info` output */
+  parseServerInfo(raw) {
+    if (!raw) return null;
+    const text = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#xA;/g, '\n').replace(/&#xD;/g, '');
+    const result = { raw: text, uptime: null, activeSessions: null, maxQueue: null, connPeak: null, serverDiff: null };
+    // AzerothCore .server info output example:
+    // AzerothCore rev. ... (worldserver-daemon)
+    // Server uptime: 2 Day(s) 3 Hour(s) 15 Minute(s) 42 Second(s).
+    // Update time diff: 10ms, ...
+    // Connected players: 5. Characters in world: 5.
+    // Connection peak: 12.
+    // Server uptime: ...
+    const uptimeMatch = text.match(/uptime:\s*(.*?)\.?\s*(?:\n|$)/i);
+    if (uptimeMatch) result.uptime = uptimeMatch[1].trim();
+    const diffMatch = text.match(/diff:\s*(\d+)\s*ms/i);
+    if (diffMatch) result.serverDiff = parseInt(diffMatch[1]);
+    const connMatch = text.match(/Connected players:\s*(\d+)/i);
+    if (connMatch) result.activeSessions = parseInt(connMatch[1]);
+    const peakMatch = text.match(/Connection peak:\s*(\d+)/i);
+    if (peakMatch) result.connPeak = parseInt(peakMatch[1]);
+    const queueMatch = text.match(/Queue(?:d)?\s*(?:players)?:\s*(\d+)/i);
+    if (queueMatch) result.maxQueue = parseInt(queueMatch[1]);
+    return result;
   }
 };
 

@@ -18,7 +18,7 @@ async function getServerInfo(onlineStats) {
   }
   let info = { name: 'Realm', online: false, onlineCount: 0, address: '127.0.0.1', totalChars: 0, totalAccounts: 0, type: 'Normal', language: 'Development', population: 'Low', gamebuild: 0 };
   try {
-    const realms = await Realm.getAll();
+    const realms = await Realm.getEnabled();
     if (realms.length) {
       const r = realms[0];
       const isOnline = await Realm.checkStatus(r.address, r.port);

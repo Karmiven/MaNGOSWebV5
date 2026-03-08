@@ -170,9 +170,7 @@ app.set('layout extractScripts', true);
       console.error('[ERROR]', err.stack || err);
       res.status(500).render('pages/error', {
         title: 'Server Error',
-        message: process.env.NODE_ENV === 'production'
-          ? 'An internal server error occurred.'
-          : err.message,
+        message: 'An internal server error occurred.',
         layout: 'layouts/main'
       });
     });

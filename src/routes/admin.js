@@ -51,7 +51,9 @@ router.get('/users', async (req, res, next) => {
     const data = await Account.list(page, 20, search);
     res.render('pages/admin/users', {
       title: 'User Management', layout: 'layouts/admin',
-      ...data, search, helpers
+      users: data.accounts || [], total: data.total || 0,
+      page: data.page || 1, totalPages: data.totalPages || 1,
+      search, helpers
     });
   } catch (err) { next(err); }
 });
@@ -161,7 +163,8 @@ router.post('/realms/update', requireSuperAdmin, async (req, res, next) => {
       ra_type: parseInt(req.body.ra_type) || 1,
       ra_port: parseInt(req.body.ra_port) || 7878,
       ra_user: req.body.ra_user || '',
-      ra_pass: req.body.ra_pass || ''
+      ra_pass: req.body.ra_pass || '',
+      info_refresh_interval: parseInt(req.body.info_refresh_interval) || 5
     };
 
     // Check if config exists
@@ -172,8 +175,8 @@ router.post('/realms/update', requireSuperAdmin, async (req, res, next) => {
       await db.cms.query(
         `INSERT INTO mw_realm (realm_id, site_enabled, db_char_host, db_char_port, db_char_name,
          db_char_user, db_char_pass, db_world_host, db_world_port, db_world_name,
-         db_world_user, db_world_pass, ra_type, ra_port, ra_user, ra_pass)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         db_world_user, db_world_pass, ra_type, ra_port, ra_user, ra_pass, info_refresh_interval)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [realmId, ...Object.values(data)]
       );
     }

@@ -1,74 +1,583 @@
-/* MaNGOSWebV5 - Admin Panel Styles */
+/* ============================================================= */
+/* MaNGOSWebV5 Admin Panel — Authentic V4 WoW Theme             */
+/* Uses the same V4 layout structure as the main site            */
+/* ============================================================= */
 
-/* ===== Sidebar ===== */
-.admin-sidebar {
-  background: #0d1117;
-  border-right: 1px solid #30363d;
-  min-height: 100vh;
-  width: 250px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  padding-top: 1rem;
-  overflow-y: auto;
-  z-index: 100;
-}
-.admin-sidebar .sidebar-brand {
-  font-family: 'Cinzel', serif;
-  font-weight: 700;
-  color: #F8B700;
-  font-size: 1.2rem;
-  padding: 0.5rem 1rem;
-  display: block;
+/* ===== Active sidebar link highlight ===== */
+a.menufiller.admin-link-active {
+  color: #fff !important;
   text-decoration: none;
-  border-bottom: 1px solid #30363d;
-  margin-bottom: 0.5rem;
 }
-.admin-sidebar .nav-link {
-  color: #8b949e;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+
+/* ===== Red Banner Breadcrumb ===== */
+.redbannerbg {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  margin-bottom: 8px;
+}
+.redbannerleft {
+  width: 24px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.redbannerlabel {
+  flex: 1;
+  height: 20px;
+  line-height: 20px;
+  background-color: #05374a;
+  padding: 0 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+}
+.redbannerlabel a {
+  color: #ffd100;
+}
+.redbannerlabel a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+.redbannerright {
+  width: 10px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ===== Flash Messages ===== */
+.flash-message {
+  padding: 8px 15px;
+  margin: 0 0 8px 0;
+  border: 1px solid;
+  font-size: 11px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.flash-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+.flash-error {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* ===== Admin Content Panel ===== */
+.admin-content-panel {
+  padding: 8px 0 0 0;
+  color: #333;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+}
+
+/* ===== Page Headings ===== */
+.admin-content-panel h3 {
+  font-family: "Times New Roman", Times, serif;
+  color: #640909;
+  font-size: 16px;
+  margin: 0 0 12px 0;
+  padding: 2px 0 6px 0;
+  border-bottom: 2px solid #d1c0a2;
+}
+.admin-content-panel h4 {
+  font-family: "Times New Roman", Times, serif;
+  color: #640909;
+  font-size: 14px;
+}
+.admin-content-panel h5,
+.admin-content-panel h6 {
+  font-family: "Times New Roman", Times, serif;
+  color: #640909;
+  font-size: 13px;
+}
+
+/* ===== Cards → WoW Content Panels ===== */
+.admin-content-panel .card {
+  background: #f0e8d4 !important;
+  border: 1px solid #8e7c56 !important;
+  border-radius: 0 !important;
+  color: #333 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.admin-content-panel .card.bg-dark {
+  background: #f0e8d4 !important;
+}
+.admin-content-panel .card-header {
+  background: #05374a !important;
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 5px 10px !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid #38464d !important;
+}
+.admin-content-panel .card-header.text-gold {
+  color: #ffd100 !important;
+}
+.admin-content-panel .card-body {
+  padding: 12px !important;
+  color: #333 !important;
+  background: transparent !important;
+}
+
+/* ===== Tables — Blizzard Styled ===== */
+.admin-content-panel .table-responsive {
+  border: none;
+}
+.admin-content-panel .table {
+  font-size: 11px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #333 !important;
+  margin-bottom: 10px;
+  --bs-table-bg: transparent;
+  --bs-table-color: #333;
+  --bs-table-border-color: #D8BF95;
+  --bs-table-hover-bg: rgba(0,0,0,0.06);
+  --bs-table-striped-bg: rgba(0,0,0,0.03);
+}
+.admin-content-panel .table.table-dark {
+  --bs-table-bg: transparent;
+  --bs-table-color: #333;
+  --bs-table-border-color: #D8BF95;
+  --bs-table-hover-bg: rgba(0,0,0,0.06);
+  background-color: transparent !important;
+  color: #333 !important;
+}
+.admin-content-panel .table thead,
+.admin-content-panel .table thead th {
+  background: #2E2D2B !important;
+  color: #fff !important;
+  font-weight: bold;
+  padding: 5px 8px;
+  border-bottom: 1px solid #1a1a1a !important;
+  font-size: 10pt;
+  font-family: arial, sans-serif;
+  white-space: nowrap;
+}
+.admin-content-panel .table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #D8BF95 !important;
+  color: #333 !important;
+  vertical-align: middle;
+  background: transparent !important;
+}
+.admin-content-panel .table tbody tr:nth-child(odd) td {
+  background: #EDE0C8 !important;
+}
+.admin-content-panel .table tbody tr:nth-child(even) td {
+  background: #D7C9AB !important;
+}
+.admin-content-panel .table tbody tr:hover td {
+  background: rgba(208,168,3,0.12) !important;
+}
+.admin-content-panel .table a {
+  color: #1e4378;
+  font-weight: bold;
+}
+.admin-content-panel .table a:hover {
+  color: #c60000;
+}
+
+/* ===== Forms — Blizzard Styled ===== */
+.admin-content-panel .form-control,
+.admin-content-panel .form-select {
+  background-color: #f5f0e1 !important;
+  border: 1px solid #8e7c56 !important;
+  color: #333 !important;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+.admin-content-panel .form-control.bg-dark,
+.admin-content-panel .form-select.bg-dark {
+  background-color: #f5f0e1 !important;
+}
+.admin-content-panel .form-control.text-light,
+.admin-content-panel .form-select.text-light {
+  color: #333 !important;
+}
+.admin-content-panel .form-control:focus,
+.admin-content-panel .form-select:focus {
+  border-color: #d0a803 !important;
+  box-shadow: 0 0 4px rgba(208,168,3,0.3) !important;
+  background-color: #faf5e8 !important;
+}
+.admin-content-panel .form-control::placeholder {
+  color: #999;
+}
+.admin-content-panel .form-control-sm {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.admin-content-panel .form-label,
+.admin-content-panel label {
+  font-weight: bold;
+  color: #555;
+  font-size: 11px;
+}
+.admin-content-panel .input-group .form-control,
+.admin-content-panel .input-group .form-select {
+  border-radius: 0 !important;
+}
+.admin-content-panel .input-group-text {
+  background: #e0d8c6 !important;
+  border: 1px solid #8e7c56 !important;
+  color: #555 !important;
+  font-size: 11px;
+  border-radius: 0 !important;
+}
+.admin-content-panel .form-check-input:checked {
+  background-color: #05374a;
+  border-color: #38464d;
+}
+
+/* ===== Buttons — WoW Styled ===== */
+.admin-content-panel .btn {
+  font-size: 11px;
+  padding: 4px 14px;
+  border-radius: 2px !important;
+  font-weight: bold;
+  transition: all 0.12s;
+}
+.admin-content-panel .btn-gold {
+  background-color: #3a2a0a !important;
+  background-image: none !important;
+  border: 1px solid #5c4523 !important;
+  color: #ffd100 !important;
+}
+.admin-content-panel .btn-gold:hover {
+  background-color: #5c4523 !important;
+  border-color: #ffd100 !important;
+  color: #fff !important;
+}
+.admin-content-panel .btn-outline-gold {
+  background: transparent !important;
+  border: 1px solid #8e7c56 !important;
+  color: #8e7c56 !important;
+}
+.admin-content-panel .btn-outline-gold:hover {
+  background-color: #3a2a0a !important;
+  color: #ffd100 !important;
+  border-color: #5c4523 !important;
+}
+.admin-content-panel .btn-outline-danger {
+  background: transparent !important;
+  border: 1px solid #c60000 !important;
+  color: #c60000 !important;
+}
+.admin-content-panel .btn-outline-danger:hover {
+  background-color: #5d1010 !important;
+  color: #ffcccc !important;
+}
+.admin-content-panel .btn-danger {
+  background-color: #5d1010 !important;
+  border: 1px solid #8a2020 !important;
+  color: #ffcccc !important;
+}
+.admin-content-panel .btn-secondary {
+  background-color: #666 !important;
+  border: 1px solid #888 !important;
+  color: #fff !important;
+}
+.admin-content-panel .btn-warning {
+  background-color: #6b4f00 !important;
+  border: 1px solid #8e6a00 !important;
+  color: #ffd100 !important;
+}
+.admin-content-panel .btn-success,
+.admin-content-panel .btn-outline-success {
+  background-color: #1a4a1a !important;
+  border: 1px solid #2a6a2a !important;
+  color: #90ee90 !important;
+}
+
+/* ===== Modals — WoW Parchment Panels ===== */
+.modal-content {
+  background: #f0e8d4 !important;
+  border: 2px solid #8e7c56 !important;
+  border-radius: 0 !important;
+  color: #333 !important;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.55);
+}
+.modal-content.bg-dark {
+  background: #f0e8d4 !important;
+}
+.modal-content.text-light {
+  color: #333 !important;
+}
+.modal-header {
+  background: #05374a !important;
+  color: #fff !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid #38464d !important;
+  padding: 7px 14px !important;
+}
+.modal-header .text-gold {
+  color: #ffd100 !important;
+}
+.modal-title {
+  color: #ffd100 !important;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 14px !important;
+  font-weight: bold;
+}
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+.modal-body {
+  padding: 14px !important;
+  color: #333 !important;
+}
+.modal-footer {
+  border-top: 1px solid #d1c0a2 !important;
+  padding: 8px 14px !important;
+}
+.modal-backdrop {
+  background-color: rgba(0,0,0,0.65) !important;
+}
+
+/* Modal internal form overrides */
+.modal-body .form-control,
+.modal-body .form-select {
+  background-color: #f5f0e1 !important;
+  border: 1px solid #8e7c56 !important;
+  color: #333 !important;
+  font-size: 12px;
+  border-radius: 2px !important;
+}
+.modal-body .form-control.bg-dark,
+.modal-body .form-select.bg-dark {
+  background-color: #f5f0e1 !important;
+}
+.modal-body .form-control.text-light,
+.modal-body .form-select.text-light {
+  color: #333 !important;
+}
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  border-color: #d0a803 !important;
+  box-shadow: 0 0 4px rgba(208,168,3,0.3) !important;
+}
+.modal-body .form-control::placeholder {
+  color: #999;
+}
+.modal-body .btn-gold,
+.modal-footer .btn-gold {
+  background-color: #3a2a0a !important;
+  border: 1px solid #5c4523 !important;
+  color: #ffd100 !important;
+  font-size: 11px;
+  border-radius: 2px !important;
+  font-weight: bold;
+}
+.modal-body .btn-gold:hover,
+.modal-footer .btn-gold:hover {
+  background-color: #5c4523 !important;
+  color: #fff !important;
+}
+.modal-body .btn-danger {
+  background-color: #5d1010 !important;
+  border-color: #8a2020 !important;
+  color: #ffcccc !important;
+}
+.modal-body .btn-success {
+  background-color: #1a4a1a !important;
+  border-color: #2a6a2a !important;
+  color: #90ee90 !important;
+}
+.modal-body .btn-warning {
+  background-color: #6b4f00 !important;
+  border-color: #8e6a00 !important;
+  color: #ffd100 !important;
+}
+.modal-body label {
+  font-weight: bold;
+  color: #555;
+  font-size: 11px;
+}
+.modal-header.border-secondary {
+  border-color: #38464d !important;
+}
+
+/* ===== Badges — WoW Themed ===== */
+.admin-content-panel .badge {
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 7px;
+  border-radius: 2px !important;
+}
+.admin-content-panel .badge.bg-danger { background-color: #8a2020 !important; }
+.admin-content-panel .badge.bg-warning { background-color: #6b4f00 !important; color: #ffd100 !important; }
+.admin-content-panel .badge.bg-warning.text-dark { color: #ffd100 !important; }
+.admin-content-panel .badge.bg-secondary { background-color: #555 !important; }
+.admin-content-panel .badge.bg-success { background-color: #1a4a1a !important; }
+.admin-content-panel .badge.bg-dark { background-color: #333 !important; }
+.admin-content-panel .badge.bg-info { background-color: #0c5460 !important; }
+
+/* ===== Alerts ===== */
+.admin-content-panel .alert {
+  border-radius: 0 !important;
+  font-size: 11px;
+  padding: 8px 15px;
+}
+.admin-content-panel .alert-success {
+  background-color: #d4edda !important;
+  border-color: #c3e6cb !important;
+  color: #155724 !important;
+}
+.admin-content-panel .alert-danger {
+  background-color: #f8d7da !important;
+  border-color: #f5c6cb !important;
+  color: #721c24 !important;
+}
+.admin-content-panel .alert-info {
+  background-color: #d1ecf1 !important;
+  border-color: #bee5eb !important;
+  color: #0c5460 !important;
+}
+
+/* ===== List Groups ===== */
+.admin-content-panel .list-group-item {
+  background: transparent !important;
+  border-color: #d1c0a2 !important;
+  color: #333 !important;
+}
+.admin-content-panel .list-group-item.bg-dark {
+  background: transparent !important;
+}
+.admin-content-panel .list-group-item.text-light {
+  color: #333 !important;
+}
+.admin-content-panel .list-group-item.border-secondary {
+  border-color: #d1c0a2 !important;
+}
+.admin-content-panel .list-group-item:hover,
+.admin-content-panel .list-group-item-action:hover {
+  background: rgba(208,168,3,0.08) !important;
+  color: #333 !important;
+}
+.admin-content-panel .list-group-item a {
+  color: #1e4378;
+}
+.admin-content-panel .list-group-item a:hover {
+  color: #c60000;
+}
+
+/* ===== Pagination ===== */
+.admin-content-panel .page-link {
+  background: #f5f0e1 !important;
+  border-color: #8e7c56 !important;
+  color: #1e4378 !important;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 0 !important;
+}
+.admin-content-panel .page-link:hover {
+  background: #e8e0cc !important;
+  color: #c60000 !important;
+}
+.admin-content-panel .page-link.bg-dark {
+  background: #f5f0e1 !important;
+}
+.admin-content-panel .page-link.text-gold {
+  color: #1e4378 !important;
+}
+.admin-content-panel .page-link.border-secondary {
+  border-color: #8e7c56 !important;
+}
+.admin-content-panel .page-item.active .page-link {
+  background: #05374a !important;
+  border-color: #38464d !important;
+  color: #fff !important;
+}
+.admin-content-panel .page-item.disabled .page-link {
+  background: #e0d8c6 !important;
+  color: #aaa !important;
+}
+
+/* ===== Display Headings ===== */
+.admin-content-panel .display-5 {
+  font-family: "Times New Roman", Times, serif;
+  color: #640909 !important;
+  font-size: 2rem !important;
+}
+
+/* ===== Text Color Overrides ===== */
+.admin-content-panel .text-gold { color: #c99500 !important; }
+.admin-content-panel .text-muted { color: #8b8072 !important; }
+.admin-content-panel .text-primary { color: #1e4378 !important; }
+.admin-content-panel .text-danger { color: #9a1010 !important; }
+.admin-content-panel .text-success { color: #1a6a1a !important; }
+.admin-content-panel .text-info { color: #0c5460 !important; }
+.admin-content-panel .text-warning { color: #856404 !important; }
+.admin-content-panel .text-light { color: #333 !important; }
+
+/* Keep gold on dark headers */
+.admin-content-panel .card-header .text-gold,
+.admin-content-panel .card-header.text-gold { color: #ffd100 !important; }
+
+/* ===== Preformatted Text (error log) ===== */
+.admin-content-panel pre {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  padding: 10px;
+  font-size: 11px;
   border-radius: 0;
-  transition: all 0.15s;
 }
-.admin-sidebar .nav-link:hover {
-  color: #F8B700;
-  background: rgba(248, 183, 0, 0.05);
+.admin-content-panel code {
+  color: #c99500;
 }
-.admin-sidebar .nav-link.active {
-  color: #F8B700;
-  background: rgba(248, 183, 0, 0.1);
-  border-left: 3px solid #F8B700;
+
+/* ===== Links inside content ===== */
+.admin-content-panel a {
+  color: #1e4378;
 }
-.admin-sidebar .nav-link i {
-  width: 20px;
-  text-align: center;
-  margin-right: 8px;
+.admin-content-panel a:hover {
+  color: #c60000;
 }
-.admin-sidebar .sidebar-section {
-  font-size: 0.7rem;
+
+/* ===== Section headers h6.text-gold ===== */
+.admin-content-panel h6.text-gold {
+  color: #05374a !important;
+  font-weight: bold;
+  font-size: 12px;
+  margin-top: 10px;
+  border-bottom: 1px solid #d1c0a2;
+  padding-bottom: 4px;
+}
+
+/* ===== General overrides ===== */
+.admin-content-panel .border-secondary {
+  border-color: #8e7c56 !important;
+}
+.admin-content-panel .bg-dark-subtle {
+  background-color: #e8e0cc !important;
+}
+.admin-content-panel .text-light:not(.badge):not(.page-link) {
+  color: #333 !important;
+}
+
+/* ===== Stat cards (dashboard) ===== */
+.admin-content-panel .card.text-center .display-5 {
+  font-size: 2rem !important;
+  line-height: 1.2;
+}
+.admin-content-panel .card.text-center .text-muted {
+  color: #777 !important;
+  font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #484f58;
-  padding: 0.75rem 1rem 0.25rem;
-  margin-top: 0.5rem;
+  font-size: 10px;
+  letter-spacing: 0.5px;
 }
 
-/* ===== Main Content ===== */
-.admin-content {
-  margin-left: 250px;
-  padding: 1.5rem;
-  min-height: 100vh;
+/* ===== text-info link colors ===== */
+.admin-content-panel a.text-info {
+  color: #0c5460 !important;
 }
-
-/* ===== Responsive ===== */
-@media (max-width: 992px) {
-  .admin-sidebar {
-    width: 100%;
-    min-height: auto;
-    position: relative;
-  }
-  .admin-content {
-    margin-left: 0;
-  }
+.admin-content-panel a.text-info:hover {
+  color: #c60000 !important;
 }

@@ -1,87 +1,215 @@
-<h3 class="mb-4">Menu Management</h3>
+<%
+  /* Category definitions — must match Menu.MENU_META in models/Menu.js */
+  var categories = {
+    1: { name: 'News',      icon: 'fa-newspaper',    desc: 'Home page, news, server info links' },
+    2: { name: 'Account',   icon: 'fa-user-circle',  desc: 'Login, register, account management' },
+    4: { name: 'Workshop',  icon: 'fa-gamepad',      desc: 'Top kills, characters, online players, stats' },
+    7: { name: 'Community', icon: 'fa-users',        desc: 'Donate, vote, shop links' },
+    8: { name: 'Support',   icon: 'fa-life-ring',    desc: 'FAQ, how to play, support pages' }
+  };
+  var catIds = [1, 2, 4, 7, 8];
 
-<!-- Add Menu Item -->
-<div class="card bg-dark border-secondary mb-4">
-  <div class="card-header text-gold">Add Menu Item</div>
-  <div class="card-body">
-    <form method="POST" action="/admin/menus/add">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <div class="row g-2">
-        <div class="col-md-2">
-          <select name="menu_id" class="form-select form-select-sm bg-dark text-light border-secondary">
-            <option value="1">Menu 1 (Sidebar)</option>
-            <option value="2">Menu 2 (Footer)</option>
-            <option value="3">Menu 3 (Extra)</option>
-          </select>
-        </div>
-        <div class="col-md-2"><input type="text" name="link_title" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Title" required></div>
-        <div class="col-md-3"><input type="text" name="link" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="URL" required></div>
-        <div class="col-md-1"><input type="number" name="order" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Order" value="0"></div>
-        <div class="col-md-1">
-          <select name="account_level" class="form-select form-select-sm bg-dark text-light border-secondary">
-            <option value="0">All</option>
-            <option value="1" selected>User</option>
-            <option value="3">Admin</option>
-          </select>
-        </div>
-        <div class="col-md-1">
-          <div class="form-check mt-1"><input type="checkbox" name="guest_only" value="1" class="form-check-input" id="go"><label class="form-check-label small" for="go">Guest</label></div>
-        </div>
-        <div class="col-md-2"><button type="submit" class="btn btn-sm btn-gold w-100">Add</button></div>
-      </div>
-    </form>
+  /* Group items by category */
+  var grouped = {};
+  catIds.forEach(function(id) { grouped[id] = []; });
+  if (items && items.length) {
+    items.forEach(function(m) {
+      var cid = m.menu_id;
+      if (!grouped[cid]) grouped[cid] = [];
+      grouped[cid].push(m);
+    });
+  }
+%>
+
+<style>
+  .cat-card { border: 1px solid #5D5D5D; border-radius: 6px; background: #1a1a1a; margin-bottom: 18px; }
+  .cat-card-header { background: #2E2D2B; padding: 10px 15px; border-bottom: 1px solid #5D5D5D; border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: space-between; }
+  .cat-card-header h5 { margin: 0; color: #FFAC04; font-size: 14px; }
+  .cat-card-header .cat-desc { color: #999; font-size: 11px; margin-left: 10px; }
+  .cat-card-header .cat-icon { color: #FFAC04; font-size: 16px; margin-right: 8px; }
+  .cat-card-body { padding: 10px; }
+  .cat-card-body table { margin-bottom: 0; }
+  .cat-card-body th { color: #C7C7C7; background: #252525; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 10px; border-bottom: 1px solid #3a3a3a; }
+  .cat-card-body td { padding: 6px 10px; border-bottom: 1px solid #2a2a2a; color: #ddd; font-size: 12px; vertical-align: middle; }
+  .cat-card-body tr:hover td { background: #252525; }
+  .add-row { background: #1e1e1e; }
+  .add-row td { padding: 8px 6px; }
+  .add-row input, .add-row select { background: #2a2a2a; border: 1px solid #444; color: #eee; font-size: 12px; padding: 4px 8px; border-radius: 3px; width: 100%; }
+  .add-row input:focus, .add-row select:focus { border-color: #FFAC04; outline: none; }
+  .btn-gold-sm { background: linear-gradient(180deg, #FFAC04 0%, #c68400 100%); color: #1a1a1a; border: none; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 3px; cursor: pointer; }
+  .btn-gold-sm:hover { background: linear-gradient(180deg, #ffc940 0%, #FFAC04 100%); }
+  .btn-del { background: none; border: 1px solid #8b2020; color: #e05050; font-size: 11px; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
+  .btn-del:hover { background: #8b2020; color: #fff; }
+  .btn-edit-sm { background: none; border: 1px solid #5D5D5D; color: #FFAC04; font-size: 11px; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
+  .btn-edit-sm:hover { background: #3a3a3a; }
+  .level-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; }
+  .level-all { background: #2d4a1e; color: #8bc34a; }
+  .level-user { background: #1e3a4a; color: #64b5f6; }
+  .level-admin { background: #4a1e1e; color: #ef5350; }
+  .guest-badge { background: #4a3a1e; color: #ffb74d; font-size: 10px; padding: 2px 6px; border-radius: 3px; }
+  .empty-cat { color: #666; font-style: italic; font-size: 12px; padding: 15px; text-align: center; }
+</style>
+
+<h3 class="mb-3" style="color:#FFAC04;">
+  <i class="fas fa-bars me-2"></i>Sidebar Menu Management
+</h3>
+<p class="text-muted mb-4" style="font-size:13px;">
+  Manage the left sidebar menu links. Items are grouped by category and sorted by order within each category.
+  <br>The sidebar displays 5 collapsible sections: <strong style="color:#ccc;">News</strong>, <strong style="color:#ccc;">Account</strong>, <strong style="color:#ccc;">Workshop</strong>, <strong style="color:#ccc;">Community</strong>, and <strong style="color:#ccc;">Support</strong>.
+</p>
+
+<% catIds.forEach(function(catId) {
+  var cat = categories[catId];
+  var catItems = grouped[catId] || [];
+  catItems.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+%>
+<div class="cat-card">
+  <div class="cat-card-header">
+    <div style="display:flex; align-items:center;">
+      <i class="fas <%= cat.icon %> cat-icon"></i>
+      <h5>Category <%= catId %>: <%= cat.name %></h5>
+      <span class="cat-desc">— <%= cat.desc %></span>
+    </div>
+    <span style="color:#666; font-size:11px;"><%= catItems.length %> item<%= catItems.length !== 1 ? 's' : '' %></span>
+  </div>
+  <div class="cat-card-body">
+    <table width="100%" cellspacing="0" cellpadding="0">
+      <thead>
+        <tr>
+          <th width="40">#</th>
+          <th>Title</th>
+          <th>URL</th>
+          <th width="60">Order</th>
+          <th width="80">Visibility</th>
+          <th width="100">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (catItems.length) { %>
+          <% catItems.forEach(function(m, idx) { %>
+            <tr>
+              <td style="color:#666;"><%= idx + 1 %></td>
+              <td><strong><%= m.link_title %></strong></td>
+              <td style="color:#80bfff;"><%= m.link %></td>
+              <td style="text-align:center;"><%= m.order || 0 %></td>
+              <td>
+                <% if (m.account_level === 0) { %>
+                  <span class="level-badge level-all">Everyone</span>
+                <% } else if (m.account_level >= 3) { %>
+                  <span class="level-badge level-admin">Admin</span>
+                <% } else { %>
+                  <span class="level-badge level-user">User</span>
+                <% } %>
+                <% if (m.guest_only) { %><span class="guest-badge ms-1">Guest</span><% } %>
+              </td>
+              <td>
+                <button class="btn-edit-sm me-1" onclick="editItem(<%= m.id %>, <%= m.menu_id %>, '<%= m.link_title.replace(/'/g, "\\'") %>', '<%= m.link.replace(/'/g, "\\'") %>', <%= m.order || 0 %>, <%= m.account_level %>, <%= m.guest_only ? 1 : 0 %>)"><i class="fas fa-pen"></i></button>
+                <form method="POST" action="/admin/menus/delete" class="d-inline" onsubmit="return confirm('Delete &quot;<%= m.link_title %>&quot;?')">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <input type="hidden" name="id" value="<%= m.id %>">
+                  <button type="submit" class="btn-del"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        <% } else { %>
+          <tr><td colspan="6" class="empty-cat">No items in this category yet. Add one below.</td></tr>
+        <% } %>
+
+        <!-- Inline add row -->
+        <tr class="add-row">
+          <form method="POST" action="/admin/menus/add">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="menu_id" value="<%= catId %>">
+            <td style="text-align:center;color:#666;"><i class="fas fa-plus" style="color:#FFAC04;"></i></td>
+            <td><input type="text" name="link_title" placeholder="Link title" required></td>
+            <td><input type="text" name="link" placeholder="/path/to/page" required></td>
+            <td><input type="number" name="order" placeholder="0" value="<%= catItems.length + 1 %>" style="text-align:center; width:50px;"></td>
+            <td>
+              <select name="account_level">
+                <option value="0">Everyone</option>
+                <option value="1" selected>Users</option>
+                <option value="3">Admin</option>
+              </select>
+            </td>
+            <td>
+              <button type="submit" class="btn-gold-sm"><i class="fas fa-plus me-1"></i>Add</button>
+            </td>
+          </form>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
+<% }); %>
 
-<!-- Menu Items Table -->
-<div class="table-responsive">
-  <table class="table table-dark table-hover table-sm">
-    <thead><tr><th>ID</th><th>Menu</th><th>Title</th><th>URL</th><th>Order</th><th>Level</th><th>Guest</th><th>Actions</th></tr></thead>
-    <tbody>
-      <% if (items && items.length) { %>
-        <% items.forEach(m => { %>
-          <tr>
-            <td><%= m.id %></td>
-            <td><%= m.menu_id %></td>
-            <td><%= m.link_title %></td>
-            <td class="text-truncate" style="max-width:150px"><%= m.link %></td>
-            <td><%= m.order || m.sort_order || 0 %></td>
-            <td><%= m.account_level %></td>
-            <td><%= m.guest_only ? 'Yes' : '' %></td>
-            <td>
-              <button class="btn btn-sm btn-outline-gold me-1" data-bs-toggle="modal" data-bs-target="#edit-m-<%= m.id %>"><i class="fas fa-edit"></i></button>
-              <form method="POST" action="/admin/menus/delete" class="d-inline" onsubmit="return confirm('Delete?')">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <input type="hidden" name="id" value="<%= m.id %>">
-                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-              </form>
-            </td>
-          </tr>
-
-          <div class="modal fade" id="edit-m-<%= m.id %>" tabindex="-1">
-            <div class="modal-dialog">
-              <div class="modal-content bg-dark text-light">
-                <div class="modal-header border-secondary"><h5 class="modal-title text-gold">Edit Menu Item</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-                <form method="POST" action="/admin/menus/edit">
-                  <div class="modal-body">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                    <input type="hidden" name="id" value="<%= m.id %>">
-                    <div class="mb-2"><label class="small text-muted">Menu</label><select name="menu_id" class="form-select form-select-sm bg-dark text-light border-secondary"><option value="1" <%= m.menu_id==1?'selected':'' %>>1</option><option value="2" <%= m.menu_id==2?'selected':'' %>>2</option><option value="3" <%= m.menu_id==3?'selected':'' %>>3</option></select></div>
-                    <div class="mb-2"><label class="small text-muted">Title</label><input type="text" name="link_title" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= m.link_title %>"></div>
-                    <div class="mb-2"><label class="small text-muted">URL</label><input type="text" name="link" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= m.link %>"></div>
-                    <div class="mb-2"><label class="small text-muted">Order</label><input type="number" name="order" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= m.order || m.sort_order || 0 %>"></div>
-                    <div class="mb-2"><label class="small text-muted">Min Level</label><select name="account_level" class="form-select form-select-sm bg-dark text-light border-secondary"><option value="0" <%= m.account_level==0?'selected':'' %>>All</option><option value="1" <%= m.account_level==1?'selected':'' %>>User</option><option value="3" <%= m.account_level==3?'selected':'' %>>Admin</option></select></div>
-                    <div class="form-check"><input type="checkbox" name="guest_only" value="1" class="form-check-input" <%= m.guest_only?'checked':'' %>><label class="form-check-label small">Guest Only</label></div>
-                  </div>
-                  <div class="modal-footer border-secondary"><button type="submit" class="btn btn-gold">Save</button></div>
-                </form>
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:#1a1a1a; border:1px solid #5D5D5D; color:#ddd;">
+      <div class="modal-header" style="border-bottom:1px solid #3a3a3a;">
+        <h5 class="modal-title" style="color:#FFAC04;"><i class="fas fa-pen me-2"></i>Edit Menu Item</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/admin/menus/edit">
+        <div class="modal-body">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="id" id="edit-id">
+          <div class="mb-3">
+            <label class="form-label" style="color:#999; font-size:12px;">Category</label>
+            <select name="menu_id" id="edit-menu_id" class="form-select form-select-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;">
+              <% catIds.forEach(function(cid) { %>
+                <option value="<%= cid %>"><%= cid %>. <%= categories[cid].name %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="color:#999; font-size:12px;">Title</label>
+            <input type="text" name="link_title" id="edit-title" class="form-control form-control-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="color:#999; font-size:12px;">URL</label>
+            <input type="text" name="link" id="edit-link" class="form-control form-control-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;" required>
+          </div>
+          <div class="row g-3">
+            <div class="col-4">
+              <label class="form-label" style="color:#999; font-size:12px;">Order</label>
+              <input type="number" name="order" id="edit-order" class="form-control form-control-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;">
+            </div>
+            <div class="col-4">
+              <label class="form-label" style="color:#999; font-size:12px;">Visibility</label>
+              <select name="account_level" id="edit-level" class="form-select form-select-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;">
+                <option value="0">Everyone</option>
+                <option value="1">Users</option>
+                <option value="3">Admin</option>
+              </select>
+            </div>
+            <div class="col-4 d-flex align-items-end">
+              <div class="form-check">
+                <input type="checkbox" name="guest_only" value="1" class="form-check-input" id="edit-guest">
+                <label class="form-check-label" for="edit-guest" style="color:#999; font-size:12px;">Guest only</label>
               </div>
             </div>
           </div>
-        <% }) %>
-      <% } else { %>
-        <tr><td colspan="8" class="text-center text-muted">No menu items.</td></tr>
-      <% } %>
-    </tbody>
-  </table>
+        </div>
+        <div class="modal-footer" style="border-top:1px solid #3a3a3a;">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn-gold-sm">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
+
+<script>
+function editItem(id, menuId, title, link, order, level, guest) {
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-menu_id').value = menuId;
+  document.getElementById('edit-title').value = title;
+  document.getElementById('edit-link').value = link;
+  document.getElementById('edit-order').value = order;
+  document.getElementById('edit-level').value = level;
+  document.getElementById('edit-guest').checked = !!guest;
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+</script>

@@ -69,6 +69,9 @@ const db = {
   get world() { return pools.world; },
   get pools() { return pools; },
 
+  /** CMS database name for cross-db queries */
+  get cmsDbName() { return process.env.CMS_DB_NAME || 'mangosweb'; },
+
   /** Create a temporary pool for a specific realm's char/world DB */
   realmPool(host, port, user, pass, dbName) {
     return mysql.createPool({

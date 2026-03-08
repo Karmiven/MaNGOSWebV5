@@ -1,47 +1,158 @@
 
 <%
   var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+
+  function parseTime(number) {
+    var d = Math.floor(number / 3600 / 24);
+    var h = Math.floor((number % (3600 * 24)) / 3600);
+    var m = Math.floor((number % 3600) / 60);
+    var s = Math.floor((number % 3600) % 60);
+    return { d: d, h: h, m: m, s: s };
+  }
+  function printTime(t) {
+    var parts = [];
+    if (t.d > 0) parts.push(t.d + ' Days');
+    if (t.h > 0) parts.push(t.h + ' Hours');
+    if (t.m > 0) parts.push(t.m + ' Minutes');
+    if (t.s > 0) parts.push(t.s + ' Seconds');
+    return parts.join(', ') || '0 Minutes';
+  }
+  function populationView(pop) {
+    if (pop <= 0) return 'Offline';
+    if (pop <= 5) return 'Low';
+    if (pop <= 20) return 'Medium';
+    return 'High';
+  }
 %>
-<!-- Server Information — V4 Blizzlike Style -->
-<div class="subheader-bar">
-  <div class="sh-left"><img src="<%= tp %>/images/subheader/subheader-left-sword.gif" alt="" style="border:0;" onerror="this.parentElement.style.display='none';"></div>
-  <div class="sh-mid"><b>Server Information</b></div>
-  <div class="sh-right"><img src="<%= tp %>/images/subheader/subheader-right.gif" alt="" style="border:0;" onerror="this.parentElement.style.display='none';"></div>
-</div>
+<style type="text/css">
+  td.serverStatus1 { border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+  .server-diff-good { color: rgb(35, 67, 3); font-weight: bold; }
+  .server-diff-warn { color: #856404; font-weight: bold; }
+  .server-diff-bad { color: rgb(102, 13, 2); font-weight: bold; }
+</style>
 
-<% realms.forEach(function(r) { %>
-  <table class="blizz-table" style="margin-bottom:15px;">
-    <tr>
-      <th colspan="2" style="font-size:13px;"><%= r.name %></th>
-    </tr>
-    <tr>
-      <td style="width:150px;"><b>Status</b></td>
-      <td>
-        <% if (r.online) { %>
-          <img src="<%= tp %>/images/stat/up_arrow.gif" alt="Online" style="vertical-align:middle; border:0;">
-          <span class="status-online">Online</span>
-        <% } else { %>
-          <img src="<%= tp %>/images/stat/down_arrow.gif" alt="Offline" style="vertical-align:middle; border:0;">
-          <span class="status-offline">Offline</span>
-        <% } %>
-      </td>
-    </tr>
-    <tr><td><b>Players Online</b></td><td><%= r.onlineCount %></td></tr>
-    <tr><td><b>Total Characters</b></td><td><%= r.totalChars %></td></tr>
-    <tr><td><b>Uptime</b></td><td><%= r.uptime %></td></tr>
-    <tr><td><b>Type</b></td><td><%= r.typeName %></td></tr>
-    <tr><td><b>Realmlist</b></td><td><%= r.address %>:<%= r.port %></td></tr>
-  </table>
+<!-- Server Information -->
+<%- include('../../partials/builddiv_start', { type: 0, title: '' }) %>
+
+<div style="padding:10px 20px 10px 20px;">
+  The realm status on this page reflects the current status of our realms. If a realm is shown as
+  <img src="<%= tp %>/images/uparrow2.gif" style="vertical-align: bottom;" height="19" width="18" alt=""/> <b style="color: rgb(35, 67, 3);">Up</b>
+  it is available and accepting connections. If a realm shows
+  <img src="<%= tp %>/images/downarrow2.gif" style="vertical-align: bottom;" height="19" width="18" alt=""/> <b style="color: rgb(102, 13, 2);">Down</b>
+  it is currently unavailable.
+</div>
+<br/>
+
+<%- include('../../partials/subheader', { subheader: 'Realm Status' }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="53">Status</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Uptime</td>
+    <td class="rankingHeader" align="left" nowrap="nowrap">Realm Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="80">Type</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="80">Players</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Population</td>
+  </tr>
+  <tr>
+    <td colspan="6" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
+<% realms.forEach(function(item, idx) {
+  var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+  var statusImg = item.online ? tp + '/images/uparrow2.gif' : tp + '/images/downarrow2.gif';
+%>
+  <tr>
+    <td class="<%= rowClass %>" align="center">
+      <img src="<%= statusImg %>" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (item.uptimeSeconds > 1) { %>
+        <%= printTime(parseTime(item.uptimeSeconds)) %>
+      <% } else { %>
+        -
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>">
+      <b style="color: rgb(35, 67, 3);"><%= item.name %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color: rgb(102, 13, 2);"><%= item.typeName %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b><%= item.onlineCount %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color: rgb(35, 67, 3);"><%= populationView(item.onlineCount) %></b>
+    </td>
+  </tr>
 <% }); %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
 
-<div class="subheader-bar">
-  <div class="sh-left"></div>
-  <div class="sh-mid"><b>Quick Navigation</b></div>
-  <div class="sh-right"></div>
-</div>
-<ul style="list-style:none; padding:0; margin:0;">
-  <li><a href="/server/online" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Players Online</a></li>
-  <li><a href="/server/topkills" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Top Kills</a></li>
-  <li><a href="/server/stats" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Statistics</a></li>
-  <li><a href="/server/chars" class="menufiller" style="width:auto; display:inline-block; padding:2px 10px;">Search Characters</a></li>
-</ul>
+<br/>
+
+<!-- Server Performance Info (from .server info SOAP) -->
+<% var hasServerInfo = realms.some(function(r) { return r.serverInfo; }); %>
+<% if (hasServerInfo) { %>
+<%- include('../../partials/subheader', { subheader: 'Server Performance' }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="left" nowrap="nowrap">Realm</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Latency (diff)</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Sessions</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Conn. Peak</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="180">Uptime</td>
+  </tr>
+  <tr>
+    <td colspan="5" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
+<% realms.forEach(function(item, idx) {
+  if (!item.serverInfo) return;
+  var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+  var si = item.serverInfo;
+  var diffClass = 'server-diff-good';
+  if (si.serverDiff !== null) {
+    if (si.serverDiff > 150) diffClass = 'server-diff-bad';
+    else if (si.serverDiff > 50) diffClass = 'server-diff-warn';
+  }
+%>
+  <tr>
+    <td class="<%= rowClass %>">
+      <b style="color: rgb(35, 67, 3);"><%= item.name %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (si.serverDiff !== null) { %>
+        <span class="<%= diffClass %>"><%= si.serverDiff %> ms</span>
+      <% } else { %>
+        -
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b><%= si.activeSessions !== null ? si.activeSessions : '-' %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b><%= si.connPeak !== null ? si.connPeak : '-' %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <%= si.uptime || '-' %>
+    </td>
+  </tr>
+<% }); %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+<% } %>
+
+<%- include('../../partials/builddiv_end') %>

@@ -8,17 +8,17 @@ const Menu = {
     return rows;
   },
 
-  /** Menu category metadata — must match V4 CSS class names */
+  /** Menu category metadata — must match V4 CSS class names and DB menu_id values */
   MENU_META: {
-    1: { name: 'News',        slug: 'menunews' },
-    2: { name: 'Account',     slug: 'menuaccount' },
-    3: { name: 'Game Guide',  slug: 'menugameguide' },
-    4: { name: 'Interactive', slug: 'menuinteractive' },
-    5: { name: 'Media',       slug: 'menumedia' },
-    6: { name: 'Forums',      slug: 'menuforums' },
-    7: { name: 'Community',   slug: 'menucommunity' },
-    8: { name: 'Support',     slug: 'menusupport' }
+    1: { name: 'News',      slug: 'menunews' },
+    2: { name: 'Account',   slug: 'menuaccount' },
+    4: { name: 'Workshop',  slug: 'menuinteractive' },
+    7: { name: 'Community', slug: 'menucommunity' },
+    8: { name: 'Support',   slug: 'menusupport' }
   },
+
+  /** Ordered list of category IDs for admin UI */
+  CATEGORY_IDS: [1, 2, 4, 7, 8],
 
   /* ---- Menu cache (shared across all requests) ---- */
   _menuCache: {},

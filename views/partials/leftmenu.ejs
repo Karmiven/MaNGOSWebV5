@@ -11,8 +11,8 @@
 
   /* ---------- Menu slug map (must match V4 CSS class names) ---------- */
   var menuSlugMap = {
-    1: 'menunews', 2: 'menuaccount', 3: 'menugameguide', 4: 'menuinteractive',
-    5: 'menumedia', 6: 'menuforums', 7: 'menucommunity', 8: 'menusupport'
+    1: 'menunews', 2: 'menuaccount', 4: 'menuinteractive',
+    7: 'menucommunity', 8: 'menusupport'
   };
 
   /* ---------- Build final menuCategories array ---------- */
@@ -50,11 +50,10 @@
           { link: '/auth/register', label: 'Register' }
         ]
       },
-      { idx: 4, slug: 'menuinteractive', name: 'Interactive', items: [
+      { idx: 4, slug: 'menuinteractive', name: 'Workshop', items: [
         { link: '/server/topkills', label: 'Top Kills' },
         { link: '/server/chars', label: 'Characters' },
         { link: '/server/online', label: 'Players Online' },
-        { link: '/server/realmstatus', label: 'Realm Status' },
         { link: '/server/stats', label: 'Server Statistics' }
       ]},
       { idx: 7, slug: 'menucommunity', name: 'Community', items: [
