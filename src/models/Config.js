@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 /**
  * Site configuration stored in mw_config as key-value pairs.
  * Loaded once at startup, cached in memory, updateable from admin.
@@ -93,13 +94,19 @@ const SiteConfig = {
     } else {
       // Legacy column-based: translate V5 key to legacy column name
       const col = v5KeyToLegacy(key);
+      // [FIXED] Validate column name against actual DB columns to prevent SQL injection
       try {
+        const [cols] = await db.cms.query('DESCRIBE mw_config');
+        const validCols = new Set(cols.map(c => c.Field));
+        if (!validCols.has(col)) {
+          console.warn(`[Config] Column '${col}' does not exist, skipping`);
+          return;
+        }
         await db.cms.query(
           `UPDATE mw_config SET \`${col}\` = ? LIMIT 1`,
           [value]
         );
       } catch (e) {
-        // Column may not exist in this DB version — silently skip
         console.warn(`[Config] Cannot save '${col}': ${e.message}`);
       }
     }

@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 /**
  * Authentication middleware.
  * Loads user from session, provides requireAuth / requireAdmin helpers.

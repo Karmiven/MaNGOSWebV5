@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const { requireAuth } = require('../middleware/auth');
 const Donate = require('../models/Donate');

@@ -1,59 +1,84 @@
-
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var points = (typeof ext !== 'undefined' && ext) ? ext.web_points : 0;
+%>
 <!-- Item Shop — V4 Blizzlike Style -->
-<div class="subheader-bar">
-  <div class="sh-left"></div>
-  <div class="sh-mid"><b>Item Shop</b></div>
-  <div class="sh-right"></div>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Item Shop' }) %>
+
+<style type="text/css">
+  td.shopRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 6px 8px; }
+  td.shopRow2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 6px 8px; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+</style>
+
+<div style="padding:5px 10px; margin-bottom:8px; font-size:12px; background:#e8dcc0; border:1px solid #c5a96a; border-radius:2px;">
+  Your balance: <b style="color:#1e4378;"><%= points %></b> Web Points
 </div>
 
-<% if (typeof categories !== 'undefined' && categories && categories.length > 0) { %>
-  <div style="margin-bottom:10px;">
-    <a href="/shop" class="btn-blizz" style="margin-right:3px;">All</a>
-    <% categories.forEach(function(cat) { %>
-      <a href="/shop?category=<%= encodeURIComponent(cat) %>" class="btn-blizz" style="margin-right:3px;"><%= cat %></a>
-    <% }); %>
-  </div>
-<% } %>
-
-<% if (typeof user !== 'undefined' && user) { %>
-  <div class="flash-message flash-info">Your balance: <b><%= user.web_points || 0 %> Points</b></div>
-<% } %>
-
-<% if (typeof items !== 'undefined' && items && items.length > 0) { %>
-  <table class="blizz-table">
-    <tr>
-      <th>Item</th>
-      <th>Description</th>
-      <th>Price</th>
-      <th style="width:200px;">Action</th>
-    </tr>
-    <% items.forEach(function(item) { %>
-      <tr>
-        <td><b><%= item.name %></b><% if (item.item_id) { %> <small style="color:#999;">(ID: <%= item.item_id %> x<%= item.item_count || 1 %>)</small><% } %></td>
-        <td><%= item.description || 'No description' %></td>
-        <td style="color:#1e4378; font-weight:bold;"><%= item.price %> pts</td>
-        <td>
-          <% if (typeof user !== 'undefined' && user) { %>
-            <form method="POST" action="/shop/buy" style="display:inline;" onsubmit="return confirm('Buy <%= item.name %> for <%= item.price %> points?');">
-              <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-              <input type="hidden" name="itemId" value="<%= item.id %>">
-              <% if (typeof characters !== 'undefined' && characters && characters.length > 0) { %>
-                <select name="characterName" required style="font-size:10px; border:1px solid #8e7c56; padding:2px;">
-                  <option value="">Character...</option>
-                  <% characters.forEach(function(ch) { %>
-                    <option value="<%= ch.name %>"><%= ch.name %></option>
-                  <% }); %>
-                </select>
-              <% } %>
-              <input type="submit" value="Buy" class="btn-blizz" style="padding:2px 10px;" <%= (typeof characters === 'undefined' || !characters || characters.length === 0) ? 'disabled' : '' %>>
-            </form>
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Item</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Qty</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Price</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="220">Purchase</td>
+  </tr>
+<% if (typeof items !== 'undefined' && items && items.length) { %>
+  <% items.forEach(function(item, idx) {
+    var rowClass = (idx % 2 === 0) ? 'shopRow1' : 'shopRow2';
+    var goldDisplay = '';
+    if (item.gold > 0) {
+      goldDisplay = item.gold >= 10000 ? ' + ' + Math.floor(item.gold/10000) + 'g' : ' + ' + item.gold + ' copper';
+    }
+  %>
+  <tr>
+    <td class="<%= rowClass %>">
+      <b style="color: rgb(35, 67, 3);"><%= item.desc || 'Item #' + item.item_number %></b>
+      <% if (item.item_number) { %>
+        <span style="color:#888; font-size:10px;">(ID: <%= item.item_number %><% if (item.itemset > 0) { %>, Set: <%= item.itemset %><% } %>)</span>
+      <% } %>
+      <% if (goldDisplay) { %><span style="color:#b8860b; font-size:10px;"><%= goldDisplay %></span><% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b><%= item.quantity || 1 %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color:#1e4378;"><%= item.wp_cost %> pts</b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (typeof characters !== 'undefined' && characters && characters.length > 0) { %>
+        <form method="POST" action="/shop/buy" style="display:inline;" onsubmit="return confirm('Buy &quot;<%= (item.desc || 'this item').replace(/'/g, '') %>&quot; for <%= item.wp_cost %> points?');">
+          <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+          <input type="hidden" name="item_id" value="<%= item.id %>">
+          <select name="character" required style="font-size:11px; border:1px solid #8e7c56; padding:2px 4px; background:#f0e6cd;">
+            <option value="">-- Character --</option>
+            <% characters.forEach(function(ch) { %>
+              <option value="<%= ch.name %>"><%= ch.name %> (Lv.<%= ch.level %>)</option>
+            <% }); %>
+          </select>
+          <% if (points < parseInt(item.wp_cost)) { %>
+            <span style="color:#cc2200; font-size:10px; font-weight:bold;">Need <%= parseInt(item.wp_cost) - points %> more pts</span>
           <% } else { %>
-            <a href="/auth/login" class="btn-blizz" style="padding:2px 10px;">Login to Buy</a>
+            <button type="submit" class="btn-blizz" style="padding:2px 12px; font-size:11px; margin-left:4px;">Buy</button>
           <% } %>
-        </td>
-      </tr>
-    <% }); %>
-  </table>
+        </form>
+      <% } else { %>
+        <span style="color:#888; font-size:11px;">No characters found</span>
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
 <% } else { %>
-  <p style="padding:10px; color:#333;">No items available in the shop.</p>
+  <tr>
+    <td class="shopRow1" colspan="4" align="center" style="padding:20px; color:#666;">
+      No items available in the shop.
+    </td>
+  </tr>
 <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>

@@ -86,7 +86,8 @@ Welcome to our World of Warcraft server!
 
 <li><div>
 <b>Online:</b>&nbsp;
-<a href="/server/online"><%= serverInfo.onlineCount %></a>
+<span title="Players online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlinePlayers || 0 %></a></span>
+ / <span title="Bots online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlineBots || 0 %></a></span>
  (<a href="/server/online">Playermap</a>)
 </div></li>
 

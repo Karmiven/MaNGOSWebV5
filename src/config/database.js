@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 /**
  * Database connection pools for all four databases.
  * cms  = mangosweb   (CMS tables)
@@ -26,7 +27,11 @@ function makePool(prefix) {
     connectionLimit: 10,
     charset: 'utf8mb4',
     timezone: '+00:00',
-    connectTimeout: 5000
+    connectTimeout: 5000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 30000,
+    idleTimeout: 60000,
+    maxIdle: 3
   });
 }
 
@@ -77,7 +82,8 @@ const db = {
     return mysql.createPool({
       host, port: parseInt(port), user, password: pass, database: dbName,
       waitForConnections: true, connectionLimit: 5,
-      charset: 'utf8mb4', connectTimeout: 5000
+      charset: 'utf8mb4', connectTimeout: 5000,
+      enableKeepAlive: true, keepAliveInitialDelay: 30000
     });
   },
 

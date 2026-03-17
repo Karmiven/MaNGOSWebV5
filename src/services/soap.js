@@ -1,7 +1,22 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 /**
  * AzerothCore SOAP client for executing in-game commands.
  */
 const soapLib = require('soap');
+
+// [FIXED] Validate character names and sanitize SOAP command arguments
+function sanitizeCharName(name) {
+  // AzerothCore character names: letters only, 2-12 chars
+  if (!name || !/^[a-zA-ZÀ-ÿ]{2,12}$/.test(name)) {
+    throw new Error('Invalid character name');
+  }
+  return name;
+}
+
+function sanitizeCommandArg(str) {
+  // Remove quotes and control characters from SOAP command arguments
+  return String(str || '').replace(/[\"\\]/g, '').replace(/[\x00-\x1f]/g, '').substring(0, 255);
+}
 
 class SoapService {
   /**
@@ -84,21 +99,37 @@ class SoapService {
   }
 
   /** Convenience: send items to character */
+  // [FIXED] Validate character name and sanitize arguments
   static async sendItems(host, port, user, pass, charName, subject, message, items) {
-    const itemStr = items.map(i => `${i.entry}:${i.count}`).join(' ');
-    const cmd = `send items ${charName} "${subject}" "${message}" ${itemStr}`;
+    const safeName = sanitizeCharName(charName);
+    const safeSubject = sanitizeCommandArg(subject);
+    const safeMessage = sanitizeCommandArg(message);
+    const itemStr = items.map(i => {
+      const entry = parseInt(i.entry);
+      const count = parseInt(i.count) || 1;
+      if (!entry || entry <= 0) throw new Error('Invalid item entry');
+      return `${entry}:${count}`;
+    }).join(' ');
+    const cmd = `send items ${safeName} "${safeSubject}" "${safeMessage}" ${itemStr}`;
     return this.executeRaw(host, port, user, pass, cmd);
   }
 
   /** Send gold (copper) to character */
   static async sendMoney(host, port, user, pass, charName, subject, message, copper) {
-    const cmd = `send money ${charName} "${subject}" "${message}" ${copper}`;
+    const safeName = sanitizeCharName(charName);
+    const safeSubject = sanitizeCommandArg(subject);
+    const safeMessage = sanitizeCommandArg(message);
+    const safeCopper = parseInt(copper) || 0;
+    const cmd = `send money ${safeName} "${safeSubject}" "${safeMessage}" ${safeCopper}`;
     return this.executeRaw(host, port, user, pass, cmd);
   }
 
   /** Send mail to character */
   static async sendMail(host, port, user, pass, charName, subject, message) {
-    const cmd = `send mail ${charName} "${subject}" "${message}"`;
+    const safeName = sanitizeCharName(charName);
+    const safeSubject = sanitizeCommandArg(subject);
+    const safeMessage = sanitizeCommandArg(message);
+    const cmd = `send mail ${safeName} "${safeSubject}" "${safeMessage}"`;
     return this.executeRaw(host, port, user, pass, cmd);
   }
 }

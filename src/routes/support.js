@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const FAQ = require('../models/FAQ');
 
@@ -10,7 +11,7 @@ router.get('/', (req, res) => {
 router.get('/faq', async (req, res, next) => {
   try {
     const faqs = await FAQ.getAll();
-    res.render('pages/support/faq', { title: 'FAQ', faqs });
+    res.render('pages/support/faq', { title: 'FAQ', faqs, helpers: require('../utils/helpers') });
   } catch (err) { next(err); }
 });
 

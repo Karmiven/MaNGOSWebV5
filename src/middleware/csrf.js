@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const crypto = require('crypto');
 
 function csrfMiddleware(req, res, next) {
@@ -15,8 +16,8 @@ function csrfMiddleware(req, res, next) {
     return next();
   }
 
-  // Skip for install routes (no session yet) and API
-  if (req.path.startsWith('/install') || req.path.startsWith('/api/ipn')) {
+  // [FIXED] Skip for install routes and exact IPN path only
+  if (req.path.startsWith('/install') || req.path === '/api/ipn') {
     return next();
   }
 

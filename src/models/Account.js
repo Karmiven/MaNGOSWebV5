@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 const SRP6 = require('../services/srp6');
 const crypto = require('crypto');
@@ -98,6 +99,27 @@ const Account = {
       [accountId]
     );
     return rows[0] || null;
+  },
+
+  /** Sync GM level from acore_auth.account_access to CMS account level.
+   *  GM level 3+ in account_access → CMS level 3 (admin), GM level 4 → CMS level 4 (super admin).
+   *  If no GM access, keep current CMS level (don't downgrade normal users). */
+  async syncGmLevel(accountId) {
+    try {
+      const [rows] = await db.auth.query(
+        'SELECT SecurityLevel FROM account_access WHERE AccountID = ? ORDER BY SecurityLevel DESC LIMIT 1',
+        [accountId]
+      );
+      if (rows.length && rows[0].SecurityLevel >= 3) {
+        const gmLevel = rows[0].SecurityLevel >= 4 ? 4 : 3;
+        await db.cms.query(
+          'UPDATE mw_account_extend SET account_level = GREATEST(account_level, ?) WHERE account_id = ?',
+          [gmLevel, accountId]
+        );
+      }
+    } catch (err) {
+      console.error('[Account] syncGmLevel error:', err.message);
+    }
   },
 
   /** Update web points */

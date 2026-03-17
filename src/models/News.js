@@ -1,20 +1,17 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 
 const News = {
+  // [FIXED] N+1 query replaced with single LEFT JOIN
   async getAll(limit = 20, offset = 0) {
     const [rows] = await db.cms.query(
-      'SELECT * FROM mw_news ORDER BY post_time DESC LIMIT ? OFFSET ?',
+      `SELECT n.*, a.username AS authorName
+       FROM ${db.cmsDbName}.mw_news n
+       LEFT JOIN ${process.env.AUTH_DB_NAME || 'acore_auth'}.account a ON a.id = n.posted_by
+       ORDER BY n.post_time DESC LIMIT ? OFFSET ?`,
       [limit, offset]
     );
-    // Get author names
-    for (const row of rows) {
-      if (row.posted_by) {
-        const [auth] = await db.auth.query(
-          'SELECT username FROM account WHERE id = ?', [row.posted_by]
-        );
-        row.authorName = auth[0]?.username || 'Unknown';
-      }
-    }
+    rows.forEach(r => { if (!r.authorName) r.authorName = 'Unknown'; });
     return rows;
   },
 

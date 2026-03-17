@@ -1,0 +1,87 @@
+<h3 class="mb-4">Deleted Characters</h3>
+
+<!-- Search -->
+<form method="GET" action="/admin/deleted-chars" class="mb-3">
+  <div class="input-group" style="max-width:400px;">
+    <input type="text" name="search" class="form-control bg-dark text-light border-secondary" placeholder="Search by name..." value="<%= search %>">
+    <button type="submit" class="btn btn-gold">Search</button>
+    <% if (search) { %>
+      <a href="/admin/deleted-chars" class="btn btn-secondary">Clear</a>
+    <% } %>
+  </div>
+</form>
+
+<% if (chars && chars.length) { %>
+  <div class="table-responsive">
+    <table class="table table-sm table-dark table-bordered" style="font-size:12px;">
+      <thead>
+        <tr>
+          <th>GUID</th>
+          <th>Name</th>
+          <th class="text-center">Race</th>
+          <th class="text-center">Class</th>
+          <th class="text-center">Lvl</th>
+          <th>Account</th>
+          <th>Deleted</th>
+          <th class="text-center">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% chars.forEach(function(c) {
+          var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+          var faction = Character.factionForRace(c.race);
+          var deleteTime = c.deleteDate ? new Date(c.deleteDate * 1000).toLocaleString() : 'Unknown';
+        %>
+        <tr>
+          <td><%= c.guid %></td>
+          <td>
+            <span class="<%= faction === 'Alliance' ? 'text-primary' : 'text-danger' %> fw-bold"><%= c.name %></span>
+          </td>
+          <td class="text-center">
+            <img src="<%= tp %>/images/icon/race/<%= c.race %>-<%= c.gender || 0 %>.gif" height="18" width="18" alt="<%= Character.raceName(c.race) %>" title="<%= Character.raceName(c.race) %>">
+          </td>
+          <td class="text-center">
+            <img src="<%= tp %>/images/icon/class/<%= c.class %>.gif" height="18" width="18" alt="<%= Character.className(c.class) %>" title="<%= Character.className(c.class) %>">
+          </td>
+          <td class="text-center"><%= c.level %></td>
+          <td>
+            <% if (accountMap[c.account]) { %>
+              <a href="/admin/users?search=<%= accountMap[c.account] %>" class="text-gold"><%= accountMap[c.account] %></a>
+              <span class="text-muted">(#<%= c.account %>)</span>
+            <% } else { %>
+              <span class="text-muted">#<%= c.account %></span>
+            <% } %>
+          </td>
+          <td><span class="text-muted"><%= deleteTime %></span></td>
+          <td class="text-center">
+            <form method="POST" action="/admin/restore-char" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="guid" value="<%= c.guid %>">
+              <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Restore &quot;<%= c.name %>&quot; (Lv.<%= c.level %>) to account <%= accountMap[c.account] || c.account %>?')">
+                <i class="fas fa-undo me-1"></i>Restore
+              </button>
+            </form>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <% if (pag.totalPages > 1) { %>
+    <nav>
+      <ul class="pagination pagination-sm justify-content-center">
+        <% for (var i = 1; i <= pag.totalPages; i++) { %>
+          <li class="page-item <%= i === pag.page ? 'active' : '' %>">
+            <a class="page-link bg-dark border-secondary <%= i === pag.page ? 'text-gold' : 'text-light' %>" href="/admin/deleted-chars?page=<%= i %><%= search ? '&search=' + encodeURIComponent(search) : '' %>"><%= i %></a>
+          </li>
+        <% } %>
+      </ul>
+    </nav>
+  <% } %>
+
+  <p class="text-muted" style="font-size:11px;">Total: <%= pag.total %> deleted character<%= pag.total !== 1 ? 's' : '' %></p>
+<% } else { %>
+  <div class="alert alert-secondary">No deleted characters found<%= search ? ' matching "' + search + '"' : '' %>.</div>
+<% } %>

@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -7,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const expressLayouts = require('express-ejs-layouts');
 const MySQLStore = require('express-mysql-session')(session);
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,8 +17,22 @@ const HOST = process.env.HOST || 'localhost';
 /* ------------------------------------------------------------------ */
 /*  Security headers                                                   */
 /* ------------------------------------------------------------------ */
+// [FIXED] Enable CSP with sensible defaults allowing CDN assets
 app.use(helmet({
-  contentSecurityPolicy: false,   // we load CDN assets
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],  // V4 theme uses onclick= handlers
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"]
+    }
+  },
   crossOriginEmbedderPolicy: false
 }));
 
@@ -68,15 +84,42 @@ app.set('layout extractScripts', true);
       sessionStore = new MySQLStore(sessionStoreOptions);
     }
 
+    // Expose a function to init session store after install
+    app._initSessionStore = async function() {
+      const store = new MySQLStore({
+        host: process.env.CMS_DB_HOST,
+        port: parseInt(process.env.CMS_DB_PORT || '3306'),
+        user: process.env.CMS_DB_USER,
+        password: process.env.CMS_DB_PASS,
+        database: process.env.CMS_DB_NAME,
+        clearExpired: true,
+        checkExpirationInterval: 900000,
+        expiration: parseInt(process.env.SESSION_LIFETIME || '2592000000'),
+        createDatabaseTable: true,
+        schema: { tableName: 'mw_sessions' }
+      });
+      sessionStore = store;
+    };
+
+    // [FIXED] Require SESSION_SECRET — abort startup if missing
+    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'fallback-secret') {
+      if (installed) {
+        console.error('FATAL: SESSION_SECRET environment variable is required. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+        process.exit(1);
+      }
+    }
+
     app.use(session({
-      secret: process.env.SESSION_SECRET || 'fallback-secret',
+      secret: process.env.SESSION_SECRET || require('crypto').randomBytes(32).toString('hex'),
       resave: false,
       saveUninitialized: false,
       store: sessionStore || undefined,
       cookie: {
         maxAge: parseInt(process.env.SESSION_LIFETIME || '2592000000'),
         httpOnly: true,
-        sameSite: 'lax'
+        sameSite: 'lax',
+        // [FIXED] Set secure flag in production
+        secure: process.env.NODE_ENV === 'production'
       }
     }));
     app.use(flash());
@@ -97,7 +140,10 @@ app.set('layout extractScripts', true);
     app.use(authMiddleware);
     app.use(themeMiddleware);
     app.use(lang);
-    if (installed) app.use(onlineMiddleware);
+    app.use((req, res, next) => {
+      if (db.isInstalled()) return onlineMiddleware(req, res, next);
+      next();
+    });
     app.use(csrfMiddleware);
 
     /* ---- Locals available in all views --------------------------- */
@@ -113,7 +159,7 @@ app.set('layout extractScripts', true);
       res.locals.csrfToken = req.csrfToken ? req.csrfToken() : '';
 
       // Load menus globally so every page gets the same left sidebar
-      if (installed) {
+      if (db.isInstalled()) {
         try {
           const userLevel = req.user ? req.user.level : 1;
           const isGuest = !req.user;
@@ -129,29 +175,45 @@ app.set('layout extractScripts', true);
     /* ---- Routes -------------------------------------------------- */
     const installRouter = require('./src/routes/install');
 
-    // If not installed, redirect everything to /install
+    // [FIXED] Block install routes when already installed
     app.use((req, res, next) => {
       if (!db.isInstalled() && !req.path.startsWith('/install')) {
         return res.redirect('/install');
+      }
+      if (db.isInstalled() && req.path.startsWith('/install')) {
+        return res.redirect('/');
       }
       next();
     });
 
     app.use('/install', installRouter);
 
-    if (installed) {
-      app.use('/', require('./src/routes/frontpage'));
-      app.use('/account', require('./src/routes/account'));
-      app.use('/auth', require('./src/routes/auth'));
-      app.use('/server', require('./src/routes/server'));
-      app.use('/news', require('./src/routes/news'));
-      app.use('/shop', require('./src/routes/shop'));
-      app.use('/donate', require('./src/routes/donate'));
-      app.use('/vote', require('./src/routes/vote'));
-      app.use('/support', require('./src/routes/support'));
-      app.use('/admin', require('./src/routes/admin'));
-      app.use('/api', require('./src/routes/api'));
-    }
+    // [FIXED] Rate limiters for sensitive endpoints
+    const authLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 30,
+      message: 'Too many requests, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false
+    });
+    const apiLimiter = rateLimit({
+      windowMs: 1 * 60 * 1000,
+      max: 60,
+      standardHeaders: true,
+      legacyHeaders: false
+    });
+
+    app.use('/', require('./src/routes/frontpage'));
+    app.use('/account', require('./src/routes/account'));
+    app.use('/auth', authLimiter, require('./src/routes/auth'));
+    app.use('/server', require('./src/routes/server'));
+    app.use('/news', require('./src/routes/news'));
+    app.use('/shop', require('./src/routes/shop'));
+    app.use('/donate', require('./src/routes/donate'));
+    app.use('/vote', authLimiter, require('./src/routes/vote'));
+    app.use('/support', require('./src/routes/support'));
+    app.use('/admin', require('./src/routes/admin'));
+    app.use('/api', apiLimiter, require('./src/routes/api'));
 
     /* ---- CSRF error handler -------------------------------------- */
     app.use(csrfErrorHandler);

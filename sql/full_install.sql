@@ -57,7 +57,8 @@ INSERT INTO `mw_config` (`key`, `value`) VALUES
 ('racechange_cost', '0'),
 ('factionchange_cost', '0'),
 ('paypal_email', ''),
-('realmlist', '127.0.0.1')
+('realmlist', '127.0.0.1'),
+('progression_phase', '0')
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- ===== Account Extensions =====
@@ -129,6 +130,22 @@ CREATE TABLE IF NOT EXISTS `mw_shop_items` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ===== Shop Transactions =====
+CREATE TABLE IF NOT EXISTS `mw_shop_transactions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `shop_item_id` int(11) NOT NULL,
+  `item_desc` varchar(255) DEFAULT '',
+  `item_number` varchar(100) DEFAULT '',
+  `quantity` int(11) DEFAULT 1,
+  `wp_cost` int(11) NOT NULL DEFAULT 0,
+  `character_name` varchar(50) DEFAULT '',
+  `status` enum('completed','failed') DEFAULT 'completed',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ===== Donate Packages =====
 CREATE TABLE IF NOT EXISTS `mw_donate_packages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -162,7 +179,8 @@ CREATE TABLE IF NOT EXISTS `mw_donate_transactions` (
 CREATE TABLE IF NOT EXISTS `mw_vote_sites` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `hostname` varchar(255) NOT NULL,
-  `votelink` varchar(500) NOT NULL,
+  `vote_type` enum('link','fake') NOT NULL DEFAULT 'link',
+  `votelink` varchar(500) DEFAULT '',
   `image_url` varchar(500) DEFAULT '',
   `points` int(11) NOT NULL DEFAULT 1,
   `reset_time` int(11) DEFAULT 12,
@@ -203,6 +221,26 @@ CREATE TABLE IF NOT EXISTS `mw_menu_items` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+INSERT INTO `mw_menu_items` (`menu_id`, `link_title`, `link`, `order`, `account_level`, `guest_only`) VALUES
+(1, 'Home', '/', 1, 1, 0),
+(1, 'Server Info', '/server', 2, 1, 0),
+(1, 'Progression', '/server/progression', 3, 1, 0),
+(2, 'Login', '/auth/login', 1, 1, 1),
+(2, 'Register', '/auth/register', 2, 1, 1),
+(2, 'My Account', '/account', 1, 2, 0),
+(2, 'Characters', '/account/characters', 2, 2, 0),
+(2, 'Transactions', '/account/transactions', 3, 2, 0),
+(2, 'Admin Panel', '/admin', 4, 3, 0),
+(4, 'Top Kills', '/server/topkills', 1, 1, 0),
+(4, 'Characters', '/server/chars', 2, 1, 0),
+(4, 'Players Online', '/server/online', 3, 1, 0),
+(4, 'Server Statistics', '/server/stats', 4, 1, 0),
+(7, 'Donate', '/donate', 1, 1, 0),
+(7, 'Vote', '/vote', 2, 1, 0),
+(7, 'Shop', '/shop', 3, 1, 0),
+(8, 'FAQ', '/support/faq', 1, 1, 0)
+ON DUPLICATE KEY UPDATE `id` = `id`;
+
 -- ===== Registration Keys =====
 CREATE TABLE IF NOT EXISTS `mw_regkeys` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -213,6 +251,19 @@ CREATE TABLE IF NOT EXISTS `mw_regkeys` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_key` (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===== Progression Phases =====
+CREATE TABLE IF NOT EXISTS `mw_progression_phases` (
+  `phase` int(11) NOT NULL,
+  `release_date` varchar(50) DEFAULT '',
+  PRIMARY KEY (`phase`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `mw_progression_phases` (`phase`, `release_date`) VALUES
+(0, ''), (1, ''), (2, ''), (3, ''), (4, ''), (5, ''), (6, ''),
+(7, ''), (8, ''), (9, ''), (10, ''), (11, ''), (12, ''),
+(13, ''), (14, ''), (15, ''), (16, ''), (17, ''), (18, '')
+ON DUPLICATE KEY UPDATE `phase` = `phase`;
 
 -- ===== Online Visitors =====
 CREATE TABLE IF NOT EXISTS `mw_online` (

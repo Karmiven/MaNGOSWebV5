@@ -7,7 +7,7 @@
 <div style="margin-left: -29px">
 <div id="module-container">
 <div style="width:470px;"></div>
-<img style="margin-top: -55px;margin-bottom: 30px;" src="<%= tp %>/images/banner_top.png" alt="" width="470"/>
+<img style="margin-top: -55px;margin-bottom: 30px;" src="/images/news/banner_top.png" alt="" width="470"/>
 </div>
 <div class="module-container">
 <% if (typeof news !== 'undefined' && news && news.length) { %>
@@ -28,7 +28,7 @@
           <div class="news-top">
             <ul>
               <li class="item-icon">
-                <img border="0" alt="new-post" src="<%= tp %>/images/news-contests.gif"/>
+                <img border="0" alt="new-post" src="/images/news/news-contests.gif"/>
               </li>
               <li class="news-entry">
                 <h1>
@@ -40,7 +40,7 @@
                 <span><strong><%= typeof helpers !== 'undefined' ? helpers.formatDate(item.post_time) : '' %></strong></span>
               </li>
               <li class="news-toggle">
-                <a href="javascript:toggleEntry('<%= topicId %>','<%= hl %>')"><img src="<%= tp %>/images/pixel001.gif" alt=""/></a>
+                <a href="javascript:toggleEntry('<%= topicId %>','<%= hl %>')"><img src="/images/news/pixel001.gif" alt=""/></a>
               </li>
             </ul>
           </div>
@@ -88,3 +88,4 @@
   </div>
 </div>
 </div>
+

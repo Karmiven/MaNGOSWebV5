@@ -22,40 +22,40 @@
 %>
 
 <style>
-  .cat-card { border: 1px solid #5D5D5D; border-radius: 6px; background: #1a1a1a; margin-bottom: 18px; }
-  .cat-card-header { background: #2E2D2B; padding: 10px 15px; border-bottom: 1px solid #5D5D5D; border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: space-between; }
-  .cat-card-header h5 { margin: 0; color: #FFAC04; font-size: 14px; }
-  .cat-card-header .cat-desc { color: #999; font-size: 11px; margin-left: 10px; }
-  .cat-card-header .cat-icon { color: #FFAC04; font-size: 16px; margin-right: 8px; }
-  .cat-card-body { padding: 10px; }
-  .cat-card-body table { margin-bottom: 0; }
-  .cat-card-body th { color: #C7C7C7; background: #252525; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 10px; border-bottom: 1px solid #3a3a3a; }
-  .cat-card-body td { padding: 6px 10px; border-bottom: 1px solid #2a2a2a; color: #ddd; font-size: 12px; vertical-align: middle; }
-  .cat-card-body tr:hover td { background: #252525; }
-  .add-row { background: #1e1e1e; }
-  .add-row td { padding: 8px 6px; }
-  .add-row input, .add-row select { background: #2a2a2a; border: 1px solid #444; color: #eee; font-size: 12px; padding: 4px 8px; border-radius: 3px; width: 100%; }
-  .add-row input:focus, .add-row select:focus { border-color: #FFAC04; outline: none; }
-  .btn-gold-sm { background: linear-gradient(180deg, #FFAC04 0%, #c68400 100%); color: #1a1a1a; border: none; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 3px; cursor: pointer; }
-  .btn-gold-sm:hover { background: linear-gradient(180deg, #ffc940 0%, #FFAC04 100%); }
-  .btn-del { background: none; border: 1px solid #8b2020; color: #e05050; font-size: 11px; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
-  .btn-del:hover { background: #8b2020; color: #fff; }
-  .btn-edit-sm { background: none; border: 1px solid #5D5D5D; color: #FFAC04; font-size: 11px; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
-  .btn-edit-sm:hover { background: #3a3a3a; }
-  .level-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; }
-  .level-all { background: #2d4a1e; color: #8bc34a; }
-  .level-user { background: #1e3a4a; color: #64b5f6; }
-  .level-admin { background: #4a1e1e; color: #ef5350; }
-  .guest-badge { background: #4a3a1e; color: #ffb74d; font-size: 10px; padding: 2px 6px; border-radius: 3px; }
-  .empty-cat { color: #666; font-style: italic; font-size: 12px; padding: 15px; text-align: center; }
+  .cat-card { border: 1px solid #1E1D1C; border-radius: 0; background: url('/themes/wotlk/images/light.jpg') repeat; margin-bottom: 10px; overflow: hidden; }
+  .cat-card-header { background: #2E2D2B; padding: 5px 15px 5px 10px; border-top: 1px solid #4a4a4a; border-bottom: 1px solid #1E1D1C; display: flex; align-items: center; justify-content: space-between; }
+  .cat-card-header h5 { margin: 0; color: #fceac6; font-family: arial, sans-serif; font-size: 10pt; font-weight: bold; }
+  .cat-card-header .cat-desc { color: #a0a1a3; font-size: 11px; margin-left: 10px; font-family: Arial, Helvetica, sans-serif; }
+  .cat-card-header .cat-icon { color: #fceac6; font-size: 14px; margin-right: 8px; }
+  .cat-card-body { padding: 0; }
+  .cat-card-body table { margin-bottom: 0; width: 100%; }
+  .cat-card-body th { color: #C7C7C7; background: #2E2D2B; font-size: 10pt; font-weight: bold; font-family: arial, sans-serif; padding: 5px 10px; border-top: 1px solid #4a4a4a; border-bottom: 1px solid #1E1D1C; border-left: 1px solid #4a4a4a; border-right: 1px solid #1E1D1C; }
+  .cat-card-body td { padding: 5px 10px; border-bottom: 1px solid #D8BF95; color: #333; font-size: 12px; font-family: Arial, Helvetica, sans-serif; vertical-align: middle; }
+  .cat-card-body tr:nth-child(even) td { background: #C3AD89; }
+  .cat-card-body tr:hover td { background: rgba(208,168,3,0.15); }
+  .add-row td { padding: 8px 6px; background: transparent !important; }
+  .add-row input, .add-row select { background: #f5f0e1; border: 1px solid #8e7c56; color: #333; font-size: 12px; padding: 4px 8px; border-radius: 0; width: 100%; }
+  .add-row input:focus, .add-row select:focus { border-color: #d0a803; outline: none; }
+  .btn-gold-sm { background: #ae813e; color: #fff; border: 1px solid #835a20; font-size: 11px; font-weight: bold; padding: 4px 12px; border-radius: 0; cursor: pointer; }
+  .btn-gold-sm:hover { background: #c9963f; }
+  .btn-del { background: none; border: 1px solid #c60000; color: #c60000; font-size: 11px; padding: 3px 8px; border-radius: 0; cursor: pointer; }
+  .btn-del:hover { background: #c60000; color: #fff; }
+  .btn-edit-sm { background: none; border: 1px solid #ae813e; color: #835a20; font-size: 11px; padding: 3px 8px; border-radius: 0; cursor: pointer; }
+  .btn-edit-sm:hover { background: #ae813e; color: #fff; }
+  .level-badge { font-size: 10px; padding: 2px 6px; border-radius: 0; font-weight: bold; }
+  .level-all { background: #2a6a2a; color: #fff; }
+  .level-user { background: #1e4378; color: #fff; }
+  .level-admin { background: #8a2020; color: #fff; }
+  .guest-badge { background: #ae813e; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 0; font-weight: bold; }
+  .empty-cat { color: #8b8072; font-style: italic; font-size: 12px; padding: 15px; text-align: center; }
 </style>
 
-<h3 class="mb-3" style="color:#FFAC04;">
+<h3 class="mb-3">
   <i class="fas fa-bars me-2"></i>Sidebar Menu Management
 </h3>
-<p class="text-muted mb-4" style="font-size:13px;">
+<p class="text-muted mb-4" style="font-size:12px;">
   Manage the left sidebar menu links. Items are grouped by category and sorted by order within each category.
-  <br>The sidebar displays 5 collapsible sections: <strong style="color:#ccc;">News</strong>, <strong style="color:#ccc;">Account</strong>, <strong style="color:#ccc;">Workshop</strong>, <strong style="color:#ccc;">Community</strong>, and <strong style="color:#ccc;">Support</strong>.
+  <br>The sidebar displays 5 collapsible sections: <strong style="color:#640909;">News</strong>, <strong style="color:#640909;">Account</strong>, <strong style="color:#640909;">Workshop</strong>, <strong style="color:#640909;">Community</strong>, and <strong style="color:#640909;">Support</strong>.
 </p>
 
 <% catIds.forEach(function(catId) {
@@ -90,7 +90,7 @@
             <tr>
               <td style="color:#666;"><%= idx + 1 %></td>
               <td><strong><%= m.link_title %></strong></td>
-              <td style="color:#80bfff;"><%= m.link %></td>
+              <td style="color:#1e4378;"><%= m.link %></td>
               <td style="text-align:center;"><%= m.order || 0 %></td>
               <td>
                 <% if (m.account_level === 0) { %>
@@ -146,39 +146,39 @@
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
   <div class="modal-dialog">
-    <div class="modal-content" style="background:#1a1a1a; border:1px solid #5D5D5D; color:#ddd;">
-      <div class="modal-header" style="border-bottom:1px solid #3a3a3a;">
-        <h5 class="modal-title" style="color:#FFAC04;"><i class="fas fa-pen me-2"></i>Edit Menu Item</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Edit Menu Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="/admin/menus/edit">
         <div class="modal-body">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <input type="hidden" name="id" id="edit-id">
           <div class="mb-3">
-            <label class="form-label" style="color:#999; font-size:12px;">Category</label>
-            <select name="menu_id" id="edit-menu_id" class="form-select form-select-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;">
+            <label class="form-label">Category</label>
+            <select name="menu_id" id="edit-menu_id" class="form-select form-select-sm">
               <% catIds.forEach(function(cid) { %>
                 <option value="<%= cid %>"><%= cid %>. <%= categories[cid].name %></option>
               <% }); %>
             </select>
           </div>
           <div class="mb-3">
-            <label class="form-label" style="color:#999; font-size:12px;">Title</label>
-            <input type="text" name="link_title" id="edit-title" class="form-control form-control-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;" required>
+            <label class="form-label">Title</label>
+            <input type="text" name="link_title" id="edit-title" class="form-control form-control-sm" required>
           </div>
           <div class="mb-3">
-            <label class="form-label" style="color:#999; font-size:12px;">URL</label>
-            <input type="text" name="link" id="edit-link" class="form-control form-control-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;" required>
+            <label class="form-label">URL</label>
+            <input type="text" name="link" id="edit-link" class="form-control form-control-sm" required>
           </div>
           <div class="row g-3">
             <div class="col-4">
-              <label class="form-label" style="color:#999; font-size:12px;">Order</label>
-              <input type="number" name="order" id="edit-order" class="form-control form-control-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;">
+              <label class="form-label">Order</label>
+              <input type="number" name="order" id="edit-order" class="form-control form-control-sm">
             </div>
             <div class="col-4">
-              <label class="form-label" style="color:#999; font-size:12px;">Visibility</label>
-              <select name="account_level" id="edit-level" class="form-select form-select-sm" style="background:#2a2a2a; border:1px solid #444; color:#eee;">
+              <label class="form-label">Visibility</label>
+              <select name="account_level" id="edit-level" class="form-select form-select-sm">
                 <option value="0">Everyone</option>
                 <option value="1">Users</option>
                 <option value="3">Admin</option>
@@ -187,12 +187,12 @@
             <div class="col-4 d-flex align-items-end">
               <div class="form-check">
                 <input type="checkbox" name="guest_only" value="1" class="form-check-input" id="edit-guest">
-                <label class="form-check-label" for="edit-guest" style="color:#999; font-size:12px;">Guest only</label>
+                <label class="form-check-label" for="edit-guest">Guest only</label>
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer" style="border-top:1px solid #3a3a3a;">
+        <div class="modal-footer">
           <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn-gold-sm">Save Changes</button>
         </div>

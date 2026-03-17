@@ -1,10 +1,9 @@
 
 function hideMenu(menuNum){
-  document.getElementById("menuContainer"+menuNum).style.display="none";
+  document.getElementById("menucontainer"+menuNum).style.display="none";
 }
 function showMenu(menuNum){
-  document.getElementById("menuContainer"+menuNum).style.display="block";
-
+  document.getElementById("menucontainer"+menuNum).style.display="block";
 }
     function newsCollapse(newsPost) {
     var obj;
@@ -144,7 +143,7 @@ function toggleNewMenu(menuID) {
         document.getElementById(menuHeader).className = menuNames[menuID]+ "-header-on";
     menuCookie[menuID] = 1;
   } else {
-    try{hidewMenu(menuNum);}catch(err){}
+    try{hideMenu(menuNum);}catch(err){}
     document.getElementById(menuName).style.visibility = "hidden";
     document.getElementById(menuName).style.display = "none";   
         document.getElementById(menuButton).className = "menu-button-off";

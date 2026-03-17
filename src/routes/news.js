@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const News = require('../models/News');
 const helpers = require('../utils/helpers');

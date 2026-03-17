@@ -1,49 +1,107 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var points = (typeof ext !== 'undefined' && ext) ? ext.web_points : 0;
+  var totalVotes = (typeof ext !== 'undefined' && ext) ? ext.total_votes : 0;
+%>
+<style type="text/css">
+  td.voteRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 8px 10px; vertical-align: middle; }
+  td.voteRow2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 8px 10px; vertical-align: middle; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+  .vote-btn { background: #1e5711; color: #fff; border: 1px solid #143d0c; font-size: 12px; font-weight: bold; padding: 4px 16px; cursor: pointer; font-family: Arial, sans-serif; }
+  .vote-btn:hover { background: #267a17; }
+  .vote-cooldown { color: #856404; font-weight: bold; font-size: 11px; }
+</style>
 
-<!-- Vote — V4 Blizzlike Style -->
-<div class="subheader-bar">
-  <div class="sh-left"></div>
-  <div class="sh-mid"><b>Vote for Us</b></div>
-  <div class="sh-right"></div>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: '' }) %>
+
+<div style="padding:10px 20px 10px 20px;">
+  Vote for our server on the sites below to earn <b style="color:#1e4378;">Web Points</b>!
+  Each site has a cooldown period before you can vote again.
+</div>
+<br/>
+
+<div style="padding:5px 10px; margin:0 10px 8px; font-size:12px; background:#e8dcc0; border:1px solid #c5a96a;">
+  Your balance: <b style="color:#1e4378;"><%= points %></b> Web Points
+  &nbsp;|&nbsp;
+  Total votes: <b style="color:#234303;"><%= totalVotes %></b>
 </div>
 
-<p>Vote for our server on the sites below to earn Web Points! You can vote once every <b><%= typeof voteCooldown !== 'undefined' ? voteCooldown : 12 %> hours</b> per site.</p>
+<%- include('../../partials/subheader', { subheader: 'Vote Sites' }) %>
 
-<% if (typeof user !== 'undefined' && user) { %>
-  <div class="flash-message flash-info">Your balance: <b><%= user.web_points || 0 %> Points</b></div>
-<% } %>
-
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="40">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Site</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="80">Reward</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="80">Cooldown</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="160">Action</td>
+  </tr>
+  <tr>
+    <td colspan="5" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
 <% if (typeof sites !== 'undefined' && sites && sites.length > 0) { %>
-  <table class="blizz-table">
-    <tr>
-      <th>Site</th>
-      <th>Reward</th>
-      <th>Action</th>
-    </tr>
-    <% sites.forEach(function(site) { %>
-      <tr>
-        <td>
-          <b><%= site.name %></b>
-          <% if (site.description) { %><br><small style="color:#666;"><%= site.description %></small><% } %>
-        </td>
-        <td style="color:#1e4378; font-weight:bold;">+<%= site.points_reward %> Points</td>
-        <td>
-          <% if (typeof user !== 'undefined' && user) { %>
-            <% if (site.canVote) { %>
-              <form method="POST" action="/vote" style="display:inline;">
-                <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-                <input type="hidden" name="siteId" value="<%= site.id %>">
-                <input type="submit" value="Vote Now" class="btn-blizz" onclick="window.open('<%= site.url %>', '_blank')">
-              </form>
-            <% } else { %>
-              <span style="color:#999;">Next vote: <%= site.nextVoteIn %></span>
-            <% } %>
-          <% } else { %>
-            <a href="/auth/login" class="btn-blizz">Login to Vote</a>
-          <% } %>
-        </td>
-      </tr>
-    <% }); %>
-  </table>
+  <% sites.forEach(function(site, idx) {
+    var rowClass = (idx % 2 === 0) ? 'voteRow1' : 'voteRow2';
+  %>
+  <tr>
+    <td class="<%= rowClass %>" align="center"><b><%= idx + 1 %></b></td>
+    <td class="<%= rowClass %>">
+      <% if (site.image_url) { %>
+        <img src="<%= site.image_url %>" alt="<%= site.hostname %>" style="max-height:30px; max-width:120px; vertical-align:middle; margin-right:8px;" onerror="this.style.display='none'"/>
+      <% } %>
+      <b style="color: rgb(35, 67, 3);"><%= site.hostname %></b>
+      <% if (site.vote_type === 'fake') { %>
+        <span style="color:#999; font-size:10px; margin-left:4px;">(Instant)</span>
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color:#1e4378;">+<%= site.points %> pts</b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <span style="color:#888; font-size:11px;"><%= site.reset_time %>h</span>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (site.canVote) { %>
+        <% if (site.vote_type === 'link' && site.votelink) { %>
+          <!-- Link type: open external link + submit form -->
+          <form method="POST" action="/vote/<%= site.id %>" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+            <button type="submit" class="vote-btn" onclick="window.open('<%= site.votelink %>', '_blank');">
+              <img src="<%= tp %>/images/uparrow2.gif" style="vertical-align:bottom;" height="14" width="14" alt=""/> Vote
+            </button>
+          </form>
+        <% } else { %>
+          <!-- Fake type: just submit, no external link -->
+          <form method="POST" action="/vote/<%= site.id %>" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+            <button type="submit" class="vote-btn">
+              <img src="<%= tp %>/images/uparrow2.gif" style="vertical-align:bottom;" height="14" width="14" alt=""/> Vote
+            </button>
+          </form>
+        <% } %>
+      <% } else { %>
+        <span class="vote-cooldown">
+          <img src="<%= tp %>/images/downarrow2.gif" style="vertical-align:bottom;" height="14" width="14" alt=""/>
+          <%= site.nextVoteIn %>
+        </span>
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
 <% } else { %>
-  <p style="padding:10px; color:#333;">No vote sites configured.</p>
+  <tr>
+    <td class="voteRow1" colspan="5" align="center" style="padding:20px; color:#666;">
+      No vote sites available at this time.
+    </td>
+  </tr>
 <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>

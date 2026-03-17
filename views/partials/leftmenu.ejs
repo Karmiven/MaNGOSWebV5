@@ -42,10 +42,9 @@
       { idx: 2, slug: 'menuaccount', name: 'Account', items:
         (typeof user !== 'undefined' && user) ? [
           { link: '/account', label: 'My Account' },
-          { link: '/account/manage', label: 'Settings' },
           { link: '/account/characters', label: 'Characters' },
           { link: '/account/transactions', label: 'Transactions' }
-        ] : [
+        ].concat(user.isAdmin ? [{ link: '/admin', label: 'Admin Panel' }] : []) : [
           { link: '/auth/login', label: 'Login' },
           { link: '/auth/register', label: 'Register' }
         ]

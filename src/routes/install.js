@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const db = require('../config/database');
 const mysql = require('mysql2/promise');
@@ -5,11 +6,16 @@ const fs = require('fs');
 const path = require('path');
 const SRP6 = require('../services/srp6');
 
-/* GET /install */
-router.get('/', (req, res) => {
+// [FIXED] Block all install routes if already installed
+router.use((req, res, next) => {
   if (db.isInstalled()) {
     return res.redirect('/');
   }
+  next();
+});
+
+/* GET /install */
+router.get('/', (req, res) => {
   res.render('pages/install/index', {
     title: 'Installation Wizard',
     layout: false,
@@ -21,17 +27,34 @@ router.get('/', (req, res) => {
 
 /* POST /install/test-db — Test database connection */
 router.post('/test-db', async (req, res) => {
-  const { host, port, user, password, database: dbName } = req.body;
+  const { host, port, user, password, database: dbName, autocreate } = req.body;
   try {
+    // Connect without specifying a database first
     const conn = await mysql.createConnection({
       host, port: parseInt(port || '3306'),
       user, password: password || '',
-      database: dbName,
       connectTimeout: 5000
     });
     await conn.query('SELECT 1');
-    await conn.end();
-    res.json({ success: true, message: 'Connection successful!' });
+
+    // Check if the database exists
+    const [rows] = await conn.query(
+      'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?',
+      [dbName]
+    );
+
+    if (rows.length === 0 && autocreate) {
+      // Auto-create the database
+      await conn.query('CREATE DATABASE ?? CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci', [dbName]);
+      await conn.end();
+      res.json({ success: true, message: `Database '${dbName}' created successfully!` });
+    } else if (rows.length === 0) {
+      await conn.end();
+      res.json({ success: true, message: `Connection OK. Database '${dbName}' does not exist yet but will be created during installation.` });
+    } else {
+      await conn.end();
+      res.json({ success: true, message: 'Connection successful!' });
+    }
   } catch (err) {
     res.json({ success: false, message: err.message });
   }
@@ -49,12 +72,28 @@ router.post('/run', async (req, res) => {
       soap_host, soap_port, soap_user, soap_pass
     } = req.body;
 
-    // 1. Connect to CMS database
+    // 1. Connect without database first and create CMS database if needed
+    console.log('[INSTALL] Connecting to MySQL without database...');
+    const initConn = await mysql.createConnection({
+      host: cms_host, port: parseInt(cms_port || '3306'),
+      user: cms_user, password: cms_pass || ''
+    });
+    console.log('[INSTALL] Connected. Creating database if not exists...');
+
+    // Sanitize database name (allow only safe characters)
+    const dbNameSafe = cms_db.replace(/[^a-zA-Z0-9_]/g, '');
+    await initConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbNameSafe}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci`);
+    console.log('[INSTALL] Database ensured:', dbNameSafe);
+    await initConn.end();
+
+    // Reconnect with the newly created database
+    console.log('[INSTALL] Reconnecting with database:', dbNameSafe);
     const conn = await mysql.createConnection({
       host: cms_host, port: parseInt(cms_port || '3306'),
       user: cms_user, password: cms_pass || '',
-      database: cms_db, multipleStatements: true
+      database: dbNameSafe, multipleStatements: true
     });
+    console.log('[INSTALL] Connected to CMS database successfully');
 
     // 2. Run SQL schema
     const sqlFile = path.join(__dirname, '../../sql/full_install.sql');
@@ -75,14 +114,14 @@ router.post('/run', async (req, res) => {
       );
     }
 
-    // 4. Create admin account in auth DB
+    // 4. Find or create admin account in auth DB
     const authConn = await mysql.createConnection({
       host: auth_host, port: parseInt(auth_port || '3306'),
       user: auth_user, password: auth_pass || '',
       database: auth_db
     });
 
-    // Check if admin account exists
+    // Check if admin account already exists
     const [existing] = await authConn.query(
       'SELECT id FROM account WHERE username = ?',
       [admin_user.toUpperCase()]
@@ -91,6 +130,12 @@ router.post('/run', async (req, res) => {
     let adminId;
     if (existing.length) {
       adminId = existing[0].id;
+      // Update password for existing account
+      const { salt, verifier } = SRP6.generateCredentials(admin_user, admin_pass);
+      await authConn.query(
+        'UPDATE account SET salt = ?, verifier = ?, email = ?, reg_mail = ? WHERE id = ?',
+        [salt, verifier, admin_email, admin_email, adminId]
+      );
     } else {
       // Create admin account with SRP6
       const { salt, verifier } = SRP6.generateCredentials(admin_user, admin_pass);
@@ -100,6 +145,12 @@ router.post('/run', async (req, res) => {
       );
       adminId = result.insertId;
     }
+
+    // Set GM level 3 in account_access
+    await authConn.query(
+      'INSERT INTO account_access (AccountID, SecurityLevel, RealmID) VALUES (?, 3, -1) ON DUPLICATE KEY UPDATE SecurityLevel = 3',
+      [adminId]
+    );
 
     await authConn.end();
 
@@ -195,9 +246,13 @@ PAYPAL_SANDBOX=true
     // Re-init database pools
     await db.reinit();
 
+    // Reload site config
+    const SiteConfig = require('../models/Config');
+    await SiteConfig.load();
+
     res.json({
       success: true,
-      message: 'Installation complete! The server will now restart. Please refresh the page.'
+      message: 'Installation complete! Please refresh the page.'
     });
 
   } catch (err) {

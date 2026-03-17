@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const Account = require('../models/Account');
 const SiteConfig = require('../models/Config');
@@ -62,6 +63,9 @@ router.post('/login', async (req, res, next) => {
       req.flash('error', 'This account has been banned.');
       return res.redirect('/auth/login');
     }
+
+    // Sync GM level from account_access to CMS account level
+    await Account.syncGmLevel(account.id);
 
     // Success
     await Account.clearFailedLogins(ip, username);
@@ -151,7 +155,8 @@ router.post('/register', async (req, res, next) => {
     // IP limit check
     const ip = req.ip || '0.0.0.0';
     const ipCount = await Account.countByIp(ip);
-    if (ipCount >= 3) {
+    const ipLimit = parseInt(config.reg_acc_per_ip) || 3;
+    if (ipCount >= ipLimit) {
       req.flash('error', 'Maximum accounts per IP reached.');
       return res.redirect('/auth/register');
     }

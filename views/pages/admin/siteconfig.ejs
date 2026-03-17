@@ -28,7 +28,7 @@
           <label class="form-label text-muted">Template</label>
           <select name="templates" class="form-control bg-dark text-light border-secondary">
             <% (availableThemes || []).forEach(function(t) { %>
-              <option value="<%= t %>" <%= (config.templates || 'wotlk') === t ? 'selected' : '' %>><%= t %></option>
+              <option value="<%= t.slug %>" <%= (config.templates || 'wotlk') === t.slug ? 'selected' : '' %>><%= t.name %> (<%= t.expansion %>)</option>
             <% }); %>
           </select>
         </div>

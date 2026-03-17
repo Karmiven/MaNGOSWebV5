@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 
 const Shop = {
@@ -49,6 +50,24 @@ const Shop = {
     } catch {
       return null;
     }
+  },
+
+  /** Record a shop purchase */
+  async recordPurchase(accountId, item, characterName, status = 'completed') {
+    await db.cms.query(
+      `INSERT INTO mw_shop_transactions (account_id, shop_item_id, item_desc, item_number, quantity, wp_cost, character_name, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [accountId, item.id, item.desc || '', item.item_number || '', item.quantity || 1, item.wp_cost, characterName, status]
+    );
+  },
+
+  /** Get purchase history for account */
+  async getPurchaseHistory(accountId) {
+    const [rows] = await db.cms.query(
+      'SELECT * FROM mw_shop_transactions WHERE account_id = ? ORDER BY created_at DESC',
+      [accountId]
+    );
+    return rows;
   },
 
   /** Get items in an item set */

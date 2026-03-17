@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const { requireAuth } = require('../middleware/auth');
 const Account = require('../models/Account');
@@ -5,6 +6,7 @@ const Character = require('../models/Character');
 const Donate = require('../models/Donate');
 const SoapService = require('../services/soap');
 const Realm = require('../models/Realm');
+const Shop = require('../models/Shop');
 const helpers = require('../utils/helpers');
 const { getZoneName } = require('../utils/zones');
 
@@ -88,19 +90,6 @@ router.post('/change-email', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* POST /account/change-expansion */
-router.post('/change-expansion', async (req, res, next) => {
-  try {
-    const expansion = parseInt(req.body.expansion);
-    if (![0, 1, 2].includes(expansion)) {
-      req.flash('error', 'Invalid expansion.');
-      return res.redirect('/account#account-settings');
-    }
-    await Account.changeExpansion(req.user.id, expansion);
-    req.flash('success', 'Expansion changed successfully.');
-    res.redirect('/account#account-settings');
-  } catch (err) { next(err); }
-});
 
 /* GET /account/characters — Character services */
 router.get('/characters', async (req, res, next) => {
@@ -121,20 +110,26 @@ router.post('/rename', async (req, res, next) => {
     const { guid } = req.body;
     const config = res.locals.siteConfig;
     const cost = parseInt(config.rename_cost) || 0;
+    const isAdmin = req.user && req.user.isAdmin;
+
+    if (!isAdmin && config.module_char_rename != '1' && config.module_char_rename !== 1) {
+      req.flash('error', 'Rename service is currently disabled.');
+      return res.redirect('/account/characters');
+    }
 
     const char = await Character.findByGuid(guid);
-    if (!char || char.account !== req.user.id) {
+    if (!char || (!isAdmin && char.account !== req.user.id)) {
       req.flash('error', 'Character not found.');
       return res.redirect('/account/characters');
     }
 
-    if (cost > 0 && req.user.webPoints < cost) {
+    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
       req.flash('error', `Not enough points. Need ${cost}.`);
       return res.redirect('/account/characters');
     }
 
     await Character.setAtLoginFlag(guid, 1); // AT_LOGIN_RENAME
-    if (cost > 0) await Account.spendPoints(req.user.id, cost);
+    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
 
     req.flash('success', `${char.name} will be prompted for rename at next login.`);
     res.redirect('/account/characters');
@@ -147,20 +142,26 @@ router.post('/customize', async (req, res, next) => {
     const { guid } = req.body;
     const config = res.locals.siteConfig;
     const cost = parseInt(config.customize_cost) || 0;
+    const isAdmin = req.user && req.user.isAdmin;
+
+    if (!isAdmin && config.module_char_customize != '1' && config.module_char_customize !== 1) {
+      req.flash('error', 'Customize service is currently disabled.');
+      return res.redirect('/account/characters');
+    }
 
     const char = await Character.findByGuid(guid);
-    if (!char || char.account !== req.user.id) {
+    if (!char || (!isAdmin && char.account !== req.user.id)) {
       req.flash('error', 'Character not found.');
       return res.redirect('/account/characters');
     }
 
-    if (cost > 0 && req.user.webPoints < cost) {
+    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
       req.flash('error', `Not enough points. Need ${cost}.`);
       return res.redirect('/account/characters');
     }
 
     await Character.setAtLoginFlag(guid, 8); // AT_LOGIN_CUSTOMIZE
-    if (cost > 0) await Account.spendPoints(req.user.id, cost);
+    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
 
     req.flash('success', `${char.name} will be prompted for customization at next login.`);
     res.redirect('/account/characters');
@@ -173,20 +174,26 @@ router.post('/racechange', async (req, res, next) => {
     const { guid } = req.body;
     const config = res.locals.siteConfig;
     const cost = parseInt(config.racechange_cost) || 0;
+    const isAdmin = req.user && req.user.isAdmin;
+
+    if (!isAdmin && config.module_char_race_change != '1' && config.module_char_race_change !== 1) {
+      req.flash('error', 'Race change service is currently disabled.');
+      return res.redirect('/account/characters');
+    }
 
     const char = await Character.findByGuid(guid);
-    if (!char || char.account !== req.user.id) {
+    if (!char || (!isAdmin && char.account !== req.user.id)) {
       req.flash('error', 'Character not found.');
       return res.redirect('/account/characters');
     }
 
-    if (cost > 0 && req.user.webPoints < cost) {
+    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
       req.flash('error', `Not enough points. Need ${cost}.`);
       return res.redirect('/account/characters');
     }
 
     await Character.setAtLoginFlag(guid, 128); // AT_LOGIN_CHANGE_RACE
-    if (cost > 0) await Account.spendPoints(req.user.id, cost);
+    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
 
     req.flash('success', `${char.name} will be prompted for race change at next login.`);
     res.redirect('/account/characters');
@@ -199,20 +206,26 @@ router.post('/factionchange', async (req, res, next) => {
     const { guid } = req.body;
     const config = res.locals.siteConfig;
     const cost = parseInt(config.factionchange_cost) || 0;
+    const isAdmin = req.user && req.user.isAdmin;
+
+    if (!isAdmin && config.module_char_faction_change != '1' && config.module_char_faction_change !== 1) {
+      req.flash('error', 'Faction change service is currently disabled.');
+      return res.redirect('/account/characters');
+    }
 
     const char = await Character.findByGuid(guid);
-    if (!char || char.account !== req.user.id) {
+    if (!char || (!isAdmin && char.account !== req.user.id)) {
       req.flash('error', 'Character not found.');
       return res.redirect('/account/characters');
     }
 
-    if (cost > 0 && req.user.webPoints < cost) {
+    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
       req.flash('error', `Not enough points. Need ${cost}.`);
       return res.redirect('/account/characters');
     }
 
     await Character.setAtLoginFlag(guid, 64); // AT_LOGIN_CHANGE_FACTION
-    if (cost > 0) await Account.spendPoints(req.user.id, cost);
+    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
 
     req.flash('success', `${char.name} will be prompted for faction change at next login.`);
     res.redirect('/account/characters');
@@ -222,11 +235,14 @@ router.post('/factionchange', async (req, res, next) => {
 /* GET /account/transactions */
 router.get('/transactions', async (req, res, next) => {
   try {
-    const transactions = await Donate.getHistory(req.user.id);
-    const ext = await Account.getExtended(req.user.id);
+    const [transactions, purchases, ext] = await Promise.all([
+      Donate.getHistory(req.user.id),
+      Shop.getPurchaseHistory(req.user.id),
+      Account.getExtended(req.user.id)
+    ]);
     res.render('pages/account/transactions', {
       title: 'My Transactions',
-      transactions, ext, helpers
+      transactions, purchases, ext, helpers
     });
   } catch (err) { next(err); }
 });

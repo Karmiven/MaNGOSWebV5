@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 
 const Menu = {
@@ -22,21 +23,20 @@ const Menu = {
 
   /* ---- Menu cache (shared across all requests) ---- */
   _menuCache: {},
-  _menuCacheKey: null,
-  _menuCacheTime: 0,
+  _menuCacheTime: {}, // per-key timestamps to avoid shared TTL bug
   MENU_CACHE_TTL: 120000, // 2 minutes
 
   /** Clear the menu cache — call after any create / update / delete */
   clearCache() {
     this._menuCache = {};
-    this._menuCacheTime = 0;
+    this._menuCacheTime = {};
   },
 
   /** Get menu items grouped by menu_id */
   async getGrouped(userLevel = 1, isGuest = true) {
     const cacheKey = `${userLevel}:${isGuest}`;
     const now = Date.now();
-    if (this._menuCache[cacheKey] && (now - this._menuCacheTime) < this.MENU_CACHE_TTL) {
+    if (this._menuCache[cacheKey] && (now - (this._menuCacheTime[cacheKey] || 0)) < this.MENU_CACHE_TTL) {
       return this._menuCache[cacheKey];
     }
 
@@ -60,7 +60,7 @@ const Menu = {
     }
 
     this._menuCache[cacheKey] = groups;
-    this._menuCacheTime = now;
+    this._menuCacheTime[cacheKey] = now;
     return groups;
   },
 

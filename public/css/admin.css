@@ -1,6 +1,6 @@
 /* ============================================================= */
-/* MaNGOSWebV5 Admin Panel — Authentic V4 WoW Theme             */
-/* Uses the same V4 layout structure as the main site            */
+/* MaNGOSWebV5 Admin Panel — V4 WoW Theme                       */
+/* Matches builddiv / content-parting / light.jpg patterns       */
 /* ============================================================= */
 
 /* ===== Active sidebar link highlight ===== */
@@ -9,41 +9,7 @@ a.menufiller.admin-link-active {
   text-decoration: none;
 }
 
-/* ===== Red Banner Breadcrumb ===== */
-.redbannerbg {
-  display: flex;
-  align-items: center;
-  height: 20px;
-  margin-bottom: 8px;
-}
-.redbannerleft {
-  width: 24px;
-  height: 20px;
-  flex-shrink: 0;
-}
-.redbannerlabel {
-  flex: 1;
-  height: 20px;
-  line-height: 20px;
-  background-color: #05374a;
-  padding: 0 8px;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  font-weight: bold;
-  color: #fff;
-}
-.redbannerlabel a {
-  color: #ffd100;
-}
-.redbannerlabel a:hover {
-  color: #fff;
-  text-decoration: underline;
-}
-.redbannerright {
-  width: 10px;
-  height: 20px;
-  flex-shrink: 0;
-}
+/* Red Banner Breadcrumb: uses theme styles from newhp_layout.css */
 
 /* ===== Flash Messages ===== */
 .flash-message {
@@ -79,7 +45,7 @@ a.menufiller.admin-link-active {
   font-size: 16px;
   margin: 0 0 12px 0;
   padding: 2px 0 6px 0;
-  border-bottom: 2px solid #d1c0a2;
+  border-bottom: none;
 }
 .admin-content-panel h4 {
   font-family: "Times New Roman", Times, serif;
@@ -93,44 +59,53 @@ a.menufiller.admin-link-active {
   font-size: 13px;
 }
 
-/* ===== Cards → WoW Content Panels ===== */
+/* ===== Cards → V4 WoW Content Panels ===== */
 .admin-content-panel .card {
-  background: #f0e8d4 !important;
-  border: 1px solid #8e7c56 !important;
+  background: url('/themes/wotlk/images/light.jpg') repeat !important;
+  border: 1px solid #1E1D1C !important;
   border-radius: 0 !important;
   color: #333 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  box-shadow: none;
+  margin-bottom: 10px;
+  overflow: hidden;
 }
 .admin-content-panel .card.bg-dark {
-  background: #f0e8d4 !important;
+  background: url('/themes/wotlk/images/light.jpg') repeat !important;
 }
 .admin-content-panel .card-header {
-  background: #05374a !important;
-  color: #fff !important;
-  font-weight: bold;
-  font-size: 12px;
+  background: #2E2D2B !important;
+  color: #C7C7C7 !important;
+  font-family: arial, sans-serif !important;
+  font-size: 10pt !important;
+  font-weight: bold !important;
   padding: 5px 10px !important;
   border-radius: 0 !important;
-  border-bottom: 1px solid #38464d !important;
+  border-top: 1px solid #4a4a4a !important;
+  border-bottom: 1px solid #1E1D1C !important;
+  line-height: normal !important;
 }
-.admin-content-panel .card-header.text-gold {
-  color: #ffd100 !important;
+.admin-content-panel .card-header.text-gold,
+.admin-content-panel .card-header .text-gold {
+  color: #fceac6 !important;
 }
 .admin-content-panel .card-body {
-  padding: 12px !important;
+  padding: 10px 12px !important;
   color: #333 !important;
   background: transparent !important;
 }
 
-/* ===== Tables — Blizzard Styled ===== */
+/* ===== Tables — V4 rankingHeader / serverStatus ===== */
 .admin-content-panel .table-responsive {
   border: none;
+  background: url('/themes/wotlk/images/light.jpg') repeat;
+  border-bottom: 1px solid #000;
+  margin-bottom: 5px;
 }
 .admin-content-panel .table {
   font-size: 11px;
   font-family: Arial, Helvetica, sans-serif;
   color: #333 !important;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   --bs-table-bg: transparent;
   --bs-table-color: #333;
   --bs-table-border-color: #D8BF95;
@@ -148,10 +123,13 @@ a.menufiller.admin-link-active {
 .admin-content-panel .table thead,
 .admin-content-panel .table thead th {
   background: #2E2D2B !important;
-  color: #fff !important;
+  color: #C7C7C7 !important;
   font-weight: bold;
   padding: 5px 8px;
-  border-bottom: 1px solid #1a1a1a !important;
+  border-top: 1px solid #4a4a4a !important;
+  border-bottom: 1px solid #1E1D1C !important;
+  border-left: 1px solid #4a4a4a !important;
+  border-right: 1px solid #1E1D1C !important;
   font-size: 10pt;
   font-family: arial, sans-serif;
   white-space: nowrap;
@@ -164,13 +142,13 @@ a.menufiller.admin-link-active {
   background: transparent !important;
 }
 .admin-content-panel .table tbody tr:nth-child(odd) td {
-  background: #EDE0C8 !important;
+  background: transparent !important;
 }
 .admin-content-panel .table tbody tr:nth-child(even) td {
-  background: #D7C9AB !important;
+  background: #C3AD89 !important;
 }
 .admin-content-panel .table tbody tr:hover td {
-  background: rgba(208,168,3,0.12) !important;
+  background: rgba(208,168,3,0.15) !important;
 }
 .admin-content-panel .table a {
   color: #1e4378;
@@ -180,7 +158,7 @@ a.menufiller.admin-link-active {
   color: #c60000;
 }
 
-/* ===== Forms — Blizzard Styled ===== */
+/* ===== Forms — V4 Styled ===== */
 .admin-content-panel .form-control,
 .admin-content-panel .form-select {
   background-color: #f5f0e1 !important;
@@ -188,7 +166,7 @@ a.menufiller.admin-link-active {
   color: #333 !important;
   font-size: 12px;
   padding: 4px 8px;
-  border-radius: 2px !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 .admin-content-panel .form-control.bg-dark,
@@ -230,38 +208,38 @@ a.menufiller.admin-link-active {
   border-radius: 0 !important;
 }
 .admin-content-panel .form-check-input:checked {
-  background-color: #05374a;
-  border-color: #38464d;
+  background-color: #640909;
+  border-color: #640909;
 }
 
-/* ===== Buttons — WoW Styled ===== */
+/* ===== Buttons — V4 WoW scroll-link styled ===== */
 .admin-content-panel .btn {
   font-size: 11px;
   padding: 4px 14px;
-  border-radius: 2px !important;
+  border-radius: 0 !important;
   font-weight: bold;
   transition: all 0.12s;
 }
 .admin-content-panel .btn-gold {
-  background-color: #3a2a0a !important;
+  background-color: #ae813e !important;
   background-image: none !important;
-  border: 1px solid #5c4523 !important;
-  color: #ffd100 !important;
+  border: 1px solid #835a20 !important;
+  color: #fff !important;
 }
 .admin-content-panel .btn-gold:hover {
-  background-color: #5c4523 !important;
-  border-color: #ffd100 !important;
+  background-color: #c9963f !important;
+  border-color: #ae813e !important;
   color: #fff !important;
 }
 .admin-content-panel .btn-outline-gold {
   background: transparent !important;
-  border: 1px solid #8e7c56 !important;
-  color: #8e7c56 !important;
+  border: 1px solid #ae813e !important;
+  color: #835a20 !important;
 }
 .admin-content-panel .btn-outline-gold:hover {
-  background-color: #3a2a0a !important;
-  color: #ffd100 !important;
-  border-color: #5c4523 !important;
+  background-color: #ae813e !important;
+  color: #fff !important;
+  border-color: #835a20 !important;
 }
 .admin-content-panel .btn-outline-danger {
   background: transparent !important;
@@ -269,59 +247,61 @@ a.menufiller.admin-link-active {
   color: #c60000 !important;
 }
 .admin-content-panel .btn-outline-danger:hover {
-  background-color: #5d1010 !important;
-  color: #ffcccc !important;
+  background-color: #c60000 !important;
+  color: #fff !important;
 }
 .admin-content-panel .btn-danger {
-  background-color: #5d1010 !important;
-  border: 1px solid #8a2020 !important;
-  color: #ffcccc !important;
+  background-color: #8a2020 !important;
+  border: 1px solid #5d1010 !important;
+  color: #fff !important;
 }
 .admin-content-panel .btn-secondary {
-  background-color: #666 !important;
-  border: 1px solid #888 !important;
+  background-color: #555 !important;
+  border: 1px solid #333 !important;
   color: #fff !important;
 }
 .admin-content-panel .btn-warning {
-  background-color: #6b4f00 !important;
-  border: 1px solid #8e6a00 !important;
-  color: #ffd100 !important;
+  background-color: #ae813e !important;
+  border: 1px solid #835a20 !important;
+  color: #fff !important;
 }
 .admin-content-panel .btn-success,
 .admin-content-panel .btn-outline-success {
-  background-color: #1a4a1a !important;
-  border: 1px solid #2a6a2a !important;
-  color: #90ee90 !important;
+  background-color: #2a6a2a !important;
+  border: 1px solid #1a4a1a !important;
+  color: #fff !important;
 }
 
-/* ===== Modals — WoW Parchment Panels ===== */
+/* ===== Modals — V4 WoW style ===== */
 .modal-content {
-  background: #f0e8d4 !important;
-  border: 2px solid #8e7c56 !important;
+  background: url('/themes/wotlk/images/light.jpg') repeat !important;
+  border: 1px solid #1E1D1C !important;
   border-radius: 0 !important;
   color: #333 !important;
   box-shadow: 0 6px 25px rgba(0,0,0,0.55);
 }
 .modal-content.bg-dark {
-  background: #f0e8d4 !important;
+  background: url('/themes/wotlk/images/light.jpg') repeat !important;
 }
 .modal-content.text-light {
   color: #333 !important;
 }
 .modal-header {
-  background: #05374a !important;
-  color: #fff !important;
+  background: #2E2D2B !important;
+  color: #C7C7C7 !important;
   border-radius: 0 !important;
-  border-bottom: 1px solid #38464d !important;
-  padding: 7px 14px !important;
+  border-top: 1px solid #4a4a4a !important;
+  border-bottom: 1px solid #1E1D1C !important;
+  padding: 5px 14px !important;
+  line-height: normal !important;
 }
 .modal-header .text-gold {
-  color: #ffd100 !important;
+  color: #fceac6 !important;
 }
 .modal-title {
-  color: #ffd100 !important;
-  font-family: "Times New Roman", Times, serif;
-  font-size: 14px !important;
+  color: #fceac6 !important;
+  font-family: arial, sans-serif;
+  font-size: 10pt !important;
   font-weight: bold;
 }
 .modal-header .btn-close {
@@ -332,7 +312,7 @@ a.menufiller.admin-link-active {
   color: #333 !important;
 }
 .modal-footer {
-  border-top: 1px solid #d1c0a2 !important;
+  border-top: 1px solid #D8BF95 !important;
   padding: 8px 14px !important;
 }
 .modal-backdrop {
@@ -346,7 +326,7 @@ a.menufiller.admin-link-active {
   border: 1px solid #8e7c56 !important;
   color: #333 !important;
   font-size: 12px;
-  border-radius: 2px !important;
+  border-radius: 0 !important;
 }
 .modal-body .form-control.bg-dark,
 .modal-body .form-select.bg-dark {
@@ -366,32 +346,32 @@ a.menufiller.admin-link-active {
 }
 .modal-body .btn-gold,
 .modal-footer .btn-gold {
-  background-color: #3a2a0a !important;
-  border: 1px solid #5c4523 !important;
-  color: #ffd100 !important;
+  background-color: #ae813e !important;
+  border: 1px solid #835a20 !important;
+  color: #fff !important;
   font-size: 11px;
-  border-radius: 2px !important;
+  border-radius: 0 !important;
   font-weight: bold;
 }
 .modal-body .btn-gold:hover,
 .modal-footer .btn-gold:hover {
-  background-color: #5c4523 !important;
+  background-color: #c9963f !important;
   color: #fff !important;
 }
 .modal-body .btn-danger {
-  background-color: #5d1010 !important;
-  border-color: #8a2020 !important;
-  color: #ffcccc !important;
+  background-color: #8a2020 !important;
+  border-color: #5d1010 !important;
+  color: #fff !important;
 }
 .modal-body .btn-success {
-  background-color: #1a4a1a !important;
-  border-color: #2a6a2a !important;
-  color: #90ee90 !important;
+  background-color: #2a6a2a !important;
+  border-color: #1a4a1a !important;
+  color: #fff !important;
 }
 .modal-body .btn-warning {
-  background-color: #6b4f00 !important;
-  border-color: #8e6a00 !important;
-  color: #ffd100 !important;
+  background-color: #ae813e !important;
+  border-color: #835a20 !important;
+  color: #fff !important;
 }
 .modal-body label {
   font-weight: bold;
@@ -399,22 +379,22 @@ a.menufiller.admin-link-active {
   font-size: 11px;
 }
 .modal-header.border-secondary {
-  border-color: #38464d !important;
+  border-color: transparent !important;
 }
 
-/* ===== Badges — WoW Themed ===== */
+/* ===== Badges — V4 Themed ===== */
 .admin-content-panel .badge {
   font-size: 10px;
   font-weight: bold;
   padding: 2px 7px;
-  border-radius: 2px !important;
+  border-radius: 0 !important;
 }
 .admin-content-panel .badge.bg-danger { background-color: #8a2020 !important; }
-.admin-content-panel .badge.bg-warning { background-color: #6b4f00 !important; color: #ffd100 !important; }
-.admin-content-panel .badge.bg-warning.text-dark { color: #ffd100 !important; }
+.admin-content-panel .badge.bg-warning { background-color: #ae813e !important; color: #fff !important; }
+.admin-content-panel .badge.bg-warning.text-dark { color: #fff !important; }
 .admin-content-panel .badge.bg-secondary { background-color: #555 !important; }
-.admin-content-panel .badge.bg-success { background-color: #1a4a1a !important; }
-.admin-content-panel .badge.bg-dark { background-color: #333 !important; }
+.admin-content-panel .badge.bg-success { background-color: #2a6a2a !important; }
+.admin-content-panel .badge.bg-dark { background-color: #2E2D2B !important; }
 .admin-content-panel .badge.bg-info { background-color: #0c5460 !important; }
 
 /* ===== Alerts ===== */
@@ -439,11 +419,18 @@ a.menufiller.admin-link-active {
   color: #0c5460 !important;
 }
 
-/* ===== List Groups ===== */
+/* ===== List Groups → V4 menu style ===== */
+.admin-content-panel .list-group {
+  border-radius: 0 !important;
+}
 .admin-content-panel .list-group-item {
   background: transparent !important;
-  border-color: #d1c0a2 !important;
+  border-color: #D8BF95 !important;
+  border-left: none !important;
+  border-right: none !important;
   color: #333 !important;
+  font-size: 11px;
+  padding: 6px 12px;
 }
 .admin-content-panel .list-group-item.bg-dark {
   background: transparent !important;
@@ -452,46 +439,51 @@ a.menufiller.admin-link-active {
   color: #333 !important;
 }
 .admin-content-panel .list-group-item.border-secondary {
-  border-color: #d1c0a2 !important;
+  border-color: #D8BF95 !important;
+}
+.admin-content-panel .list-group-item:nth-child(even) {
+  background: #C3AD89 !important;
 }
 .admin-content-panel .list-group-item:hover,
 .admin-content-panel .list-group-item-action:hover {
-  background: rgba(208,168,3,0.08) !important;
+  background: rgba(208,168,3,0.15) !important;
   color: #333 !important;
 }
-.admin-content-panel .list-group-item a {
+.admin-content-panel .list-group-item a,
+.admin-content-panel .list-group-item-action {
   color: #1e4378;
 }
-.admin-content-panel .list-group-item a:hover {
+.admin-content-panel .list-group-item a:hover,
+.admin-content-panel .list-group-item-action:hover {
   color: #c60000;
 }
 
 /* ===== Pagination ===== */
 .admin-content-panel .page-link {
-  background: #f5f0e1 !important;
-  border-color: #8e7c56 !important;
+  background: #EDE0C8 !important;
+  border: 1px solid #D8BF95 !important;
   color: #1e4378 !important;
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 0 !important;
 }
 .admin-content-panel .page-link:hover {
-  background: #e8e0cc !important;
+  background: #C3AD89 !important;
   color: #c60000 !important;
 }
 .admin-content-panel .page-link.bg-dark {
-  background: #f5f0e1 !important;
+  background: #EDE0C8 !important;
 }
 .admin-content-panel .page-link.text-gold {
   color: #1e4378 !important;
 }
 .admin-content-panel .page-link.border-secondary {
-  border-color: #8e7c56 !important;
+  border-color: #D8BF95 !important;
 }
 .admin-content-panel .page-item.active .page-link {
-  background: #05374a !important;
-  border-color: #38464d !important;
-  color: #fff !important;
+  background: #2E2D2B !important;
+  border-color: #1E1D1C !important;
+  color: #fceac6 !important;
 }
 .admin-content-panel .page-item.disabled .page-link {
   background: #e0d8c6 !important;
@@ -506,30 +498,26 @@ a.menufiller.admin-link-active {
 }
 
 /* ===== Text Color Overrides ===== */
-.admin-content-panel .text-gold { color: #c99500 !important; }
+.admin-content-panel .text-gold { color: #d0a803 !important; }
 .admin-content-panel .text-muted { color: #8b8072 !important; }
 .admin-content-panel .text-primary { color: #1e4378 !important; }
-.admin-content-panel .text-danger { color: #9a1010 !important; }
+.admin-content-panel .text-danger { color: #c60000 !important; }
 .admin-content-panel .text-success { color: #1a6a1a !important; }
 .admin-content-panel .text-info { color: #0c5460 !important; }
 .admin-content-panel .text-warning { color: #856404 !important; }
 .admin-content-panel .text-light { color: #333 !important; }
 
-/* Keep gold on dark headers */
-.admin-content-panel .card-header .text-gold,
-.admin-content-panel .card-header.text-gold { color: #ffd100 !important; }
-
 /* ===== Preformatted Text (error log) ===== */
 .admin-content-panel pre {
-  background: #2a2a2a;
-  color: #e0e0e0;
-  border: 1px solid #555;
+  background: #2E2D2B;
+  color: #C7C7C7;
+  border: 1px solid #1E1D1C;
   padding: 10px;
   font-size: 11px;
   border-radius: 0;
 }
 .admin-content-panel code {
-  color: #c99500;
+  color: #d0a803;
 }
 
 /* ===== Links inside content ===== */
@@ -542,36 +530,46 @@ a.menufiller.admin-link-active {
 
 /* ===== Section headers h6.text-gold ===== */
 .admin-content-panel h6.text-gold {
-  color: #05374a !important;
+  color: #640909 !important;
   font-weight: bold;
   font-size: 12px;
   margin-top: 10px;
-  border-bottom: 1px solid #d1c0a2;
+  border-bottom: 1px solid #D8BF95;
   padding-bottom: 4px;
 }
 
 /* ===== General overrides ===== */
 .admin-content-panel .border-secondary {
-  border-color: #8e7c56 !important;
+  border-color: #D8BF95 !important;
 }
 .admin-content-panel .bg-dark-subtle {
-  background-color: #e8e0cc !important;
+  background-color: #EDE0C8 !important;
 }
 .admin-content-panel .text-light:not(.badge):not(.page-link) {
   color: #333 !important;
 }
 
-/* ===== Stat cards (dashboard) ===== */
+/* ===== Stat cards (dashboard) — V4 serverStatus style ===== */
+.admin-content-panel .card.text-center {
+  background: url('/themes/wotlk/images/light.jpg') repeat !important;
+  border: 1px solid #1E1D1C !important;
+}
+.admin-content-panel .card.text-center .card-body {
+  padding: 15px 10px !important;
+}
 .admin-content-panel .card.text-center .display-5 {
   font-size: 2rem !important;
   line-height: 1.2;
+  font-family: "Palatino Linotype", Georgia, "Times New Roman", serif;
+  color: #640909 !important;
 }
 .admin-content-panel .card.text-center .text-muted {
-  color: #777 !important;
+  color: #555 !important;
   font-weight: bold;
   text-transform: uppercase;
   font-size: 10px;
   letter-spacing: 0.5px;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* ===== text-info link colors ===== */

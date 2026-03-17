@@ -94,6 +94,20 @@
                     </div>
                   </form>
 
+                  <!-- Add/Remove Points -->
+                  <form method="POST" action="/admin/users/edit" class="mb-3">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="account_id" value="<%= u.id %>">
+                    <input type="hidden" name="action" value="add_points">
+                    <input type="hidden" name="page" value="<%= page %>">
+                    <label class="form-label small text-muted mb-1">Web Points (current: <span class="text-warning"><%= u.web_points || 0 %></span>)</label>
+                    <div class="input-group input-group-sm">
+                      <input type="number" name="points_amount" class="form-control bg-dark text-light border-secondary" placeholder="Amount (negative to remove)">
+                      <button class="btn btn-info" type="submit"><i class="fas fa-coins me-1"></i>Set Points</button>
+                    </div>
+                    <small class="text-muted">Use positive to add, negative to remove.</small>
+                  </form>
+
                   <!-- Ban/Unban -->
                   <div class="d-flex gap-2">
                     <form method="POST" action="/admin/users/edit" class="flex-grow-1">

@@ -1,0 +1,162 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var _currentPhase = typeof currentPhase !== 'undefined' ? currentPhase : 0;
+  var _phaseMap = typeof phaseMap !== 'undefined' ? phaseMap : {};
+
+  var now = new Date();
+
+  function timeLabel(dateStr, isFuture) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    var diff = d.getTime() - now.getTime();
+    var days = Math.floor(Math.abs(diff) / 86400000);
+    if (days === 0) return 'Today';
+    if (isFuture) {
+      if (days === 1) return 'Tomorrow';
+      if (days < 7) return 'In ' + days + ' days';
+      var weeks = Math.floor(days / 7);
+      if (weeks < 5) return 'In ' + weeks + ' week' + (weeks > 1 ? 's' : '');
+      var months = Math.floor(days / 30);
+      if (months < 12) return 'In ' + months + ' month' + (months > 1 ? 's' : '');
+      return 'In ' + Math.floor(days / 365) + ' year' + (Math.floor(days/365) > 1 ? 's' : '');
+    } else {
+      if (days === 1) return 'Yesterday';
+      if (days < 7) return days + ' days ago';
+      var weeks = Math.floor(days / 7);
+      if (weeks < 5) return weeks + ' week' + (weeks > 1 ? 's' : '') + ' ago';
+      var months = Math.floor(days / 30);
+      if (months < 12) return months + ' month' + (months > 1 ? 's' : '') + ' ago';
+      return Math.floor(days / 365) + ' year' + (Math.floor(days/365) > 1 ? 's' : '') + ' ago';
+    }
+  }
+
+  var expansions = [
+    { name: 'Vanilla', phases: [
+      { id: 0,  title: 'Leveling & Dungeons' },
+      { id: 1,  title: "Molten Core, Onyxia's Lair" },
+      { id: 2,  title: 'Dire Maul, Azuregos, Lord Kazzak, AV, WSG' },
+      { id: 3,  title: 'Blackwing Lair, Darkmoon Faire, AB' },
+      { id: 4,  title: "Zul'Gurub, Dragons of Nightmare" },
+      { id: 5,  title: "Ahn'Qiraj, Fishing Extravaganza" },
+      { id: 6,  title: 'Naxxramas, Scourge Invasion' }
+    ]},
+    { name: 'The Burning Crusade', phases: [
+      { id: 7,  title: 'Outland, Blood Elf, Draenei, Jewelcrafting' },
+      { id: 8,  title: "Karazhan, Gruul's Lair, Magtheridon, S1" },
+      { id: 9,  title: "SSC, Tempest Keep, Ogri'la, S2" },
+      { id: 10, title: 'Hyjal, Black Temple, S3' },
+      { id: 11, title: "Zul'Aman" },
+      { id: 12, title: "Sunwell Plateau, Isle of Quel'Danas, S4" }
+    ]},
+    { name: 'Wrath of the Lich King', phases: [
+      { id: 13, title: 'Northrend, Death Knight, SotA' },
+      { id: 14, title: 'Naxxramas, EoE, OS, VoA, S5' },
+      { id: 15, title: 'Ulduar, Isle of Conquest, S6' },
+      { id: 16, title: 'Trial of the Crusader, Onyxia, S7' },
+      { id: 17, title: 'ICC, Forge of Souls, PoS, HoR, S8' },
+      { id: 18, title: 'Ruby Sanctum' }
+    ]}
+  ];
+%>
+<style type="text/css">
+  td.tlRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; }
+  td.tlRow2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 5px 8px; }
+  td.tlRowLive { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #c5e6a8; padding: 5px 8px; }
+  td.tlRowFuture { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; opacity: 0.5; }
+  td.tlRowFuture2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 5px 8px; opacity: 0.5; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+</style>
+
+<%- include('../../partials/builddiv_start', { type: 0, title: '' }) %>
+
+<div style="padding:10px 20px 10px 20px;">
+  This timeline shows the progression of content phases for our server.
+  Phases marked <b style="color: rgb(35, 67, 3);">LIVE</b> are currently active.
+  Future phases with announced dates show a countdown to release.
+</div>
+<br/>
+
+<% expansions.forEach(function(exp, expIdx) { %>
+
+<%- include('../../partials/subheader', { subheader: exp.name }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="50">Phase</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Content</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="90">Status</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Date</td>
+  </tr>
+  <tr>
+    <td colspan="4" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
+  <% exp.phases.forEach(function(ph, idx) {
+    var isLive = ph.id === _currentPhase;
+    var isPast = ph.id < _currentPhase;
+    var isFuture = ph.id > _currentPhase;
+    var releaseDate = _phaseMap[ph.id] || '';
+    var relLabel = timeLabel(releaseDate, isFuture);
+    var rowClass;
+    if (isLive) {
+      rowClass = 'tlRowLive';
+    } else if (isFuture) {
+      rowClass = (idx % 2 === 0) ? 'tlRowFuture' : 'tlRowFuture2';
+    } else {
+      rowClass = (idx % 2 === 0) ? 'tlRow1' : 'tlRow2';
+    }
+  %>
+  <tr>
+    <td class="<%= rowClass %>" align="center">
+      <b><%= ph.id %></b>
+    </td>
+    <td class="<%= rowClass %>">
+      <% if (isLive) { %>
+        <b style="color: rgb(35, 67, 3);"><%= ph.title %></b>
+      <% } else if (isPast) { %>
+        <span style="color:#555;"><%= ph.title %></span>
+      <% } else { %>
+        <span style="color:#777;"><%= ph.title %></span>
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (isLive) { %>
+        <img src="<%= tp %>/images/uparrow2.gif" style="vertical-align:bottom;" height="14" width="14" alt=""/>
+        <b style="color: rgb(35, 67, 3);">LIVE</b>
+      <% } else if (isPast) { %>
+        <b style="color:#555;">Released</b>
+      <% } else if (releaseDate && relLabel) { %>
+        <b style="color:#856404;"><%= relLabel %></b>
+      <% } else { %>
+        <span style="color:#999;">TBA</span>
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (releaseDate) { %>
+        <% if (isLive && relLabel) { %>
+          <span style="color: rgb(35, 67, 3); font-size:11px;"><%= releaseDate %></span>
+          <br/><span style="color:#555; font-size:10px;"><%= relLabel %></span>
+        <% } else if (isPast && relLabel) { %>
+          <span style="color:#888; font-size:11px;"><%= releaseDate %></span>
+          <br/><span style="color:#999; font-size:10px;"><%= relLabel %></span>
+        <% } else { %>
+          <span style="color:#856404; font-size:11px;"><%= releaseDate %></span>
+        <% } %>
+      <% } else { %>
+        <span style="color:#ccc;">-</span>
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+<br/>
+
+<% }); %>
+
+<%- include('../../partials/builddiv_end') %>

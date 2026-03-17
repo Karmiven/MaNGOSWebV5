@@ -277,6 +277,84 @@ body {
   margin-bottom: 3px;
 }
 
+/* ===== Right Sidebar — Fixed Layout (theme-independent) ===== */
+/* Standardise positioning so sidebar doesn't shift between themes */
+#q-links {
+  width: 308px !important;
+  margin-top: -37px !important;
+  margin-left: 5px !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+#box3 {
+  width: 308px !important;
+  margin-top: 18px !important;
+  margin-left: 5px !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+span.gfxhook {
+  width: 308px !important;
+  position: relative !important;
+  left: 5px !important;
+}
+#rightbox {
+  width: 305px !important;
+  margin-left: 6px !important;
+  margin-top: 15px !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+div.newcommer {
+  position: relative !important;
+  left: 8px !important;
+  z-index: 2 !important;
+}
+
+/* ===== News Module — Fixed Layout (theme-independent) ===== */
+/* All news images served from /images/news/ so every theme looks the same */
+
+/* Collapsed rows */
+.news-collapse, .news-collapsealt { position: relative !important; }
+.news-collapse .news-listing, .news-collapsealt .news-listing { width: 465px !important; border-bottom: 1px solid #b7842c !important; margin: 0 auto !important; }
+.news-collapse .news-listing { background: url('/images/news/news-bg0.gif') repeat-x 0 0 !important; }
+.news-collapsealt .news-listing { background: url('/images/news/news-bg1.gif') repeat-x 0 0 !important; }
+.news-collapse .news-border-left { background: url('/images/news/news-border0-left.gif') no-repeat 0 0 !important; }
+.news-collapsealt .news-border-left { background: url('/images/news/news-border1-left.gif') no-repeat 0 0 !important; }
+.news-collapse .news-border-right { background: url('/images/news/news-border0-right.gif') no-repeat 0 0 !important; }
+.news-collapsealt .news-border-right { background: url('/images/news/news-border1-right.gif') no-repeat 0 0 !important; }
+
+/* Expanded header */
+.news-expand .news-listing div { background: url('/images/news/blog-header-bg.jpg') repeat-y 0 0 !important; }
+.news-expand .news-listing div div.news-top { width: 465px !important; background: url('/images/news/blog-header-top.jpg') no-repeat 0 0 !important; }
+.news-expand .news-listing { width: 465px !important; }
+.news-expand .hovercontainer { width: 465px !important; }
+.news-expand .news-listing ul li.news-entry { width: 400px !important; }
+.news-expand .news-listing ul li.news-entry h1 { font: small-caps 21px/24px georgia, "times new roman", times, serif !important; letter-spacing: -1px !important; }
+.news-expand .news-listing ul li.news-entry span.user { font: 11px "trebuchet ms", verdana, arial, sans-serif !important; color: #7d5c1b !important; }
+
+/* Expanded content body */
+.news-expand .news-item { width: 465px !important; border-bottom: 1px solid #b6904f !important; }
+.news-expand .news-item blockquote { background: url('/images/news/blog-content-bg.jpg') repeat !important; }
+.news-expand .news-item dl { background: url('/images/news/blog-content-left.jpg') repeat-y 0 0 !important; }
+.news-expand .news-item dl dd { width: 465px !important; background: url('/images/news/blog-content-right.jpg') repeat-y 100% 0 !important; }
+.news-expand .news-item dl dd ul { background: url('/images/news/blog-content-top.jpg') no-repeat 0 0 !important; }
+.news-expand .news-item dl dd ul li { width: 465px !important; background: url('/images/news/blog-content-bot.jpg') no-repeat 0 100% !important; }
+
+/* Toggle +/- icons */
+.news-collapse .news-toggle, .news-collapsealt .news-toggle { background: url('/images/news/more-plus.gif') repeat-y 0 0 !important; }
+.news-expand .news-toggle { background: url('/images/news/more-minus.gif') repeat-y 0 0 !important; }
+
+/* Blog post text */
+.blog-post { display: block !important; padding: 30px !important; font: 12px/19px "trebuchet ms", "times new roman", times, serif !important; }
+.blog-post a, .blog-post a:link, .blog-post a:active, .blog-post a:visited { color: #0069b3 !important; }
+.blog-post a:hover { color: #990000 !important; background: #fbf3e1 !important; }
+
+/* Archive link */
+.news-archive-link { background: url('/images/news/archives-bg.jpg') no-repeat !important; height: 35px !important; }
+.news-archive-button { background: url('/images/news/news-archives.gif') no-repeat !important; }
+.news-archive-button a, .news-archive-button a:active, .news-archive-button a:visited { background: url('/images/news/news-archives.gif') no-repeat 0 0 !important; }
+
 /* ===== Left Sidebar Menu Fixes ===== */
 /* Ensure menu items stack properly without overlapping */
 a.menufiller,

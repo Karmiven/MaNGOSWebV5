@@ -2,77 +2,158 @@
 
 <!-- Add Item -->
 <div class="card bg-dark border-secondary mb-4">
-  <div class="card-header text-gold">Add Shop Item</div>
+  <div class="card-header text-gold"><i class="fas fa-plus-circle me-2"></i>Add New Shop Item</div>
   <div class="card-body">
     <form method="POST" action="/admin/shop/add">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <div class="row g-2">
-        <div class="col-md-2"><input type="text" name="item_number" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Item ID" required></div>
-        <div class="col-md-1"><input type="number" name="quantity" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Qty" value="1"></div>
-        <div class="col-md-1"><input type="number" name="itemset" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Set" value="0"></div>
-        <div class="col-md-2"><input type="number" name="gold" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Gold" value="0"></div>
-        <div class="col-md-2"><input type="number" name="wp_cost" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="WP Cost" required></div>
-        <div class="col-md-2"><input type="text" name="desc" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Description"></div>
-        <div class="col-md-1"><input type="number" name="realms" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Realm" value="0"></div>
-        <div class="col-md-1"><button type="submit" class="btn btn-sm btn-gold w-100">Add</button></div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label small text-muted">Item ID(s) <span class="text-danger">*</span></label>
+          <input type="text" name="item_number" class="form-control bg-dark text-light border-secondary" placeholder="49623 or 49623,49624" required>
+          <small class="text-muted">Entry from item_template. Use commas for multiple items.</small>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-muted">Description <span class="text-danger">*</span></label>
+          <input type="text" name="desc" class="form-control bg-dark text-light border-secondary" placeholder="Shadowmourne" required>
+          <small class="text-muted">Display name shown to buyers.</small>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small text-muted">WP Cost <span class="text-danger">*</span></label>
+          <input type="number" name="wp_cost" class="form-control bg-dark text-light border-secondary" placeholder="100" required min="0">
+          <small class="text-muted">Price in Web Points.</small>
+        </div>
+      </div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Quantity</label>
+          <input type="number" name="quantity" class="form-control bg-dark text-light border-secondary" value="1" min="1">
+          <small class="text-muted">Count per item.</small>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Item Set ID</label>
+          <input type="number" name="itemset" class="form-control bg-dark text-light border-secondary" value="0" min="0">
+          <small class="text-muted">0 = no set. Sends all items from the set.</small>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Gold (copper)</label>
+          <input type="number" name="gold" class="form-control bg-dark text-light border-secondary" value="0" min="0">
+          <small class="text-muted">Bonus gold. 10000 = 1g.</small>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Realm</label>
+          <input type="number" name="realms" class="form-control bg-dark text-light border-secondary" value="0" min="0">
+          <small class="text-muted">0 = available on all realms.</small>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-gold"><i class="fas fa-plus me-1"></i>Add Item</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Items Table -->
-<div class="table-responsive">
-  <table class="table table-dark table-hover table-sm">
-    <thead><tr><th>ID</th><th>Item #</th><th>Qty</th><th>Set</th><th>Gold</th><th>WP Cost</th><th>Desc</th><th>Realm</th><th>Actions</th></tr></thead>
-    <tbody>
-      <% if (items && items.length) { %>
+<!-- Items List -->
+<div class="card bg-dark border-secondary">
+  <div class="card-header text-gold"><i class="fas fa-shopping-cart me-2"></i>Shop Items (<%= items ? items.length : 0 %>)</div>
+<% if (items && items.length) { %>
+  <div class="table-responsive">
+    <table class="table table-dark table-striped table-hover mb-0 align-middle" style="font-size:13px;">
+      <thead>
+        <tr>
+          <th style="width:40px;">ID</th>
+          <th>Description</th>
+          <th>Item ID(s)</th>
+          <th class="text-center" style="width:50px;">Qty</th>
+          <th class="text-center" style="width:50px;">Set</th>
+          <th class="text-center" style="width:70px;">Gold</th>
+          <th class="text-center" style="width:80px;">WP Cost</th>
+          <th class="text-center" style="width:60px;">Realm</th>
+          <th class="text-center" style="width:90px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
         <% items.forEach(item => { %>
           <tr>
-            <td><%= item.id %></td>
-            <td><%= item.item_number %></td>
-            <td><%= item.quantity %></td>
-            <td><%= item.itemset %></td>
-            <td><%= item.gold %></td>
-            <td class="text-gold"><%= item.wp_cost %></td>
-            <td><%= item.desc || '' %></td>
-            <td><%= item.realms %></td>
-            <td>
-              <button class="btn btn-sm btn-outline-gold me-1" data-bs-toggle="modal" data-bs-target="#edit-s-<%= item.id %>"><i class="fas fa-edit"></i></button>
-              <form method="POST" action="/admin/shop/delete" class="d-inline" onsubmit="return confirm('Delete?')">
+            <td class="text-muted"><%= item.id %></td>
+            <td><strong><%= item.desc || '' %></strong></td>
+            <td><code style="color:#8bb9fe;"><%= item.item_number %></code></td>
+            <td class="text-center"><%= item.quantity %></td>
+            <td class="text-center"><%= item.itemset || '-' %></td>
+            <td class="text-center"><%= item.gold ? (item.gold >= 10000 ? Math.floor(item.gold/10000) + 'g' : item.gold + 'c') : '-' %></td>
+            <td class="text-center"><span class="text-warning fw-bold"><%= item.wp_cost %></span></td>
+            <td class="text-center"><%= item.realms || 'All' %></td>
+            <td class="text-center text-nowrap">
+              <button class="btn btn-sm btn-outline-light me-1" data-bs-toggle="modal" data-bs-target="#edit-s-<%= item.id %>" title="Edit"><i class="fas fa-edit"></i></button>
+              <form method="POST" action="/admin/shop/delete" class="d-inline" onsubmit="return confirm('Delete &quot;<%= (item.desc || '').replace(/'/g, '') %>&quot;?')">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="hidden" name="id" value="<%= item.id %>">
-                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></button>
               </form>
             </td>
           </tr>
 
+          <!-- Edit Modal -->
           <div class="modal fade" id="edit-s-<%= item.id %>" tabindex="-1">
-            <div class="modal-dialog">
-              <div class="modal-content bg-dark text-light">
-                <div class="modal-header border-secondary"><h5 class="modal-title text-gold">Edit Item #<%= item.id %></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                  <h5 class="modal-title text-gold"><i class="fas fa-edit me-2"></i>Edit: <%= item.desc || 'Item #' + item.id %></h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
                 <form method="POST" action="/admin/shop/edit">
                   <div class="modal-body">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <input type="hidden" name="id" value="<%= item.id %>">
-                    <div class="row g-2">
-                      <div class="col-6 mb-2"><label class="form-label small text-muted">Item ID</label><input type="text" name="item_number" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= item.item_number %>"></div>
-                      <div class="col-6 mb-2"><label class="form-label small text-muted">Quantity</label><input type="number" name="quantity" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= item.quantity %>"></div>
-                      <div class="col-6 mb-2"><label class="form-label small text-muted">Set</label><input type="number" name="itemset" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= item.itemset %>"></div>
-                      <div class="col-6 mb-2"><label class="form-label small text-muted">Gold</label><input type="number" name="gold" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= item.gold %>"></div>
-                      <div class="col-6 mb-2"><label class="form-label small text-muted">WP Cost</label><input type="number" name="wp_cost" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= item.wp_cost %>"></div>
-                      <div class="col-6 mb-2"><label class="form-label small text-muted">Realm</label><input type="number" name="realms" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= item.realms %>"></div>
-                      <div class="col-12 mb-2"><label class="form-label small text-muted">Desc</label><input type="text" name="desc" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= item.desc || '' %>"></div>
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Item ID(s)</label>
+                        <input type="text" name="item_number" class="form-control bg-dark text-light border-secondary" value="<%= item.item_number %>">
+                        <small class="text-muted">Entry from item_template</small>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small text-muted">Description</label>
+                        <input type="text" name="desc" class="form-control bg-dark text-light border-secondary" value="<%= item.desc || '' %>">
+                        <small class="text-muted">Name shown to buyers</small>
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label small text-muted">Quantity</label>
+                        <input type="number" name="quantity" class="form-control bg-dark text-light border-secondary" value="<%= item.quantity %>" min="1">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label small text-muted">Item Set ID</label>
+                        <input type="number" name="itemset" class="form-control bg-dark text-light border-secondary" value="<%= item.itemset %>" min="0">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label small text-muted">Gold (copper)</label>
+                        <input type="number" name="gold" class="form-control bg-dark text-light border-secondary" value="<%= item.gold %>" min="0">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label small text-muted">WP Cost</label>
+                        <input type="number" name="wp_cost" class="form-control bg-dark text-light border-secondary" value="<%= item.wp_cost %>" min="0">
+                      </div>
+                      <div class="col-md-12">
+                        <label class="form-label small text-muted">Realm</label>
+                        <input type="number" name="realms" class="form-control bg-dark text-light border-secondary" value="<%= item.realms %>" min="0">
+                        <small class="text-muted">0 = all realms</small>
+                      </div>
                     </div>
                   </div>
-                  <div class="modal-footer border-secondary"><button type="submit" class="btn btn-gold">Save</button></div>
+                  <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-gold"><i class="fas fa-save me-1"></i>Save Changes</button>
+                  </div>
                 </form>
               </div>
             </div>
           </div>
         <% }) %>
-      <% } else { %>
-        <tr><td colspan="9" class="text-center text-muted">No shop items.</td></tr>
-      <% } %>
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </div>
+<% } else { %>
+  <div class="card-body text-center text-muted py-5">
+    <i class="fas fa-box-open fa-3x mb-3" style="opacity:0.3;"></i>
+    <p>No shop items yet. Use the form above to add your first item.</p>
+  </div>
+<% } %>
 </div>

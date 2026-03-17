@@ -144,29 +144,6 @@
               </div>
             </form>
 
-            <hr style="border:none; border-top:1px dotted #928058; margin:8px 0;">
-
-            <!-- Change Expansion -->
-            <form method="POST" action="/account/change-expansion">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <table border="0" cellspacing="0" cellpadding="4">
-                <tr>
-                  <td align="right" valign="top" width="40%">
-                    <font face="arial,helvetica" size="-1"><b>Expansion</b></font>
-                  </td>
-                  <td align="left">
-                    <select name="expansion" style="padding:2px;">
-                      <option value="2" <%= user.expansion === 2 ? 'selected' : '' %>>WotLK</option>
-                      <option value="1" <%= user.expansion === 1 ? 'selected' : '' %>>TBC</option>
-                      <option value="0" <%= user.expansion === 0 ? 'selected' : '' %>>Classic</option>
-                    </select>
-                  </td>
-                </tr>
-              </table>
-              <div align="center">
-                <button type="submit" class="btn-blizz" style="padding:6px 24px;">Update Expansion</button>
-              </div>
-            </form>
             <br>
           </td></tr>
         </table>

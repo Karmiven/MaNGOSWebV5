@@ -1,0 +1,111 @@
+<h3 class="mb-4">Progression Timeline</h3>
+
+<%
+  var expansions = [
+    { name: 'Vanilla', color: '#c59a4a', phases: [
+      { id: 0,  title: 'Leveling & Dungeons' },
+      { id: 1,  title: "Molten Core, Onyxia's Lair" },
+      { id: 2,  title: 'Dire Maul, Azuregos, Lord Kazzak, AV, WSG' },
+      { id: 3,  title: "Blackwing Lair, Darkmoon Faire, AB" },
+      { id: 4,  title: "Zul'Gurub, Dragons of Nightmare" },
+      { id: 5,  title: "Ahn'Qiraj, Fishing Extravaganza" },
+      { id: 6,  title: 'Naxxramas, Scourge Invasion' }
+    ]},
+    { name: 'The Burning Crusade', color: '#4a9c3a', phases: [
+      { id: 7,  title: 'Outland, Blood Elf, Draenei, Jewelcrafting' },
+      { id: 8,  title: "Karazhan, Gruul's Lair, Magtheridon, S1" },
+      { id: 9,  title: 'SSC, Tempest Keep, Ogri\'la, S2' },
+      { id: 10, title: 'Hyjal, Black Temple, S3' },
+      { id: 11, title: "Zul'Aman" },
+      { id: 12, title: "Sunwell Plateau, Isle of Quel'Danas, S4" }
+    ]},
+    { name: 'Wrath of the Lich King', color: '#3a7ac5', phases: [
+      { id: 13, title: 'Northrend, Death Knight, SotA' },
+      { id: 14, title: 'Naxxramas, EoE, OS, VoA, S5' },
+      { id: 15, title: 'Ulduar, Isle of Conquest, S6' },
+      { id: 16, title: 'Trial of the Crusader, Onyxia, S7' },
+      { id: 17, title: 'ICC, Forge of Souls, PoS, HoR, S8' },
+      { id: 18, title: 'Ruby Sanctum' }
+    ]}
+  ];
+%>
+
+<form method="POST" action="/admin/progression">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <!-- Current Phase Selector -->
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header border-secondary">
+      <i class="fas fa-flag me-1"></i> Current Live Phase
+    </div>
+    <div class="card-body">
+      <div class="row align-items-center">
+        <div class="col-auto">
+          <select name="current_phase" class="form-select bg-dark text-light border-secondary" style="width: 320px;">
+            <% expansions.forEach(function(exp) { %>
+              <optgroup label="<%= exp.name %>">
+                <% exp.phases.forEach(function(ph) { %>
+                  <option value="<%= ph.id %>" <%= currentPhase === ph.id ? 'selected' : '' %>>
+                    Phase <%= ph.id %> — <%= ph.title %>
+                  </option>
+                <% }); %>
+              </optgroup>
+            <% }); %>
+          </select>
+        </div>
+        <div class="col-auto">
+          <span class="badge bg-success" style="font-size: 13px;">Currently: Phase <%= currentPhase %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase Release Dates -->
+  <% expansions.forEach(function(exp) { %>
+    <div class="card bg-dark border-secondary mb-3">
+      <div class="card-header border-secondary" style="background: <%= exp.color %>22;">
+        <span style="color: <%= exp.color %>; font-weight: bold;"><%= exp.name %></span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-dark table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width: 60px;">#</th>
+              <th>Phase</th>
+              <th style="width: 60px;">Status</th>
+              <th style="width: 180px;">Release Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% exp.phases.forEach(function(ph) {
+              var isLive = ph.id === currentPhase;
+              var isPast = ph.id < currentPhase;
+            %>
+              <tr class="<%= isLive ? 'table-success' : (isPast ? '' : 'text-muted') %>">
+                <td><strong><%= ph.id %></strong></td>
+                <td><%= ph.title %></td>
+                <td>
+                  <% if (isLive) { %>
+                    <span class="badge bg-success">LIVE</span>
+                  <% } else if (isPast) { %>
+                    <span class="badge bg-secondary">Done</span>
+                  <% } else { %>
+                    <span class="badge bg-dark border border-secondary">TBA</span>
+                  <% } %>
+                </td>
+                <td>
+                  <input type="date" name="date_<%= ph.id %>" class="form-control form-control-sm bg-dark text-light border-secondary"
+                    value="<%= phaseMap[ph.id] || '' %>">
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% }); %>
+
+  <button type="submit" class="btn btn-gold btn-lg">
+    <i class="fas fa-save me-1"></i> Save Timeline
+  </button>
+</form>

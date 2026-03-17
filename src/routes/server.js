@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const Realm = require('../models/Realm');
 const Character = require('../models/Character');
@@ -10,10 +11,18 @@ const { getZoneName } = require('../utils/zones');
  * Shows: multiples of 10, first page (if cur>3), current±2, last page (if cur<=numPages-3)
  * Current page shown as [ N ]
  */
+// [FIXED] Escape HTML in pagination link targets to prevent XSS
+function escapeHtmlAttr(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function paginate(numPages, curPage, linkTo) {
   const pages = {};
   // Detect separator: if linkTo already has params after ?, use &; otherwise use empty
   const sep = linkTo.endsWith('?') ? '' : '&';
+  // [FIXED] Escape linkTo for safe HTML attribute insertion
+  const safeLinkTo = escapeHtmlAttr(linkTo);
+  const safeSep = escapeHtmlAttr(sep);
   if (numPages <= 1) {
     pages[1] = '1';
   } else {
@@ -21,24 +30,24 @@ function paginate(numPages, curPage, linkTo) {
     const tens = Math.floor(numPages / 10);
     for (let i = 1; i <= tens; i++) {
       const tp = i * 10;
-      pages[tp] = `<a href='${linkTo}${sep}p=${tp}'>${tp}</a>`;
+      pages[tp] = `<a href='${safeLinkTo}${safeSep}p=${tp}'>${tp}</a>`;
     }
     // Add page 1 if current > 3
     if (curPage > 3) {
-      pages[1] = `<a href='${linkTo}${sep}p=1'>1</a>`;
+      pages[1] = `<a href='${safeLinkTo}${safeSep}p=1'>1</a>`;
     }
     // Add pages around current (cur-2 to cur+2)
     for (let current = curPage - 2; current < curPage + 3; current++) {
       if (current < 1 || current > numPages) continue;
       if (current !== curPage) {
-        pages[current] = `<a href='${linkTo}${sep}p=${current}'>${current}</a>`;
+        pages[current] = `<a href='${safeLinkTo}${safeSep}p=${current}'>${current}</a>`;
       } else {
         pages[current] = `[ ${current} ]`;
       }
     }
     // Add last page if cur <= numPages-3
     if (curPage <= numPages - 3) {
-      pages[numPages] = `<a href='${linkTo}${sep}p=${numPages}'>${numPages}</a>`;
+      pages[numPages] = `<a href='${safeLinkTo}${safeSep}p=${numPages}'>${numPages}</a>`;
     }
   }
   // Sort by key, unique, join
@@ -91,10 +100,88 @@ router.get('/', async (req, res, next) => {
 /* GET /server/online — Players Online */
 router.get('/online', async (req, res, next) => {
   try {
-    const players = await Character.getOnline();
+    const allOnline = await Character.getOnline();
+    // Identify bot accounts (RNDBOT*, case-insensitive)
+    let botIds = new Set();
+    if (allOnline.length) {
+      const [botAccRows] = await db.auth.query(
+        "SELECT id FROM account WHERE UPPER(username) LIKE 'RNDBOT%'"
+      );
+      botIds = new Set(botAccRows.map(r => r.id));
+    }
+    // Resolve zone names
+    const allPlayers = allOnline.filter(r => !botIds.has(r.account)).map(p => ({
+      ...p, zoneName: getZoneName(p.zone)
+    }));
+    const allBots = allOnline.filter(r => botIds.has(r.account)).map(p => ({
+      ...p, zoneName: getZoneName(p.zone)
+    }));
+
+    // Search filter
+    const query = (req.query.q || '').trim();
+    let filteredPlayers = allPlayers;
+    let filteredBots = allBots;
+    if (query.length >= 2) {
+      const q = query.toLowerCase();
+      filteredPlayers = allPlayers.filter(p =>
+        p.name.toLowerCase().includes(q) || (p.zoneName && p.zoneName.toLowerCase().includes(q))
+      );
+      filteredBots = allBots.filter(p =>
+        p.name.toLowerCase().includes(q) || (p.zoneName && p.zoneName.toLowerCase().includes(q))
+      );
+    }
+
+    // Pagination
+    const perPage = 25;
+    const page = parseInt(req.query.p) || 1;
+    const botPage = parseInt(req.query.bp) || 1;
+
+    const totalPlayerPages = Math.ceil(filteredPlayers.length / perPage) || 1;
+    const totalBotPages = Math.ceil(filteredBots.length / perPage) || 1;
+
+    const playerOffset = (page - 1) * perPage;
+    const botOffset = (botPage - 1) * perPage;
+
+    const players = filteredPlayers.slice(playerOffset, playerOffset + perPage);
+    const bots = filteredBots.slice(botOffset, botOffset + perPage);
+
+    // Build pagination strings
+    const linkParts = [];
+    if (query) linkParts.push(`q=${encodeURIComponent(query)}`);
+    const baseLink = '/server/online?' + linkParts.join('&');
+    const pagesStr = paginate(totalPlayerPages, page, baseLink.endsWith('?') ? baseLink : baseLink + '&');
+    const botPagesStr = paginate(totalBotPages, botPage,
+      (baseLink.endsWith('?') ? baseLink + 'bp=' : baseLink + '&bp=').replace(/bp=$/, ''));
+
+    // For bot pagination we need a custom one using 'bp' param
+    const botPagesObj = {};
+    const bpBase = baseLink + (baseLink.endsWith('?') ? '' : '&');
+    if (totalBotPages <= 1) {
+      botPagesObj[1] = '1';
+    } else {
+      if (botPage > 3) botPagesObj[1] = `<a href='${escapeHtmlAttr(bpBase)}bp=1'>1</a>`;
+      for (let c = botPage - 2; c < botPage + 3; c++) {
+        if (c < 1 || c > totalBotPages) continue;
+        botPagesObj[c] = c === botPage ? `[ ${c} ]` : `<a href='${escapeHtmlAttr(bpBase)}bp=${c}'>${c}</a>`;
+      }
+      if (botPage <= totalBotPages - 3) botPagesObj[totalBotPages] = `<a href='${escapeHtmlAttr(bpBase)}bp=${totalBotPages}'>${totalBotPages}</a>`;
+    }
+    const botPagesStrFinal = Object.keys(botPagesObj).map(Number).sort((a,b)=>a-b).map(k=>botPagesObj[k]).join(' ');
+
+    // Faction counts from ALL filtered (not just current page)
+    const allianceRaces = [1, 3, 4, 7, 11];
+    const playerAlly = filteredPlayers.filter(p => allianceRaces.includes(Number(p.race))).length;
+    const playerHorde = filteredPlayers.length - playerAlly;
+    const botAlly = filteredBots.filter(p => allianceRaces.includes(Number(p.race))).length;
+    const botHorde = filteredBots.length - botAlly;
+
     res.render('pages/server/online', {
       title: 'Players Online',
-      players, Character, helpers
+      players, bots, Character, helpers,
+      totalPlayers: filteredPlayers.length, totalBots: filteredBots.length,
+      playerAlly, playerHorde, botAlly, botHorde,
+      pagesStr, botPagesStr: botPagesStrFinal,
+      query, page, botPage
     });
   } catch (err) { next(err); }
 });
@@ -115,7 +202,9 @@ router.get('/chars', async (req, res, next) => {
   try {
     const query = req.query.q || '';
     const page = parseInt(req.query.p) || parseInt(req.query.page) || 1;
-    const sort = req.query.sort || '';
+    // [FIXED] Whitelist sort values to prevent injection
+    const allowedSorts = ['lvlasc', 'lvldesc', ''];
+    const sort = allowedSorts.includes(req.query.sort || '') ? (req.query.sort || '') : '';
     const perPage = 25;
     let characters = [];
     let totalChars = 0;
@@ -228,6 +317,21 @@ router.get('/stats', async (req, res, next) => {
       rc, numAlly, numHorde, numChars,
       pcAlly, pcHorde, racePc,
       Character, helpers
+    });
+  } catch (err) { next(err); }
+});
+
+/* GET /server/progression — Progression Timeline */
+router.get('/progression', async (req, res, next) => {
+  try {
+    const SiteConfig = require('../models/Config');
+    const currentPhase = parseInt(SiteConfig.get('progression_phase')) || 0;
+    const [phaseRows] = await db.cms.query('SELECT phase, release_date FROM mw_progression_phases ORDER BY phase').catch(() => [[]]);
+    const phaseMap = {};
+    phaseRows.forEach(function(p) { phaseMap[p.phase] = p.release_date || ''; });
+    res.render('pages/server/progression', {
+      title: 'Progression Timeline',
+      currentPhase, phaseMap, helpers
     });
   } catch (err) { next(err); }
 });

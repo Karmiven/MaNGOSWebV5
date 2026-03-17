@@ -1,53 +1,112 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
 <!-- Character Services — V4 Blizzlike Style -->
-<div class="subheader-bar">
-  <div class="sh-left"></div>
-  <div class="sh-mid"><b>Character Services</b></div>
-  <div class="sh-right"></div>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Character Services' }) %>
+
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+</style>
+
+<div style="padding:5px 0; margin-bottom:5px;">
+  <b style="color:#d0a803;"><%= ext ? ext.web_points : 0 %></b> Web Points available
 </div>
 
-<p><b style="color:#d0a803;"><%= ext ? ext.web_points : 0 %></b> Web Points available</p>
-
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" colspan="6">Your Characters</td>
+  </tr>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Lvl</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Services</td>
+  </tr>
 <% if (characters && characters.length) { %>
-  <table class="blizz-table" style="width:100%;">
-    <tr><th colspan="4">Your Characters</th></tr>
-    <% characters.forEach((c, i) => { %>
-      <tr class="<%= i % 2 === 0 ? 'pvpboxrow' : 'pvpboxrowalt' %>">
-        <td style="width:200px;">
-          <b><%= c.name %></b><br>
-          <span style="font-size:11px; color:#888;"><%= Character.raceName(c.race) %> <%= Character.className(c.class) %> — Lv.<%= c.level %></span>
-        </td>
-        <td>
-          <% if (!c.online) { %>
-            <form method="POST" action="/account/rename" style="display:inline;">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <input type="hidden" name="guid" value="<%= c.guid %>">
-              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Rename <%= c.name %> for <%= config.rename_cost || 0 %> pts?')">Rename (<%= config.rename_cost || 0 %>)</button>
-            </form>
-            <form method="POST" action="/account/customize" style="display:inline;">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <input type="hidden" name="guid" value="<%= c.guid %>">
-              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Customize <%= c.name %> for <%= config.customize_cost || 0 %> pts?')">Customize (<%= config.customize_cost || 0 %>)</button>
-            </form>
-            <form method="POST" action="/account/racechange" style="display:inline;">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <input type="hidden" name="guid" value="<%= c.guid %>">
-              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Race change <%= c.name %> for <%= config.racechange_cost || 0 %> pts?')">Race (<%= config.racechange_cost || 0 %>)</button>
-            </form>
-            <form method="POST" action="/account/factionchange" style="display:inline;">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <input type="hidden" name="guid" value="<%= c.guid %>">
-              <button type="submit" class="btn-blizz" style="padding:2px 8px; font-size:11px;" onclick="return confirm('Faction change <%= c.name %> for <%= config.factionchange_cost || 0 %> pts?')">Faction (<%= config.factionchange_cost || 0 %>)</button>
-            </form>
-          <% } else { %>
-            <span style="color:#da4;">⚠ Character must be offline</span>
-          <% } %>
-        </td>
-      </tr>
-    <% }) %>
-  </table>
+  <% characters.forEach(function(c, idx) {
+    var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+    var num = idx + 1;
+  %>
+  <tr>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= num %></b></td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color: rgb(35, 67, 3);"><%= c.name %></b>
+      <% if (c.online) { %><span style="color:#234303; font-size:10px;"> (Online)</span><% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.raceName(c.race) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/race/<%= c.race %>-<%= c.gender || 0 %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.className(c.class) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/class/<%= c.class %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= c.level %></b></td>
+    <td class="<%= rowClass %>" align="center">
+      <%
+        var isAdmin = typeof user !== 'undefined' && user && user.isAdmin;
+        var renameOn = isAdmin || config.module_char_rename == '1' || config.module_char_rename === 1;
+        var customOn = isAdmin || config.module_char_customize == '1' || config.module_char_customize === 1;
+        var raceOn   = isAdmin || config.module_char_race_change == '1' || config.module_char_race_change === 1;
+        var factionOn = isAdmin || config.module_char_faction_change == '1' || config.module_char_faction_change === 1;
+      %>
+      <% if (!c.online) { %>
+        <% if (renameOn) { %>
+        <form method="POST" action="/account/rename" style="display:inline;">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="guid" value="<%= c.guid %>">
+          <button type="submit" class="btn-blizz" style="padding:2px 6px; font-size:10px;" onclick="return confirm('Rename <%= c.name %> for <%= isAdmin ? 0 : (config.rename_cost || 0) %> pts?')">Rename (<%= isAdmin ? 'Free' : (config.rename_cost || 0) %>)</button>
+        </form>
+        <% } else { %>
+        <span style="padding:2px 6px; font-size:10px; color:#666; background:#3a3a3a; border:1px solid #555; border-radius:3px; opacity:0.6; cursor:not-allowed;" title="Service disabled">Rename</span>
+        <% } %>
+        <% if (customOn) { %>
+        <form method="POST" action="/account/customize" style="display:inline;">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="guid" value="<%= c.guid %>">
+          <button type="submit" class="btn-blizz" style="padding:2px 6px; font-size:10px;" onclick="return confirm('Customize <%= c.name %> for <%= isAdmin ? 0 : (config.customize_cost || 0) %> pts?')">Custom (<%= isAdmin ? 'Free' : (config.customize_cost || 0) %>)</button>
+        </form>
+        <% } else { %>
+        <span style="padding:2px 6px; font-size:10px; color:#666; background:#3a3a3a; border:1px solid #555; border-radius:3px; opacity:0.6; cursor:not-allowed;" title="Service disabled">Custom</span>
+        <% } %>
+        <% if (raceOn) { %>
+        <form method="POST" action="/account/racechange" style="display:inline;">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="guid" value="<%= c.guid %>">
+          <button type="submit" class="btn-blizz" style="padding:2px 6px; font-size:10px;" onclick="return confirm('Race change <%= c.name %> for <%= isAdmin ? 0 : (config.racechange_cost || 0) %> pts?')">Race (<%= isAdmin ? 'Free' : (config.racechange_cost || 0) %>)</button>
+        </form>
+        <% } else { %>
+        <span style="padding:2px 6px; font-size:10px; color:#666; background:#3a3a3a; border:1px solid #555; border-radius:3px; opacity:0.6; cursor:not-allowed;" title="Service disabled">Race</span>
+        <% } %>
+        <% if (factionOn) { %>
+        <form method="POST" action="/account/factionchange" style="display:inline;">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="guid" value="<%= c.guid %>">
+          <button type="submit" class="btn-blizz" style="padding:2px 6px; font-size:10px;" onclick="return confirm('Faction change <%= c.name %> for <%= isAdmin ? 0 : (config.factionchange_cost || 0) %> pts?')">Faction (<%= isAdmin ? 'Free' : (config.factionchange_cost || 0) %>)</button>
+        </form>
+        <% } else { %>
+        <span style="padding:2px 6px; font-size:10px; color:#666; background:#3a3a3a; border:1px solid #555; border-radius:3px; opacity:0.6; cursor:not-allowed;" title="Service disabled">Faction</span>
+        <% } %>
+      <% } else { %>
+        <span style="color:#da4; font-size:10px;">Character must be offline</span>
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
 <% } else { %>
-  <table class="blizz-table" style="width:100%;">
-    <tr><th>Your Characters</th></tr>
-    <tr><td style="text-align:center; padding:30px; color:#888;">No characters found.</td></tr>
-  </table>
+  <tr>
+    <td class="serverStatus1" colspan="6" align="center" style="padding:15px;">No characters found.</td>
+  </tr>
 <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>

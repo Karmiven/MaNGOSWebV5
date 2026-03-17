@@ -1,36 +1,167 @@
-
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var _bots = typeof bots !== 'undefined' ? bots : [];
+  var _totalPlayers = typeof totalPlayers !== 'undefined' ? totalPlayers : (players ? players.length : 0);
+  var _totalBots = typeof totalBots !== 'undefined' ? totalBots : _bots.length;
+  var _query = typeof query !== 'undefined' ? query : '';
+  // Use pre-computed totals from route (counts ALL, not just current page)
+  var allyCount = typeof playerAlly !== 'undefined' ? playerAlly : 0;
+  var hordeCount = typeof playerHorde !== 'undefined' ? playerHorde : 0;
+  var botAllyCount = typeof botAlly !== 'undefined' ? botAlly : 0;
+  var botHordeCount = typeof botHorde !== 'undefined' ? botHorde : 0;
+%>
 <!-- Players Online — V4 Blizzlike Style -->
-<div class="subheader-bar">
-  <div class="sh-left"></div>
-  <div class="sh-mid"><b>Players Online (<%= players.length %>)</b></div>
-  <div class="sh-right"></div>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Players Online' }) %>
+
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+  .online-search { padding: 2px 6px; border: 1px solid #8e7c56; font-size: 11px; background: #f0e6cd; width: 160px; }
+  .online-search-btn { padding: 2px 10px; font-size: 11px; }
+  .pagination-row { padding: 5px 0; font-size: 11px; text-align: center; }
+  .pagination-row a { color: #1e4378; text-decoration: none; padding: 0 3px; }
+  .pagination-row a:hover { text-decoration: underline; }
+</style>
+
+<!-- Search -->
+<div style="padding:5px 0; margin-bottom:8px;">
+  <form method="GET" action="/server/online" style="display:inline;">
+    <input type="text" name="q" value="<%= _query %>" class="online-search" placeholder="Search name or zone...">
+    <button type="submit" class="btn-blizz online-search-btn">Search</button>
+    <% if (_query) { %>
+      <a href="/server/online" style="font-size:11px; margin-left:6px; color:#8b0000;">Clear</a>
+    <% } %>
+  </form>
 </div>
 
-<% if (typeof players !== 'undefined' && players.length) { %>
-  <table class="blizz-table" style="width:100%;">
-    <tr>
-      <th>Name</th>
-      <th>Race</th>
-      <th>Class</th>
-      <th>Level</th>
-      <th>Zone</th>
-      <th>Faction</th>
-    </tr>
-    <% players.forEach(function(p, i) { %>
-      <tr class="<%= i % 2 === 0 ? 'pvpboxrow' : 'pvpboxrowalt' %> pvp-row">
-        <td><b><%= p.name %></b></td>
-        <td><%= Character.raceName(p.race) %></td>
-        <td><%= Character.className(p.class) %></td>
-        <td><%= p.level %></td>
-        <td><%= p.zone %></td>
-        <td>
-          <span class="<%= Character.factionForRace(p.race) === 'Alliance' ? 'badge-alliance' : 'badge-horde' %>">
-            <%= Character.factionForRace(p.race) %>
-          </span>
-        </td>
-      </tr>
-    <% }); %>
-  </table>
+<!-- Players Section -->
+<%- include('../../partials/subheader', { subheader: 'Players (' + _totalPlayers + ')' }) %>
+
+<div style="padding:5px 0; margin-bottom:5px; font-size:12px;">
+  <b style="color:#1e4378;">Alliance: <%= allyCount %></b> &nbsp;|&nbsp;
+  <b style="color:#8b0000;">Horde: <%= hordeCount %></b> &nbsp;|&nbsp;
+  <b>Showing: <%= players.length %> of <%= _totalPlayers %></b>
+</div>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Lvl</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Zone</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Faction</td>
+  </tr>
+<% if (players && players.length) { %>
+  <% var playerOffset = ((typeof page !== 'undefined' ? page : 1) - 1) * 25; %>
+  <% players.forEach(function(p, idx) {
+    var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+    var faction = Character.factionForRace(p.race);
+    var num = playerOffset + idx + 1;
+  %>
+  <tr>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= num %></b></td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(35, 67, 3);"><%= p.name %></b></td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.raceName(p.race) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/race/<%= p.race %>-<%= p.gender || 0 %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.className(p.class) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/class/<%= p.class %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= p.level %></b></td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(35, 67, 3);"><%= p.zoneName || 'Unknown' %></b></td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (faction === 'Alliance') { %>
+        <img src="<%= tp %>/images/icon/faction/alliance.gif" height="16" width="16" alt="Alliance" style="vertical-align:middle;" title="Alliance">
+      <% } else { %>
+        <img src="<%= tp %>/images/icon/faction/horde.gif" height="16" width="16" alt="Horde" style="vertical-align:middle;" title="Horde">
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
 <% } else { %>
-  <p style="padding:10px; color:#333;">No players currently online.</p>
+  <tr>
+    <td class="serverStatus1" colspan="7" align="center" style="padding:15px;">No players currently online.</td>
+  </tr>
 <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<% if (typeof pagesStr !== 'undefined' && _totalPlayers > 25) { %>
+<div class="pagination-row">Pages: <%- pagesStr %></div>
+<% } %>
+
+<br>
+
+<!-- Bots Section -->
+<%- include('../../partials/subheader', { subheader: 'Bots (' + _totalBots + ')' }) %>
+
+<div style="padding:5px 0; margin-bottom:5px; font-size:12px;">
+  <b style="color:#1e4378;">Alliance: <%= botAllyCount %></b> &nbsp;|&nbsp;
+  <b style="color:#8b0000;">Horde: <%= botHordeCount %></b> &nbsp;|&nbsp;
+  <b>Showing: <%= _bots.length %> of <%= _totalBots %></b>
+</div>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Lvl</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Zone</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Faction</td>
+  </tr>
+<% if (_bots.length) { %>
+  <% var botOffset = ((typeof botPage !== 'undefined' ? botPage : 1) - 1) * 25; %>
+  <% _bots.forEach(function(p, idx) {
+    var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
+    var faction = Character.factionForRace(p.race);
+    var num = botOffset + idx + 1;
+  %>
+  <tr>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= num %></b></td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(35, 67, 3);"><%= p.name %></b></td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.raceName(p.race) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/race/<%= p.race %>-<%= p.gender || 0 %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <img onmouseover="ddrivetip('<%= Character.className(p.class) %>','#ffffff')" onmouseout="hideddrivetip()"
+        src="<%= tp %>/images/icon/class/<%= p.class %>.gif" height="18" width="18" alt=""/>
+    </td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= p.level %></b></td>
+    <td class="<%= rowClass %>" align="center"><b style="color: rgb(35, 67, 3);"><%= p.zoneName || 'Unknown' %></b></td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (faction === 'Alliance') { %>
+        <img src="<%= tp %>/images/icon/faction/alliance.gif" height="16" width="16" alt="Alliance" style="vertical-align:middle;" title="Alliance">
+      <% } else { %>
+        <img src="<%= tp %>/images/icon/faction/horde.gif" height="16" width="16" alt="Horde" style="vertical-align:middle;" title="Horde">
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
+<% } else { %>
+  <tr>
+    <td class="serverStatus1" colspan="7" align="center" style="padding:15px;">No bots currently online.</td>
+  </tr>
+<% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<% if (typeof botPagesStr !== 'undefined' && _totalBots > 25) { %>
+<div class="pagination-row">Pages: <%- botPagesStr %></div>
+<% } %>
+
+<%- include('../../partials/builddiv_end') %>

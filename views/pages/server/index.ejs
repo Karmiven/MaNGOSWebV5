@@ -18,10 +18,10 @@
     return parts.join(', ') || '0 Minutes';
   }
   function populationView(pop) {
-    if (pop <= 0) return 'Offline';
-    if (pop <= 5) return 'Low';
-    if (pop <= 20) return 'Medium';
-    return 'High';
+    var p = parseFloat(pop) || 0;
+    if (p >= 2) return 'High';
+    if (p >= 1) return 'Medium';
+    return 'Low';
   }
 %>
 <style type="text/css">
@@ -53,7 +53,7 @@
   <tr>
     <td class="rankingHeader" align="center" nowrap="nowrap" width="53">Status</td>
     <td class="rankingHeader" align="center" nowrap="nowrap">Uptime</td>
-    <td class="rankingHeader" align="left" nowrap="nowrap">Realm Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Realm Name</td>
     <td class="rankingHeader" align="center" nowrap="nowrap" width="80">Type</td>
     <td class="rankingHeader" align="center" nowrap="nowrap" width="80">Players</td>
     <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Population</td>
@@ -78,7 +78,7 @@
         -
       <% } %>
     </td>
-    <td class="<%= rowClass %>">
+    <td class="<%= rowClass %>" align="center">
       <b style="color: rgb(35, 67, 3);"><%= item.name %></b>
     </td>
     <td class="<%= rowClass %>" align="center">
@@ -88,7 +88,7 @@
       <b><%= item.onlineCount %></b>
     </td>
     <td class="<%= rowClass %>" align="center">
-      <b style="color: rgb(35, 67, 3);"><%= populationView(item.onlineCount) %></b>
+      <b style="color: rgb(35, 67, 3);"><%= populationView(item.population) %></b>
     </td>
   </tr>
 <% }); %>
@@ -96,63 +96,5 @@
 </table>
 <%- include('../../partials/metalborder_footer') %>
 
-<br/>
-
-<!-- Server Performance Info (from .server info SOAP) -->
-<% var hasServerInfo = realms.some(function(r) { return r.serverInfo; }); %>
-<% if (hasServerInfo) { %>
-<%- include('../../partials/subheader', { subheader: 'Server Performance' }) %>
-
-<%- include('../../partials/metalborder_header') %>
-<table cellpadding="3" cellspacing="0" width="100%">
-<tbody>
-  <tr>
-    <td class="rankingHeader" align="left" nowrap="nowrap">Realm</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Latency (diff)</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Sessions</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Conn. Peak</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap" width="180">Uptime</td>
-  </tr>
-  <tr>
-    <td colspan="5" style="background: url('<%= tp %>/images/shadow.gif');">
-      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
-    </td>
-  </tr>
-<% realms.forEach(function(item, idx) {
-  if (!item.serverInfo) return;
-  var rowClass = (idx % 2 === 0) ? 'serverStatus1' : 'serverStatus2';
-  var si = item.serverInfo;
-  var diffClass = 'server-diff-good';
-  if (si.serverDiff !== null) {
-    if (si.serverDiff > 150) diffClass = 'server-diff-bad';
-    else if (si.serverDiff > 50) diffClass = 'server-diff-warn';
-  }
-%>
-  <tr>
-    <td class="<%= rowClass %>">
-      <b style="color: rgb(35, 67, 3);"><%= item.name %></b>
-    </td>
-    <td class="<%= rowClass %>" align="center">
-      <% if (si.serverDiff !== null) { %>
-        <span class="<%= diffClass %>"><%= si.serverDiff %> ms</span>
-      <% } else { %>
-        -
-      <% } %>
-    </td>
-    <td class="<%= rowClass %>" align="center">
-      <b><%= si.activeSessions !== null ? si.activeSessions : '-' %></b>
-    </td>
-    <td class="<%= rowClass %>" align="center">
-      <b><%= si.connPeak !== null ? si.connPeak : '-' %></b>
-    </td>
-    <td class="<%= rowClass %>" align="center">
-      <%= si.uptime || '-' %>
-    </td>
-  </tr>
-<% }); %>
-</tbody>
-</table>
-<%- include('../../partials/metalborder_footer') %>
-<% } %>
 
 <%- include('../../partials/builddiv_end') %>

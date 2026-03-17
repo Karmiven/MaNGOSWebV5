@@ -53,9 +53,11 @@
       <div class="card-header text-gold">Online Stats</div>
       <div class="card-body">
         <% if (onlineStats) { %>
-          <p>Alliance: <span class="text-primary"><%= onlineStats.alliance || 0 %></span></p>
-          <p>Horde: <span class="text-danger"><%= onlineStats.horde || 0 %></span></p>
-          <p class="mb-0">Unique IPs: <span class="text-info"><%= onlineStats.uniqueIPs || 0 %></span></p>
+          <%  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk'; %>
+          <p><img src="<%= tp %>/images/icon/faction/alliance.gif" height="18" width="18" alt="Alliance" style="vertical-align:middle;"> Alliance: <span class="text-primary fw-bold"><%= onlineStats.alliance || 0 %></span></p>
+          <p><img src="<%= tp %>/images/icon/faction/horde.gif" height="18" width="18" alt="Horde" style="vertical-align:middle;"> Horde: <span class="text-danger fw-bold"><%= onlineStats.horde || 0 %></span></p>
+          <p>Unique IPs: <span class="text-info fw-bold"><%= onlineStats.uniqueIPs || 0 %></span></p>
+          <p class="mb-1">Total Online: <span class="text-success fw-bold"><%= onlineStats.total || 0 %></span></p>
         <% } else { %>
           <p class="text-muted mb-0">No stats available.</p>
         <% } %>

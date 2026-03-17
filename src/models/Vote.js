@@ -1,7 +1,13 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 
 const Vote = {
   async getSites() {
+    const [rows] = await db.cms.query('SELECT * FROM mw_vote_sites WHERE active = 1 ORDER BY id');
+    return rows;
+  },
+
+  async getAllSites() {
     const [rows] = await db.cms.query('SELECT * FROM mw_vote_sites ORDER BY id');
     return rows;
   },
@@ -13,16 +19,16 @@ const Vote = {
 
   async createSite(data) {
     const [r] = await db.cms.query(
-      'INSERT INTO mw_vote_sites (hostname, votelink, image_url, points, reset_time) VALUES (?, ?, ?, ?, ?)',
-      [data.hostname, data.votelink, data.image_url || '', data.points, data.reset_time]
+      'INSERT INTO mw_vote_sites (hostname, vote_type, votelink, image_url, points, reset_time, active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [data.hostname, data.vote_type || 'link', data.votelink || '', data.image_url || '', data.points, data.reset_time, data.active !== undefined ? data.active : 1]
     );
     return r.insertId;
   },
 
   async updateSite(id, data) {
     await db.cms.query(
-      'UPDATE mw_vote_sites SET hostname = ?, votelink = ?, image_url = ?, points = ?, reset_time = ? WHERE id = ?',
-      [data.hostname, data.votelink, data.image_url || '', data.points, data.reset_time, id]
+      'UPDATE mw_vote_sites SET hostname = ?, vote_type = ?, votelink = ?, image_url = ?, points = ?, reset_time = ?, active = ? WHERE id = ?',
+      [data.hostname, data.vote_type || 'link', data.votelink || '', data.image_url || '', data.points, data.reset_time, data.active !== undefined ? data.active : 1, id]
     );
   },
 
@@ -34,23 +40,25 @@ const Vote = {
   /** Check if user can vote on a site */
   async canVote(ip, siteId, resetTime) {
     const now = Math.floor(Date.now() / 1000);
+    const resetSeconds = resetTime * 3600;
     const [rows] = await db.cms.query(
       'SELECT time FROM mw_voting WHERE user_ip = ? AND site = ? ORDER BY time DESC LIMIT 1',
       [ip, siteId]
     );
     if (!rows.length) return true;
-    return (now - rows[0].time) >= resetTime;
+    return (now - rows[0].time) >= resetSeconds;
   },
 
-  /** Get time until next vote */
+  /** Get time until next vote (in seconds) */
   async getNextVoteTime(ip, siteId, resetTime) {
     const now = Math.floor(Date.now() / 1000);
+    const resetSeconds = resetTime * 3600;
     const [rows] = await db.cms.query(
       'SELECT time FROM mw_voting WHERE user_ip = ? AND site = ? ORDER BY time DESC LIMIT 1',
       [ip, siteId]
     );
     if (!rows.length) return 0;
-    const remaining = resetTime - (now - rows[0].time);
+    const remaining = resetSeconds - (now - rows[0].time);
     return remaining > 0 ? remaining : 0;
   },
 
@@ -73,6 +81,15 @@ const Vote = {
        WHERE account_id = ?`,
       [points, points, accountId]
     );
+  },
+
+  /** Get vote stats for a user */
+  async getUserStats(accountId) {
+    const [rows] = await db.cms.query(
+      'SELECT total_votes, points_earned FROM mw_account_extend WHERE account_id = ?',
+      [accountId]
+    );
+    return rows[0] || { total_votes: 0, points_earned: 0 };
   }
 };
 

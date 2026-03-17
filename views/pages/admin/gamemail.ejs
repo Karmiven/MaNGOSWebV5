@@ -1,6 +1,24 @@
 <h3 class="mb-4">Send Game Mail</h3>
 
+<!-- SOAP Connection Test -->
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header text-gold"><i class="fas fa-plug me-2"></i>SOAP Connection</div>
+  <div class="card-body">
+    <p class="text-muted mb-2" style="font-size:13px;">
+      <b>Host:</b> <code><%= process.env.SOAP_HOST || 'not set' %></code> &nbsp;
+      <b>Port:</b> <code><%= process.env.SOAP_PORT || 'not set' %></code> &nbsp;
+      <b>User:</b> <code><%= process.env.SOAP_USER || 'not set' %></code>
+    </p>
+    <button type="button" id="soap-test-btn" class="btn btn-sm btn-outline-info" onclick="testSoap()">
+      <i class="fas fa-heartbeat me-1"></i>Test Connection
+    </button>
+    <span id="soap-test-result" class="ms-3" style="font-size:13px;"></span>
+  </div>
+</div>
+
+<!-- Send Mail Form -->
 <div class="card bg-dark border-secondary">
+  <div class="card-header text-gold"><i class="fas fa-envelope me-2"></i>Send Mail via SOAP</div>
   <div class="card-body">
     <form method="POST" action="/admin/gamemail">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -21,9 +39,32 @@
   </div>
 </div>
 
-<div class="card bg-dark border-secondary mt-4">
-  <div class="card-header text-gold">Note</div>
-  <div class="card-body text-muted">
-    <p class="mb-0">Game mail is sent via SOAP. Ensure your SOAP credentials are configured in the <code>.env</code> file (SOAP_HOST, SOAP_PORT, SOAP_USER, SOAP_PASS). The character must exist in the game database.</p>
-  </div>
-</div>
+<script>
+function testSoap() {
+  var btn = document.getElementById('soap-test-btn');
+  var result = document.getElementById('soap-test-result');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Testing...';
+  result.innerHTML = '';
+
+  fetch('/admin/soap-test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<%= csrfToken %>' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      result.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Connected!</span><br><pre class="text-muted mt-1 mb-0" style="font-size:11px;white-space:pre-wrap;">' + data.message + '</pre>';
+    } else {
+      result.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-1"></i>Failed: ' + data.message + '</span>';
+    }
+  })
+  .catch(function(e) {
+    result.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle me-1"></i>Error: ' + e.message + '</span>';
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-heartbeat me-1"></i>Test Connection';
+  });
+}
+</script>

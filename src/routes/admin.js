@@ -1,3 +1,4 @@
+/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
 const Account = require('../models/Account');
@@ -10,6 +11,7 @@ const Vote = require('../models/Vote');
 const FAQ = require('../models/FAQ');
 const Menu = require('../models/Menu');
 const SiteConfig = require('../models/Config');
+const { clearThemeCache } = require('../middleware/theme');
 const SoapService = require('../services/soap');
 const db = require('../config/database');
 const helpers = require('../utils/helpers');
@@ -24,19 +26,20 @@ router.use(requireAdmin);
 /* ================================================================== */
 router.get('/', async (req, res, next) => {
   try {
-    const [totalAccounts] = await db.auth.query('SELECT COUNT(*) as c FROM account');
-    const totalChars = await Character.countTotal();
-    const onlinePlayers = await Character.countOnline();
-    const [totalNews] = await db.cms.query('SELECT COUNT(*) as c FROM mw_news');
-    const onlineStats = await Account.getOnlineStats();
+    const [[totalAccounts], totalChars, [totalNews], onlineStats] = await Promise.all([
+      db.auth.query('SELECT COUNT(*) as c FROM account'),
+      Character.countTotal(),
+      db.cms.query('SELECT COUNT(*) as c FROM mw_news'),
+      Character.getOnlinePlayers()
+    ]);
 
     res.render('pages/admin/dashboard', {
       title: 'Admin Dashboard',
       layout: 'layouts/admin',
       totalAccounts: totalAccounts[0].c,
-      totalChars, onlinePlayers,
+      totalChars, onlinePlayers: onlineStats.total,
       totalNews: totalNews[0].c,
-      onlineStats, helpers
+      onlineStats, helpers, Character
     });
   } catch (err) { next(err); }
 });
@@ -79,6 +82,15 @@ router.post('/users/edit', async (req, res, next) => {
       if (acc && req.body.new_password) {
         await Account.changePassword(id, acc.username, req.body.new_password);
         req.flash('success', 'Password changed.');
+      }
+    } else if (action === 'add_points') {
+      const pts = parseInt(req.body.points_amount) || 0;
+      if (pts > 0) {
+        await Account.addPoints(id, pts);
+        req.flash('success', `Added ${pts} points.`);
+      } else if (pts < 0) {
+        await Account.spendPoints(id, Math.abs(pts));
+        req.flash('success', `Removed ${Math.abs(pts)} points.`);
       }
     } else if (action === 'delete' && req.user.isSuperAdmin) {
       // Delete extended data, then auth account
@@ -192,16 +204,10 @@ router.post('/realms/update', requireSuperAdmin, async (req, res, next) => {
 router.get('/siteconfig', async (req, res, next) => {
   try {
     const config = SiteConfig.get();
-    // Scan available themes from public/themes directory
-    const themesDir = path.join(__dirname, '../../public/themes');
-    let availableThemes = [];
-    try {
-      const entries = fs.readdirSync(themesDir, { withFileTypes: true });
-      availableThemes = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
-    } catch (e) { availableThemes = ['wotlk']; }
+    // availableThemes already set by theme middleware (from theme.json manifests)
     res.render('pages/admin/siteconfig', {
       title: 'Site Configuration', layout: 'layouts/admin',
-      config, availableThemes
+      config
     });
   } catch (err) { next(err); }
 });
@@ -235,6 +241,7 @@ router.post('/siteconfig', async (req, res, next) => {
     }
 
     await SiteConfig.update(data);
+    clearThemeCache();
     req.flash('success', 'Site configuration saved.');
     res.redirect('/admin/siteconfig');
   } catch (err) { next(err); }
@@ -335,7 +342,7 @@ router.post('/donate/delete', async (req, res, next) => {
 /* ================================================================== */
 router.get('/vote', async (req, res, next) => {
   try {
-    const sites = await Vote.getSites();
+    const sites = await Vote.getAllSites();
     res.render('pages/admin/vote', {
       title: 'Vote Sites', layout: 'layouts/admin',
       sites, helpers
@@ -347,10 +354,12 @@ router.post('/vote/add', async (req, res, next) => {
   try {
     await Vote.createSite({
       hostname: req.body.hostname,
-      votelink: req.body.votelink,
-      image_url: req.body.image_url,
-      points: parseInt(req.body.points),
-      reset_time: parseInt(req.body.reset_time)
+      vote_type: req.body.vote_type || 'link',
+      votelink: req.body.votelink || '',
+      image_url: req.body.image_url || '',
+      points: parseInt(req.body.points) || 1,
+      reset_time: parseInt(req.body.reset_time) || 12,
+      active: req.body.active ? 1 : 0
     });
     req.flash('success', 'Vote site added.');
     res.redirect('/admin/vote');
@@ -361,10 +370,12 @@ router.post('/vote/edit', async (req, res, next) => {
   try {
     await Vote.updateSite(req.body.id, {
       hostname: req.body.hostname,
-      votelink: req.body.votelink,
-      image_url: req.body.image_url,
-      points: parseInt(req.body.points),
-      reset_time: parseInt(req.body.reset_time)
+      vote_type: req.body.vote_type || 'link',
+      votelink: req.body.votelink || '',
+      image_url: req.body.image_url || '',
+      points: parseInt(req.body.points) || 1,
+      reset_time: parseInt(req.body.reset_time) || 12,
+      active: req.body.active ? 1 : 0
     });
     req.flash('success', 'Vote site updated.');
     res.redirect('/admin/vote');
@@ -424,6 +435,53 @@ router.post('/chartools', async (req, res, next) => {
     }
 
     res.redirect('/admin/chartools');
+  } catch (err) { next(err); }
+});
+
+/* ================================================================== */
+/*  Deleted Characters (Restore)                                       */
+/* ================================================================== */
+router.get('/deleted-chars', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const search = req.query.search || '';
+    const perPage = 25;
+    const [total, chars] = await Promise.all([
+      Character.countDeleted(search),
+      Character.getDeleted(perPage, (page - 1) * perPage, search)
+    ]);
+    // Fetch account names for display
+    const accountIds = [...new Set(chars.map(c => c.account).filter(Boolean))];
+    let accountMap = {};
+    if (accountIds.length) {
+      const [accs] = await db.auth.query(
+        `SELECT id, username FROM account WHERE id IN (${accountIds.map(() => '?').join(',')})`,
+        accountIds
+      );
+      accs.forEach(a => { accountMap[a.id] = a.username; });
+    }
+    const pag = helpers.paginate(total, page, perPage);
+    res.render('pages/admin/deleted-chars', {
+      title: 'Deleted Characters', layout: 'layouts/admin',
+      chars, accountMap, pag, search, Character, helpers
+    });
+  } catch (err) { next(err); }
+});
+
+router.post('/restore-char', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const guid = parseInt(req.body.guid);
+    if (!guid) {
+      req.flash('error', 'Invalid character.');
+      return res.redirect('/admin/deleted-chars');
+    }
+    const result = await Character.restoreCharacter(guid);
+    if (!result) {
+      req.flash('error', 'Character not found or already restored.');
+    } else {
+      req.flash('success', `Character "${result.name}" restored to account #${result.account}.`);
+    }
+    res.redirect('/admin/deleted-chars');
   } catch (err) { next(err); }
 });
 
@@ -572,6 +630,25 @@ router.get('/gamemail', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/* POST /admin/soap-test — Test SOAP connection */
+router.post('/soap-test', async (req, res) => {
+  try {
+    const soapHost = process.env.SOAP_HOST;
+    const soapPort = parseInt(process.env.SOAP_PORT);
+    const soapUser = process.env.SOAP_USER;
+    const soapPass = process.env.SOAP_PASS;
+
+    if (!soapHost || !soapPort || !soapUser) {
+      return res.json({ success: false, message: 'SOAP not configured in .env' });
+    }
+
+    const result = await SoapService.executeRaw(soapHost, soapPort, soapUser, soapPass, 'server info');
+    res.json({ success: true, message: result || 'SOAP connection successful.' });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
 router.post('/gamemail', async (req, res, next) => {
   try {
     const { character, subject, message } = req.body;
@@ -587,6 +664,41 @@ router.post('/gamemail', async (req, res, next) => {
     req.flash('error', `Failed: ${err.message}`);
     res.redirect('/admin/gamemail');
   }
+});
+
+/* ================================================================== */
+/*  Progression Timeline                                               */
+/* ================================================================== */
+router.get('/progression', async (req, res, next) => {
+  try {
+    const currentPhase = parseInt(SiteConfig.get('progression_phase')) || 0;
+    const [phases] = await db.cms.query('SELECT phase, release_date FROM mw_progression_phases ORDER BY phase');
+    const phaseMap = {};
+    phases.forEach(p => { phaseMap[p.phase] = p.release_date || ''; });
+    res.render('pages/admin/progression', {
+      title: 'Progression Timeline', layout: 'layouts/admin',
+      currentPhase, phaseMap, helpers
+    });
+  } catch (err) { next(err); }
+});
+
+router.post('/progression', async (req, res, next) => {
+  try {
+    const newPhase = parseInt(req.body.current_phase);
+    if (!isNaN(newPhase) && newPhase >= 0 && newPhase <= 18) {
+      await SiteConfig.update({ progression_phase: String(newPhase) });
+    }
+    // Update release dates
+    for (let i = 0; i <= 18; i++) {
+      const dateVal = req.body['date_' + i] || '';
+      await db.cms.query(
+        'INSERT INTO mw_progression_phases (phase, release_date) VALUES (?, ?) ON DUPLICATE KEY UPDATE release_date = ?',
+        [i, dateVal, dateVal]
+      );
+    }
+    req.flash('success', 'Progression timeline updated.');
+    res.redirect('/admin/progression');
+  } catch (err) { next(err); }
 });
 
 /* ================================================================== */
