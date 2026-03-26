@@ -218,7 +218,7 @@ router.post('/siteconfig', async (req, res, next) => {
       'site_title', 'site_email', 'emulator',
       'templates', 'default_lang', 'available_lang',
       'site_armory', 'site_forums', 'default_realm_id',
-      'site_notice_enable',
+      'site_notice_enable', 'site_notice_text',
       'fp_serverinfo', 'fp_realm_status', 'fp_players_online',
       'fp_vote_banner', 'fp_newbie_guide', 'fp_hitcounter',
       'module_online_list', 'module_voting',
@@ -685,11 +685,11 @@ router.get('/progression', async (req, res, next) => {
 router.post('/progression', async (req, res, next) => {
   try {
     const newPhase = parseInt(req.body.current_phase);
-    if (!isNaN(newPhase) && newPhase >= 0 && newPhase <= 18) {
+    if (!isNaN(newPhase) && newPhase >= 0 && newPhase <= 15) {
       await SiteConfig.update({ progression_phase: String(newPhase) });
     }
     // Update release dates
-    for (let i = 0; i <= 18; i++) {
+    for (let i = 0; i <= 15; i++) {
       const dateVal = req.body['date_' + i] || '';
       await db.cms.query(
         'INSERT INTO mw_progression_phases (phase, release_date) VALUES (?, ?) ON DUPLICATE KEY UPDATE release_date = ?',

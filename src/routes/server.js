@@ -100,6 +100,11 @@ router.get('/', async (req, res, next) => {
 /* GET /server/online — Players Online */
 router.get('/online', async (req, res, next) => {
   try {
+    const SiteConfig = require('../models/Config');
+    if (!SiteConfig.enabled('module_online_list')) {
+      req.flash('error', 'Online list is currently disabled.');
+      return res.redirect('/');
+    }
     const allOnline = await Character.getOnline();
     // Identify bot accounts (RNDBOT*, case-insensitive)
     let botIds = new Set();
@@ -336,25 +341,26 @@ router.get('/progression', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* GET /server/commands — GM Commands (auth required) */
+/* GET /server/commands — Player & GM Commands */
 router.get('/commands', async (req, res, next) => {
   try {
-    if (!req.user) {
-      req.flash('error', 'Please log in.');
-      return res.redirect('/auth/login');
-    }
-
     let commands = [];
+    let gmCommands = [];
     try {
-      const [rows] = await db.world.query(
-        'SELECT name FROM command ORDER BY name'
-      );
-      commands = rows;
+      if (db.world) {
+        const [rows] = await db.world.query(
+          'SELECT name, security, help FROM command ORDER BY security, name'
+        );
+        // security 0 = player commands, 1+ = GM/Admin
+        commands = rows.filter(r => r.security === 0);
+        gmCommands = rows.filter(r => r.security > 0);
+      }
     } catch { /* world db might not be available */ }
 
+    const isGM = req.user && req.user.isAdmin;
     res.render('pages/server/commands', {
-      title: 'GM/Server Commands',
-      commands
+      title: 'Server Commands',
+      commands, gmCommands, isGM
     });
   } catch (err) { next(err); }
 });

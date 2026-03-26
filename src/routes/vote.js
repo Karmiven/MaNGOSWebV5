@@ -19,6 +19,11 @@ function formatCooldown(seconds) {
 /* GET /vote */
 router.get('/', requireAuth, async (req, res, next) => {
   try {
+    const SiteConfig = require('../models/Config');
+    if (!SiteConfig.enabled('module_voting')) {
+      req.flash('error', 'Voting is currently disabled.');
+      return res.redirect('/');
+    }
     const sites = await Vote.getSites();
     const ip = req.ip || '0.0.0.0';
 
@@ -41,6 +46,11 @@ router.get('/', requireAuth, async (req, res, next) => {
 
 /* POST /vote/:siteId — process a vote */
 router.post('/:siteId', requireAuth, async (req, res, next) => {
+  const SiteConfig = require('../models/Config');
+  if (!SiteConfig.enabled('module_voting')) {
+    req.flash('error', 'Voting is currently disabled.');
+    return res.redirect('/');
+  }
   const conn = await db.cms.getConnection();
   try {
     await conn.beginTransaction();

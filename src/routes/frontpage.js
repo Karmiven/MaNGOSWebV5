@@ -5,6 +5,7 @@ const Account = require('../models/Account');
 const Realm = require('../models/Realm');
 const Character = require('../models/Character');
 const helpers = require('../utils/helpers');
+const SiteConfig = require('../models/Config');
 
 /* Cache for server info to avoid TCP check on every request */
 let cachedServerInfo = null;
@@ -93,7 +94,8 @@ async function getServerInfo() {
 router.get('/', async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const perPage = 5;
+    const cfg = SiteConfig.get();
+    const perPage = parseInt(cfg.module_news_items) || 5;
 
     const [totalNews, onlineStats] = await Promise.all([
       News.count(),
@@ -103,8 +105,9 @@ router.get('/', async (req, res, next) => {
     const news = await News.getAll(pag.perPage, pag.offset);
     const serverInfo = await getServerInfo();
 
+    const newsOpen = parseInt(cfg.module_news_open) || 3;
     res.render('pages/home', {
-      news, onlineStats, pag, helpers, serverInfo
+      news, onlineStats, pag, helpers, serverInfo, newsOpen
     });
   } catch (err) { next(err); }
 });

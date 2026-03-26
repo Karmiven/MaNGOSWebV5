@@ -85,6 +85,9 @@
           { key: 'fp_hitcounter',      label: 'Hit Counter' },
           { key: 'site_notice_enable', label: 'Site Notice' },
         ];
+        var fpTextFields = [
+          { key: 'site_notice_text',   label: 'Notice Text' },
+        ];
       %>
       <% fpModules.forEach(function(m) { %>
         <div class="col-md-2">
@@ -93,6 +96,12 @@
             <option value="1" <%= config[m.key]=='1'?'selected':'' %>>On</option>
             <option value="0" <%= config[m.key]!='1'?'selected':'' %>>Off</option>
           </select>
+        </div>
+      <% }) %>
+      <% fpTextFields.forEach(function(m) { %>
+        <div class="col-md-12 mt-2">
+          <label class="form-label text-muted"><%= m.label %></label>
+          <input type="text" name="<%= m.key %>" class="form-control form-control-sm bg-dark text-light border-secondary" value="<%= config[m.key] || '' %>">
         </div>
       <% }) %>
     </div>
@@ -106,9 +115,8 @@
         var modules = [
           { key: 'module_online_list',   label: 'Online List' },
           { key: 'module_voting',        label: 'Voting' },
-          { key: 'module_fp_ssotd',      label: 'SSOTD' },
-          { key: 'module_news_items',    label: 'News Items #', type: 'number' },
-          { key: 'module_news_open',     label: 'News Open #', type: 'number' },
+          { key: 'module_news_items',    label: 'News per Page', type: 'number' },
+          { key: 'module_news_open',     label: 'News Expanded', type: 'number' },
           { key: 'enable_debugging',     label: 'Debug Mode' },
         ];
       %>

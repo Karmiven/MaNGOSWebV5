@@ -1,57 +1,159 @@
-<!-- GM Commands — V4 Blizzlike Style -->
-<div class="subheader-bar">
-  <div class="sh-left"></div>
-  <div class="sh-mid"><b>GM Commands</b></div>
-  <div class="sh-right"></div>
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var _commands = typeof commands !== 'undefined' ? commands : [];
+  var _gmCommands = typeof gmCommands !== 'undefined' ? gmCommands : [];
+  var _isGM = typeof isGM !== 'undefined' && isGM;
+
+  var securityLabels = {
+    0: 'Player',
+    1: 'Moderator',
+    2: 'Game Master',
+    3: 'Administrator'
+  };
+
+  function secLabel(sec) {
+    return securityLabels[sec] || 'Level ' + sec;
+  }
+%>
+
+<style type="text/css">
+  td.cmdRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; }
+  td.cmdRow2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 5px 8px; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+  .cmd-name { font-family: 'Courier New', monospace; font-weight: bold; color: rgb(35, 67, 3); }
+  .cmd-help { font-size: 11px; color: #555; line-height: 1.4; }
+  .cmd-security { font-size: 10px; font-weight: bold; }
+  .sec-player { color: #234303; }
+  .sec-mod { color: #856404; }
+  .sec-gm { color: #0d5aa7; }
+  .sec-admin { color: #8b0000; }
+</style>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Server Commands' }) %>
+
+<div style="padding:10px 20px;">
+  These are the commands available to players in-game. Type them in the chat window.
 </div>
 
-<% if (!user || user.gmlevel < 3) { %>
-  <p style="color:#c00; background:#200; padding:8px; border:1px solid #600;">Access denied. GM privileges required.</p>
+<!-- Player Commands -->
+<%- include('../../partials/subheader', { subheader: 'Player Commands' }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" nowrap="nowrap" width="200">&nbsp;Command</td>
+    <td class="rankingHeader" nowrap="nowrap">&nbsp;Description</td>
+  </tr>
+  <tr>
+    <td colspan="2" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
+<% if (_commands.length > 0) { %>
+  <% _commands.forEach(function(cmd, idx) {
+    var rowClass = (idx % 2 === 0) ? 'cmdRow1' : 'cmdRow2';
+    var rawHelp = (cmd.help || '').trim();
+    var syntaxLine = '';
+    var helpText = '';
+    if (rawHelp) {
+      var lines = rawHelp.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(function(l) { return l; });
+      if (lines.length > 0 && lines[0].indexOf('Syntax:') === 0) {
+        syntaxLine = lines[0].replace(/^Syntax:\s*/, '');
+        helpText = lines.slice(1).join(' ');
+      } else {
+        helpText = lines.join(' ');
+      }
+    }
+  %>
+  <tr>
+    <td class="<%= rowClass %>" valign="top">
+      <span class="cmd-name">.<%= cmd.name %></span>
+      <% if (syntaxLine) { %>
+        <br><span style="font-family:'Courier New',monospace; font-size:10px; color:#777;"><%= syntaxLine %></span>
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>">
+      <% if (helpText) { %>
+        <span class="cmd-help"><%= helpText %></span>
+      <% } else if (syntaxLine) { %>
+        <span class="cmd-help" style="color:#888;"><%= syntaxLine %></span>
+      <% } else { %>
+        <span style="color:#999; font-size:11px;">—</span>
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
 <% } else { %>
-  <table class="blizz-table" style="width:100%; margin-bottom:10px;">
-    <tr><th>Send Command</th></tr>
-    <tr><td>
-      <form method="POST" action="/server/commands" class="blizz-form">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <table cellspacing="0" cellpadding="0" style="width:100%;"><tr>
-          <td style="width:140px; padding-right:6px;">
-            <label>Realm</label>
-            <select name="realmId" style="width:100%; padding:4px; background:#0a1929; color:#ccc; border:1px solid #1a3a5c;">
-              <% realms.forEach(r => { %>
-                <option value="<%= r.id %>"><%= r.name %></option>
-              <% }) %>
-            </select>
-          </td>
-          <td style="padding-right:6px;">
-            <label>Command</label>
-            <input type="text" name="command" placeholder=".server info" required style="width:100%;">
-          </td>
-          <td style="width:80px; vertical-align:bottom;">
-            <button type="submit" class="btn-blizz" style="width:100%; margin-top:18px;">Execute</button>
-          </td>
-        </tr></table>
-      </form>
-    </td></tr>
-  </table>
-
-  <% if (typeof result !== 'undefined' && result) { %>
-    <table class="blizz-table" style="width:100%; margin-bottom:10px;">
-      <tr><th>Result</th></tr>
-      <tr><td><pre style="color:#6f6; background:#000; padding:8px; margin:0; white-space:pre-wrap; font-family:monospace;"><%= result %></pre></td></tr>
-    </table>
-  <% } %>
-
-  <table class="blizz-table" style="width:100%;">
-    <tr><th colspan="2">Common Commands</th></tr>
-    <tr style="background:#05374a; color:#d0a803;"><td><b>Command</b></td><td><b>Description</b></td></tr>
-    <tr class="pvpboxrow"><td style="font-family:monospace; color:#6f6;">.server info</td><td>Show server information</td></tr>
-    <tr class="pvpboxrowalt"><td style="font-family:monospace; color:#6f6;">.server shutdown [seconds]</td><td>Shutdown server</td></tr>
-    <tr class="pvpboxrow"><td style="font-family:monospace; color:#6f6;">.account create [name] [pass]</td><td>Create account</td></tr>
-    <tr class="pvpboxrowalt"><td style="font-family:monospace; color:#6f6;">.send items [player] "subject" "text" [itemId:count]</td><td>Send items</td></tr>
-    <tr class="pvpboxrow"><td style="font-family:monospace; color:#6f6;">.send money [player] "subject" "text" [amount]</td><td>Send gold</td></tr>
-    <tr class="pvpboxrowalt"><td style="font-family:monospace; color:#6f6;">.announce [message]</td><td>Server-wide announcement</td></tr>
-    <tr class="pvpboxrow"><td style="font-family:monospace; color:#6f6;">.ban account [name] [duration] [reason]</td><td>Ban account</td></tr>
-    <tr class="pvpboxrowalt"><td style="font-family:monospace; color:#6f6;">.unban account [name]</td><td>Unban account</td></tr>
-    <tr class="pvpboxrow"><td style="font-family:monospace; color:#6f6;">.lookup item [name]</td><td>Search for items</td></tr>
-  </table>
+  <tr>
+    <td class="cmdRow1" colspan="2" align="center" style="padding:20px; color:#666;">
+      No player commands found. World database may not be connected.
+    </td>
+  </tr>
 <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+<br/>
+
+<% if (_isGM && _gmCommands.length > 0) { %>
+<!-- GM/Admin Commands (only visible to GMs) -->
+<%- include('../../partials/subheader', { subheader: 'GM / Admin Commands' }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" nowrap="nowrap" width="200">&nbsp;Command</td>
+    <td class="rankingHeader" nowrap="nowrap" width="90" align="center">Level</td>
+    <td class="rankingHeader" nowrap="nowrap">&nbsp;Description</td>
+  </tr>
+  <tr>
+    <td colspan="3" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
+  <% _gmCommands.forEach(function(cmd, idx) {
+    var rowClass = (idx % 2 === 0) ? 'cmdRow1' : 'cmdRow2';
+    var rawHelp = (cmd.help || '').trim();
+    var syntaxLine = '';
+    var helpText = '';
+    if (rawHelp) {
+      var lines = rawHelp.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(function(l) { return l; });
+      if (lines.length > 0 && lines[0].indexOf('Syntax:') === 0) {
+        syntaxLine = lines[0].replace(/^Syntax:\s*/, '');
+        helpText = lines.slice(1).join(' ');
+      } else {
+        helpText = lines.join(' ');
+      }
+    }
+    var secClass = cmd.security === 1 ? 'sec-mod' : cmd.security === 2 ? 'sec-gm' : 'sec-admin';
+  %>
+  <tr>
+    <td class="<%= rowClass %>" valign="top">
+      <span class="cmd-name">.<%= cmd.name %></span>
+      <% if (syntaxLine) { %>
+        <br><span style="font-family:'Courier New',monospace; font-size:10px; color:#777;"><%= syntaxLine %></span>
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <span class="cmd-security <%= secClass %>"><%= secLabel(cmd.security) %></span>
+    </td>
+    <td class="<%= rowClass %>">
+      <% if (helpText) { %>
+        <span class="cmd-help"><%= helpText %></span>
+      <% } else if (syntaxLine) { %>
+        <span class="cmd-help" style="color:#888;"><%= syntaxLine %></span>
+      <% } else { %>
+        <span style="color:#999; font-size:11px;">—</span>
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+<br/>
+<% } %>
+
+<%- include('../../partials/builddiv_end') %>

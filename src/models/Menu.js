@@ -24,7 +24,7 @@ const Menu = {
   /* ---- Menu cache (shared across all requests) ---- */
   _menuCache: {},
   _menuCacheTime: {}, // per-key timestamps to avoid shared TTL bug
-  MENU_CACHE_TTL: 120000, // 2 minutes
+  MENU_CACHE_TTL: 30000, // 30 seconds
 
   /** Clear the menu cache — call after any create / update / delete */
   clearCache() {

@@ -2,30 +2,27 @@
 
 <%
   var expansions = [
-    { name: 'Vanilla', color: '#c59a4a', phases: [
-      { id: 0,  title: 'Leveling & Dungeons' },
-      { id: 1,  title: "Molten Core, Onyxia's Lair" },
-      { id: 2,  title: 'Dire Maul, Azuregos, Lord Kazzak, AV, WSG' },
-      { id: 3,  title: "Blackwing Lair, Darkmoon Faire, AB" },
-      { id: 4,  title: "Zul'Gurub, Dragons of Nightmare" },
-      { id: 5,  title: "Ahn'Qiraj, Fishing Extravaganza" },
-      { id: 6,  title: 'Naxxramas, Scourge Invasion' }
+    { name: 'Classic', color: '#c59a4a', phases: [
+      { id: 0,  num: 1, title: "Launch — Molten Core, Onyxia's Lair" },
+      { id: 1,  num: 2, title: 'Dire Maul — Azuregos, Lord Kazzak' },
+      { id: 2,  num: 3, title: 'Blackwing Lair — Darkmoon Faire, AB' },
+      { id: 3,  num: 4, title: "Rise of the Blood God — Zul'Gurub, Dragons of Nightmare" },
+      { id: 4,  num: 5, title: "The Gates of Ahn'Qiraj — AQ20, AQ40" },
+      { id: 5,  num: 6, title: 'Shadow of the Necropolis — Naxxramas, Scourge Invasion' }
     ]},
     { name: 'The Burning Crusade', color: '#4a9c3a', phases: [
-      { id: 7,  title: 'Outland, Blood Elf, Draenei, Jewelcrafting' },
-      { id: 8,  title: "Karazhan, Gruul's Lair, Magtheridon, S1" },
-      { id: 9,  title: 'SSC, Tempest Keep, Ogri\'la, S2' },
-      { id: 10, title: 'Hyjal, Black Temple, S3' },
-      { id: 11, title: "Zul'Aman" },
-      { id: 12, title: "Sunwell Plateau, Isle of Quel'Danas, S4" }
+      { id: 6,  num: 1, title: "Through the Dark Portal — Karazhan, Gruul's, Magtheridon" },
+      { id: 7,  num: 2, title: 'Lords of Outland — SSC, The Eye, Season 2' },
+      { id: 8,  num: 3, title: 'The Battle for Mount Hyjal — Black Temple, Season 3' },
+      { id: 9,  num: 4, title: "The Gods of Zul'Aman" },
+      { id: 10, num: 5, title: "The Sunwell — Sunwell Plateau, Isle of Quel'Danas, Season 4" }
     ]},
     { name: 'Wrath of the Lich King', color: '#3a7ac5', phases: [
-      { id: 13, title: 'Northrend, Death Knight, SotA' },
-      { id: 14, title: 'Naxxramas, EoE, OS, VoA, S5' },
-      { id: 15, title: 'Ulduar, Isle of Conquest, S6' },
-      { id: 16, title: 'Trial of the Crusader, Onyxia, S7' },
-      { id: 17, title: 'ICC, Forge of Souls, PoS, HoR, S8' },
-      { id: 18, title: 'Ruby Sanctum' }
+      { id: 11, num: 1, title: 'Launch — Naxxramas, EoE, OS, VoA, Season 5' },
+      { id: 12, num: 2, title: 'Secrets of Ulduar — Season 6' },
+      { id: 13, num: 3, title: 'Call of the Crusade — ToC, Onyxia Revamp, Season 7' },
+      { id: 14, num: 4, title: 'Fall of the Lich King — ICC, Season 8' },
+      { id: 15, num: 5, title: 'Assault on the Ruby Sanctum' }
     ]}
   ];
 %>
@@ -46,7 +43,7 @@
               <optgroup label="<%= exp.name %>">
                 <% exp.phases.forEach(function(ph) { %>
                   <option value="<%= ph.id %>" <%= currentPhase === ph.id ? 'selected' : '' %>>
-                    Phase <%= ph.id %> — <%= ph.title %>
+                    Phase <%= ph.num %> — <%= ph.title %>
                   </option>
                 <% }); %>
               </optgroup>
@@ -82,7 +79,7 @@
               var isPast = ph.id < currentPhase;
             %>
               <tr class="<%= isLive ? 'table-success' : (isPast ? '' : 'text-muted') %>">
-                <td><strong><%= ph.id %></strong></td>
+                <td><strong><%= ph.num %></strong></td>
                 <td><%= ph.title %></td>
                 <td>
                   <% if (isLive) { %>

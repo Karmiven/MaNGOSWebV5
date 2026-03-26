@@ -1,13 +1,13 @@
 
 <%
   var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
-  var defaultOpen = 3;
+  var defaultOpen = (typeof newsOpen !== 'undefined') ? newsOpen : 3;
 %>
 <!-- ===== NEWS MODULE (V4-exact) ===== -->
 <div style="margin-left: -29px">
 <div id="module-container">
 <div style="width:470px;"></div>
-<img style="margin-top: -55px;margin-bottom: 30px;" src="/images/news/banner_top.png" alt="" width="470"/>
+<img style="margin-top: -55px;margin-bottom: 30px;" src="<%= tp %>/images/banner_top.png" alt="" width="470"/>
 </div>
 <div class="module-container">
 <% if (typeof news !== 'undefined' && news && news.length) { %>

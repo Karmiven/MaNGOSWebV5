@@ -38,10 +38,10 @@
     <div class="tn_interior">
       <a href="/">Home</a>
       <a href="/server">Server</a>
-      <a href="/server/online">Players</a>
+      <% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.module_online_list != '0') { %><a href="/server/online">Players</a><% } %>
       <a href="/server/topkills">Top Kills</a>
       <a href="/shop">Shop</a>
-      <a href="/vote">Vote</a>
+      <% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.module_voting != '0') { %><a href="/vote">Vote</a><% } %>
       <a href="/donate">Donate</a>
       <a href="/support">Support</a>
     </div>
@@ -191,6 +191,12 @@
                                                               <% flash_error.forEach(function(msg) { %>
                                                                 <div class="flash-message flash-error"><%= msg %></div>
                                                               <% }); %>
+                                                            <% } %>
+                                                            <!-- Site Notice -->
+                                                            <% if (typeof siteConfig !== 'undefined' && siteConfig && siteConfig.site_notice_enable == '1' && siteConfig.site_notice_text) { %>
+                                                              <div style="background:#fff3cd; border:1px solid #c5a96a; padding:8px 12px; margin:5px 0 10px 0; font-size:12px; color:#664d03;">
+                                                                <b>Notice:</b> <%= siteConfig.site_notice_text %>
+                                                              </div>
                                                             <% } %>
                                                             <!-- Component body BEGIN -->
 

@@ -32,30 +32,68 @@
   }
 
   var expansions = [
-    { name: 'Vanilla', phases: [
-      { id: 0,  title: 'Leveling & Dungeons' },
-      { id: 1,  title: "Molten Core, Onyxia's Lair" },
-      { id: 2,  title: 'Dire Maul, Azuregos, Lord Kazzak, AV, WSG' },
-      { id: 3,  title: 'Blackwing Lair, Darkmoon Faire, AB' },
-      { id: 4,  title: "Zul'Gurub, Dragons of Nightmare" },
-      { id: 5,  title: "Ahn'Qiraj, Fishing Extravaganza" },
-      { id: 6,  title: 'Naxxramas, Scourge Invasion' }
+    { name: 'Classic', phases: [
+      { id: 0,  num: 1, title: 'Launch',
+        raids: ["Molten Core", "Onyxia's Lair"],
+        dungeons: ['Maraudon'],
+        pvp: ['Alterac Valley', 'Warsong Gulch'] },
+      { id: 1,  num: 2, title: 'Dire Maul',
+        raids: [],
+        dungeons: ['Dire Maul'],
+        world: ['Azuregos', 'Lord Kazzak'],
+        pvp: ['Honor System', 'PvP Ranks'] },
+      { id: 2,  num: 3, title: 'Blackwing Lair',
+        raids: ['Blackwing Lair'],
+        world: ['Darkmoon Faire'],
+        pvp: ['Arathi Basin'] },
+      { id: 3,  num: 4, title: 'Rise of the Blood God',
+        raids: ["Zul'Gurub"],
+        world: ['Dragons of Nightmare'],
+        other: ['Fishing Extravaganza'] },
+      { id: 4,  num: 5, title: "The Gates of Ahn'Qiraj",
+        raids: ["Temple of Ahn'Qiraj", "Ruins of Ahn'Qiraj"],
+        world: ["Ahn'Qiraj War Effort"],
+        other: ['Tier 0.5 Dungeon Set Upgrade'] },
+      { id: 5,  num: 6, title: 'Shadow of the Necropolis',
+        raids: ['Naxxramas'],
+        world: ['Scourge Invasion Event'] }
     ]},
     { name: 'The Burning Crusade', phases: [
-      { id: 7,  title: 'Outland, Blood Elf, Draenei, Jewelcrafting' },
-      { id: 8,  title: "Karazhan, Gruul's Lair, Magtheridon, S1" },
-      { id: 9,  title: "SSC, Tempest Keep, Ogri'la, S2" },
-      { id: 10, title: 'Hyjal, Black Temple, S3' },
-      { id: 11, title: "Zul'Aman" },
-      { id: 12, title: "Sunwell Plateau, Isle of Quel'Danas, S4" }
+      { id: 6,  num: 1, title: 'Through the Dark Portal',
+        raids: ["Karazhan", "Gruul's Lair", "Magtheridon's Lair"],
+        dungeons: ['All 5-man Dungeons (Normal & Heroic)'],
+        pvp: ['Arena Season 1'] },
+      { id: 7,  num: 2, title: 'Lords of Outland',
+        raids: ['Serpentshrine Cavern', "The Eye"],
+        world: ["Ogri'la", 'Sha\'tari Skyguard'],
+        pvp: ['Arena Season 2'] },
+      { id: 8,  num: 3, title: 'The Battle for Mount Hyjal',
+        raids: ['Hyjal Summit', 'Black Temple'],
+        pvp: ['Arena Season 3'] },
+      { id: 9,  num: 4, title: "The Gods of Zul'Aman",
+        raids: ["Zul'Aman"] },
+      { id: 10, num: 5, title: 'The Sunwell',
+        raids: ['Sunwell Plateau'],
+        world: ["Isle of Quel'Danas"],
+        pvp: ['Arena Season 4'] }
     ]},
     { name: 'Wrath of the Lich King', phases: [
-      { id: 13, title: 'Northrend, Death Knight, SotA' },
-      { id: 14, title: 'Naxxramas, EoE, OS, VoA, S5' },
-      { id: 15, title: 'Ulduar, Isle of Conquest, S6' },
-      { id: 16, title: 'Trial of the Crusader, Onyxia, S7' },
-      { id: 17, title: 'ICC, Forge of Souls, PoS, HoR, S8' },
-      { id: 18, title: 'Ruby Sanctum' }
+      { id: 11, num: 1, title: 'Launch',
+        raids: ['Naxxramas', 'The Eye of Eternity', 'The Obsidian Sanctum', 'Vault of Archavon'],
+        dungeons: ['All 5-man Dungeons (Normal & Heroic)'],
+        pvp: ['Strand of the Ancients', 'Arena Season 5'] },
+      { id: 12, num: 2, title: 'Secrets of Ulduar',
+        raids: ['Ulduar'],
+        pvp: ['Isle of Conquest', 'Arena Season 6'] },
+      { id: 13, num: 3, title: 'Call of the Crusade',
+        raids: ['Trial of the Crusader', "Onyxia's Lair (Revamp)"],
+        pvp: ['Arena Season 7'] },
+      { id: 14, num: 4, title: 'Fall of the Lich King',
+        raids: ['Icecrown Citadel'],
+        dungeons: ['Forge of Souls', 'Pit of Saron', 'Halls of Reflection'],
+        pvp: ['Arena Season 8'] },
+      { id: 15, num: 5, title: 'Assault on the Ruby Sanctum',
+        raids: ['Ruby Sanctum'] }
     ]}
   ];
 %>
@@ -63,12 +101,12 @@
   td.tlRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; }
   td.tlRow2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 5px 8px; }
   td.tlRowLive { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #c5e6a8; padding: 5px 8px; }
-  td.tlRowFuture { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; opacity: 0.5; }
-  td.tlRowFuture2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 5px 8px; opacity: 0.5; }
+  td.tlRowFuture { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; opacity: 0.75; }
+  td.tlRowFuture2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 5px 8px; opacity: 0.75; }
   td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
 </style>
-
-<%- include('../../partials/builddiv_start', { type: 0, title: '' }) %>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Progression Timeline' }) %>
 
 <div style="padding:10px 20px 10px 20px;">
   This timeline shows the progression of content phases for our server.
@@ -85,8 +123,8 @@
 <table cellpadding="3" cellspacing="0" width="100%">
 <tbody>
   <tr>
-    <td class="rankingHeader" align="center" nowrap="nowrap" width="50">Phase</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap">Content</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="60">Phase</td>
+    <td class="rankingHeader" nowrap="nowrap">&nbsp;Content</td>
     <td class="rankingHeader" align="center" nowrap="nowrap" width="90">Status</td>
     <td class="rankingHeader" align="center" nowrap="nowrap" width="120">Date</td>
   </tr>
@@ -112,16 +150,28 @@
   %>
   <tr>
     <td class="<%= rowClass %>" align="center">
-      <b><%= ph.id %></b>
+      <b><%= ph.num %></b>
     </td>
-    <td class="<%= rowClass %>">
-      <% if (isLive) { %>
-        <b style="color: rgb(35, 67, 3);"><%= ph.title %></b>
-      <% } else if (isPast) { %>
-        <span style="color:#555;"><%= ph.title %></span>
-      <% } else { %>
-        <span style="color:#777;"><%= ph.title %></span>
-      <% } %>
+    <td class="<%= rowClass %>" style="padding: 6px 8px;">
+      <%
+        var titleColor = isLive ? 'color:rgb(35,67,3);' : isPast ? 'color:#555;' : 'color:#4a4a4a;';
+        var detailColor = isLive ? 'color:#3a6e1a;' : isPast ? 'color:#777;' : 'color:#666;';
+        var categories = [
+          { key: 'raids', icon: '&#9876;', label: 'Raids' },
+          { key: 'dungeons', icon: '&#9961;', label: 'Dungeons' },
+          { key: 'pvp', icon: '&#9876;', label: 'PvP' },
+          { key: 'world', icon: '&#9733;', label: 'World' },
+          { key: 'other', icon: '&#8226;', label: '' }
+        ];
+      %>
+      <b style="<%= titleColor %> font-size: 12px;"><%= ph.title %></b>
+      <div style="<%= detailColor %> font-size: 11px; margin-top: 2px; line-height: 1.5;">
+        <% categories.forEach(function(cat) {
+          if (ph[cat.key] && ph[cat.key].length > 0) { %>
+            <div><span style="font-size:10px; opacity:0.7;"><%= cat.label ? cat.label + ':' : '' %></span> <%- ph[cat.key].join(', ') %></div>
+        <% }
+        }); %>
+      </div>
     </td>
     <td class="<%= rowClass %>" align="center">
       <% if (isLive) { %>

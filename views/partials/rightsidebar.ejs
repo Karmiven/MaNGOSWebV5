@@ -32,6 +32,7 @@
 <span class="gfxhook"></span>
 <hr>
 
+<% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.fp_vote_banner != '0') { %>
 <!-- VoteLinks -->
 <div id="box3">
 <h3>Vote for Us</h3>
@@ -45,7 +46,9 @@ Vote for our server and earn rewards!<br />
 </ul></div>
 <span class="gfxhook"></span>
 <hr>
+<% } %>
 
+<% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.fp_newbie_guide != '0') { %>
 <!-- Newcomers section -->
 <div id="rightbox">
 <div class="newcommer">
@@ -61,9 +64,10 @@ Welcome to our World of Warcraft server!
 </ul>
 </div>
 </div>
+<% } %>
 
 <!-- Server Information -->
-<% if (typeof serverInfo !== 'undefined' && serverInfo) { %>
+<% if (typeof serverInfo !== 'undefined' && serverInfo && (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.fp_serverinfo != '0')) { %>
 <div id="box3">
 <h3>Server Information</h3>
 <ul>
@@ -76,6 +80,7 @@ Welcome to our World of Warcraft server!
 <b>Realm name:</b>&nbsp;<%= serverInfo.name %>
 </div></li>
 
+<% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.fp_realm_status != '0') { %>
 <li><div>
 <b>Realmstatus:</b>&nbsp;<% if (serverInfo.online) { %>
   <img src="<%= tp %>/images/uparrow2.gif" height="15" alt="Online" style="vertical-align:middle;" /> <font color="#23430a">Online</font>
@@ -83,13 +88,16 @@ Welcome to our World of Warcraft server!
   <img src="<%= tp %>/images/downarrow2.gif" height="15" alt="Offline" style="vertical-align:middle;" /> <font color="#cc2200">Offline</font>
 <% } %>
 </div></li>
+<% } %>
 
+<% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.fp_players_online != '0') { %>
 <li><div>
 <b>Online:</b>&nbsp;
 <span title="Players online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlinePlayers || 0 %></a></span>
  / <span title="Bots online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlineBots || 0 %></a></span>
  (<a href="/server/online">Playermap</a>)
 </div></li>
+<% } %>
 
 <li><div>
 <b>Server IP:</b>&nbsp;<%= serverInfo.address %>
@@ -122,4 +130,25 @@ Welcome to our World of Warcraft server!
 </ul></div>
 <span class="gfxhook"></span>
 <hr>
+<% } %>
+
+<% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.fp_hitcounter != '0') { %>
+<!-- Hit Counter / Online Visitors -->
+<% if (typeof onlineStats !== 'undefined' && onlineStats) { %>
+<div id="box3">
+<h3>Who's Online</h3>
+<ul>
+<li><div>
+<b>Visitors:</b>&nbsp;<%= onlineStats.total || 0 %>
+(<%= onlineStats.guests || 0 %> Guest<%= (onlineStats.guests || 0) !== 1 ? 's' : '' %>, <%= (onlineStats.members && onlineStats.members.length) || 0 %> Member<%= ((onlineStats.members && onlineStats.members.length) || 0) !== 1 ? 's' : '' %>)
+</div></li>
+<% if (onlineStats.members && onlineStats.members.length > 0) { %>
+<li><div>
+<b>Members:</b>&nbsp;<%= onlineStats.members.map(function(m) { return m.user_name; }).join(', ') %>
+</div></li>
+<% } %>
+</ul></div>
+<span class="gfxhook"></span>
+<hr>
+<% } %>
 <% } %>

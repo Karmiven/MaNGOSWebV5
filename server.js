@@ -161,9 +161,19 @@ app.set('layout extractScripts', true);
       // Load menus globally so every page gets the same left sidebar
       if (db.isInstalled()) {
         try {
-          const userLevel = req.user ? req.user.level : 1;
+          // Menu account_level: 1=everyone, 2=logged-in, 3=admin, 4=superadmin
           const isGuest = !req.user;
-          res.locals.menus = await Menu.getGrouped(userLevel, isGuest);
+          let menuLevel = 1; // guest
+          if (req.user) {
+            menuLevel = 2; // logged-in user
+            if (req.user.isAdmin) menuLevel = 3;
+            if (req.user.isSuperAdmin) menuLevel = 4;
+          }
+          res.locals.menus = await Menu.getGrouped(menuLevel, isGuest);
+          // Debug: log menu keys for account menu visibility
+          if (req.originalUrl === '/server/commands') {
+            console.log('[Menu Debug] user:', req.user ? req.user.username : 'guest', 'menuLevel:', menuLevel, 'isGuest:', isGuest, 'menu keys:', Object.keys(res.locals.menus));
+          }
         } catch (e) {
           console.error('[Menu] Error loading menus:', e.message);
         }
@@ -191,7 +201,7 @@ app.set('layout extractScripts', true);
     // [FIXED] Rate limiters for sensitive endpoints
     const authLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
-      max: 30,
+      max: 100,
       message: 'Too many requests, please try again later.',
       standardHeaders: true,
       legacyHeaders: false
@@ -210,7 +220,7 @@ app.set('layout extractScripts', true);
     app.use('/news', require('./src/routes/news'));
     app.use('/shop', require('./src/routes/shop'));
     app.use('/donate', require('./src/routes/donate'));
-    app.use('/vote', authLimiter, require('./src/routes/vote'));
+    app.use('/vote', require('./src/routes/vote'));
     app.use('/support', require('./src/routes/support'));
     app.use('/admin', require('./src/routes/admin'));
     app.use('/api', apiLimiter, require('./src/routes/api'));

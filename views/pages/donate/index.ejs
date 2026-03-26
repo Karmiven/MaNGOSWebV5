@@ -1,44 +1,80 @@
-
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var balance = (typeof user !== 'undefined' && user) ? (user.web_points || 0) : 0;
+%>
 <!-- Donate — V4 Blizzlike Style -->
-<div class="subheader-bar">
-  <div class="sh-left"></div>
-  <div class="sh-mid"><b>Donate</b></div>
-  <div class="sh-right"></div>
+<br>
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Donate' }) %>
+
+<style type="text/css">
+  td.donateRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 6px 8px; }
+  td.donateRow2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 6px 8px; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px;}
+</style>
+
+<div style="padding:10px 20px 10px 20px;">
+  Support the server by donating. You will receive Web Points that can be spent in the <a href="/shop" style="color:#1e4378;">Item Shop</a>.
 </div>
 
-<p>Support the server by donating. You will receive Web Points that can be spent in the <a href="/shop">Item Shop</a>.</p>
-
 <% if (typeof user !== 'undefined' && user) { %>
-  <div class="flash-message flash-info">Your balance: <b><%= user.web_points || 0 %> Points</b></div>
+  <div style="padding:5px 10px; margin: 0 20px 8px 20px; font-size:12px; background:#e8dcc0; border:1px solid #c5a96a; border-radius:2px;">
+    Your balance: <b style="color:#1e4378;"><%= balance %></b> Web Points
+  </div>
 <% } %>
 
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Package</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="90">Points</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="100">Price</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="180">Action</td>
+  </tr>
+  <tr>
+    <td colspan="4" style="background: url('<%= tp %>/images/shadow.gif');">
+      <img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""/>
+    </td>
+  </tr>
 <% if (typeof packages !== 'undefined' && packages && packages.length > 0) { %>
-  <table class="blizz-table">
-    <tr>
-      <th>Package</th>
-      <th>Points</th>
-      <th>Price</th>
-      <th>Action</th>
-    </tr>
-    <% packages.forEach(function(pkg) { %>
-      <tr>
-        <td><b><%= pkg.name %></b><% if (pkg.description) { %> <br><small style="color:#666;"><%= pkg.description %></small><% } %></td>
-        <td style="color:#1e4378; font-weight:bold;"><%= pkg.points %></td>
-        <td>$<%= parseFloat(pkg.price).toFixed(2) %> USD</td>
-        <td>
-          <% if (typeof user !== 'undefined' && user) { %>
-            <form method="POST" action="/donate/checkout" style="display:inline;">
-              <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-              <input type="hidden" name="packageId" value="<%= pkg.id %>">
-              <input type="submit" value="Donate via PayPal" class="btn-blizz">
-            </form>
-          <% } else { %>
-            <a href="/auth/login" class="btn-blizz">Login to Donate</a>
-          <% } %>
-        </td>
-      </tr>
-    <% }); %>
-  </table>
+  <% packages.forEach(function(pkg, idx) {
+    var rowClass = (idx % 2 === 0) ? 'donateRow1' : 'donateRow2';
+  %>
+  <tr>
+    <td class="<%= rowClass %>">
+      <b style="color: rgb(35, 67, 3);"><%= pkg.name %></b>
+      <% if (pkg.description) { %>
+        <br><span style="color:#666; font-size:10px;"><%= pkg.description %></span>
+      <% } %>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b style="color:#1e4378;"><%= pkg.points %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <b>$<%= parseFloat(pkg.price).toFixed(2) %></b>
+    </td>
+    <td class="<%= rowClass %>" align="center">
+      <% if (typeof user !== 'undefined' && user) { %>
+        <form method="POST" action="/donate/checkout" style="display:inline;">
+          <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+          <input type="hidden" name="packageId" value="<%= pkg.id %>">
+          <button type="submit" class="btn-blizz" style="padding:2px 12px; font-size:11px;">Donate via PayPal</button>
+        </form>
+      <% } else { %>
+        <a href="/auth/login" style="color:#1e4378; font-size:11px; font-weight:bold;">Login to Donate</a>
+      <% } %>
+    </td>
+  </tr>
+  <% }); %>
 <% } else { %>
-  <p style="padding:10px; color:#333;">No donation packages available at this time.</p>
+  <tr>
+    <td class="donateRow1" colspan="4" align="center" style="padding:20px; color:#666;">
+      No donation packages available at this time.
+    </td>
+  </tr>
 <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<%- include('../../partials/builddiv_end') %>
