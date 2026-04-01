@@ -3,8 +3,6 @@
   var balance = (typeof user !== 'undefined' && user) ? (user.web_points || 0) : 0;
 %>
 <!-- Donate — V4 Blizzlike Style -->
-<br>
-<%- include('../../partials/builddiv_start', { type: 0, title: 'Donate' }) %>
 
 <style type="text/css">
   td.donateRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 6px 8px; }
@@ -76,5 +74,3 @@
 </tbody>
 </table>
 <%- include('../../partials/metalborder_footer') %>
-
-<%- include('../../partials/builddiv_end') %>

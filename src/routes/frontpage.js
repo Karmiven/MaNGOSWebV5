@@ -7,13 +7,9 @@ const Character = require('../models/Character');
 const helpers = require('../utils/helpers');
 const SiteConfig = require('../models/Config');
 
-/* Cache for server info to avoid TCP check on every request */
-let cachedServerInfo = null;
-let serverInfoCacheTime = 0;
-const SERVER_INFO_CACHE_TTL = 15000; // 15 seconds
-let _serverInfoLoading = false;
-
+/* Server info — background refresh every 30 seconds */
 const DEFAULT_SERVER_INFO = { name: 'Realm', online: false, onlineCount: 0, onlinePlayers: 0, onlineBots: 0, address: '127.0.0.1', totalChars: 0, totalAccounts: 0, type: 'Normal', language: 'Development', population: 'Low', gamebuild: 0 };
+let cachedServerInfo = null;
 
 async function fetchServerInfo() {
   try {
@@ -21,21 +17,16 @@ async function fetchServerInfo() {
     const realms = await Realm.getEnabled();
     if (!realms.length) return DEFAULT_SERVER_INFO;
     const r = realms[0];
-    // Run TCP check and DB counts in parallel
     const [isOnline, charResult, accResult] = await Promise.all([
       Realm.checkStatus(r.address, r.port),
       db.char.query('SELECT COUNT(*) as cnt FROM characters').catch(() => [[{ cnt: 0 }]]),
       db.auth.query('SELECT COUNT(*) as cnt FROM account').catch(() => [[{ cnt: 0 }]])
     ]);
-    // .query() returns [rows, fields] — extract first row
     const totalChars = charResult[0][0].cnt;
     const totalAccounts = accResult[0][0].cnt;
-    let playersOnline = 0;
-    let onlinePlayers = 0;
-    let onlineBots = 0;
+    let playersOnline = 0, onlinePlayers = 0, onlineBots = 0;
     if (isOnline) {
       try {
-        // Get online characters and all bot account IDs in parallel
         const [[onRows], [botAccRows]] = await Promise.all([
           db.char.query('SELECT account FROM characters WHERE online = 1'),
           db.auth.query("SELECT id FROM account WHERE UPPER(username) LIKE 'RNDBOT%'")
@@ -60,34 +51,16 @@ async function fetchServerInfo() {
   } catch (e) { return cachedServerInfo || DEFAULT_SERVER_INFO; }
 }
 
-async function getServerInfo() {
-  const now = Date.now();
-  // Cache is fresh — return immediately
-  if (cachedServerInfo && (now - serverInfoCacheTime) < SERVER_INFO_CACHE_TTL) {
-    return cachedServerInfo;
-  }
-  // First ever load — must await so we have real data
-  if (!cachedServerInfo) {
-    if (!_serverInfoLoading) {
-      _serverInfoLoading = true;
-      try {
-        cachedServerInfo = await fetchServerInfo();
-        serverInfoCacheTime = Date.now();
-      } finally {
-        _serverInfoLoading = false;
-      }
-    }
-    return cachedServerInfo || DEFAULT_SERVER_INFO;
-  }
-  // Cache exists but stale — refresh in background, return stale data now
-  if (!_serverInfoLoading) {
-    _serverInfoLoading = true;
-    fetchServerInfo().then(info => {
-      cachedServerInfo = info;
-      serverInfoCacheTime = Date.now();
-    }).catch(() => {}).finally(() => { _serverInfoLoading = false; });
-  }
-  return cachedServerInfo;
+// Background refresh loop — runs every 30s regardless of page visits
+setInterval(() => {
+  fetchServerInfo().then(info => { cachedServerInfo = info; }).catch(() => {});
+}, 30000);
+
+// First fetch on startup
+fetchServerInfo().then(info => { cachedServerInfo = info; }).catch(() => {});
+
+function getServerInfo() {
+  return cachedServerInfo || DEFAULT_SERVER_INFO;
 }
 
 /* GET / — Homepage with news */
@@ -103,7 +76,7 @@ router.get('/', async (req, res, next) => {
     ]);
     const pag = helpers.paginate(totalNews, page, perPage);
     const news = await News.getAll(pag.perPage, pag.offset);
-    const serverInfo = await getServerInfo();
+    const serverInfo = getServerInfo();
 
     const newsOpen = parseInt(cfg.module_news_open) || 3;
     res.render('pages/home', {

@@ -199,9 +199,16 @@
                                                               </div>
                                                             <% } %>
                                                             <!-- Component body BEGIN -->
+                                                            <% if (!isFrontpage) { %>
+                                                            <br>
+                                                            <%- include('../partials/builddiv_start', { type: (typeof builddivType !== 'undefined' ? builddivType : 0), title: (typeof title !== 'undefined' ? title : '') }) %>
+                                                            <% } %>
 
                                                             <%- body %>
 
+                                                            <% if (!isFrontpage) { %>
+                                                            <%- include('../partials/builddiv_end') %>
+                                                            <% } %>
                                                             <!-- Component body END -->
                                                             </div>
                                                             </div>

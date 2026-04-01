@@ -2,6 +2,7 @@
 const router = require('express').Router();
 const Realm = require('../models/Realm');
 const Character = require('../models/Character');
+const Playermap = require('../models/Playermap');
 const db = require('../config/database');
 const helpers = require('../utils/helpers');
 const { getZoneName } = require('../utils/zones');
@@ -58,7 +59,7 @@ function paginate(numPages, curPage, linkTo) {
 /* ---- Server-page data cache ---- */
 let _serverCache = null;
 let _serverCacheTime = 0;
-const SERVER_CACHE_TTL = 60000; // 60 seconds
+const SERVER_CACHE_TTL = 120000; // 2 minutes
 
 async function getServerData() {
   const now = Date.now();
@@ -105,7 +106,17 @@ router.get('/online', async (req, res, next) => {
       req.flash('error', 'Online list is currently disabled.');
       return res.redirect('/');
     }
-    const allOnline = await Character.getOnline();
+    // Check if any realm is actually online before querying characters
+    const realms = await Realm.getEnabled();
+    let serverOnline = false;
+    for (const realm of realms) {
+      if (await Realm.checkStatus(realm.address, realm.port)) {
+        serverOnline = true;
+        break;
+      }
+    }
+
+    const allOnline = serverOnline ? await Character.getOnline() : [];
     // Identify bot accounts (RNDBOT*, case-insensitive)
     let botIds = new Set();
     if (allOnline.length) {
@@ -317,6 +328,7 @@ router.get('/stats', async (req, res, next) => {
 
     res.render('pages/server/stats', {
       title: 'Statistics',
+      builddivType: 1,
       totalAccounts: totalAccounts[0].c,
       totalChars, onlinePlayers,
       rc, numAlly, numHorde, numChars,
@@ -363,6 +375,25 @@ router.get('/commands', async (req, res, next) => {
       commands, gmCommands, isGM
     });
   } catch (err) { next(err); }
+});
+
+/* GET /server/playermap — Interactive World Map */
+router.get('/playermap', async (req, res, next) => {
+  try {
+    res.render('pages/server/playermap', {
+      title: 'Player Map'
+    });
+  } catch (err) { next(err); }
+});
+
+/* GET /server/playermap/data — AJAX endpoint for player positions */
+router.get('/playermap/data', async (req, res, next) => {
+  try {
+    const data = await Playermap.getData();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load map data' });
+  }
 });
 
 module.exports = router;

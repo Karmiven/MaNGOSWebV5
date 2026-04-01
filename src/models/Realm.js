@@ -70,7 +70,7 @@ const Realm = {
   /* ---- Realm status cache (shared across all routes) ---- */
   _statusCache: {},
   _statusCacheTime: {},
-  STATUS_CACHE_TTL: 120000, // 2 minutes
+  STATUS_CACHE_TTL: 30000, // 30 seconds
 
   /** Check if realm is online (TCP port check) — cached */
   async checkStatus(host, port, timeout = 800) {

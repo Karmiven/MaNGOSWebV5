@@ -11,8 +11,6 @@
   var botHordeCount = typeof botHorde !== 'undefined' ? botHorde : 0;
 %>
 <!-- Players Online — V4 Blizzlike Style -->
-<br>
-<%- include('../../partials/builddiv_start', { type: 0, title: 'Players Online' }) %>
 
 <style type="text/css">
   td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
@@ -164,4 +162,3 @@
 <div class="pagination-row">Pages: <%- botPagesStr %></div>
 <% } %>
 
-<%- include('../../partials/builddiv_end') %>

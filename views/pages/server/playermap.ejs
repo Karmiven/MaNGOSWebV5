@@ -1,0 +1,454 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var currentTheme = typeof theme !== 'undefined' ? theme : 'wotlk';
+  // Theme-based map availability
+  // vanilla = only Azeroth, tbc = Azeroth + Outland, wotlk = all three
+  var showOutland = (currentTheme === 'tbc' || currentTheme === 'wotlk');
+  var showNorthrend = (currentTheme === 'wotlk');
+  var mapsCount = 1 + (showOutland ? 1 : 0) + (showNorthrend ? 1 : 0);
+%>
+
+<style type="text/css">
+  /* Outer wrapper: clips the scaled map */
+  .playermap-outer {
+    position: relative;
+    width: 100%;
+    max-width: 966px;
+    overflow: hidden;
+    border: 2px solid #1a1a1a;
+    box-shadow: 0 0 12px rgba(0,0,0,0.5);
+  }
+  /* Inner: always 966x732, scaled via transform from top-left */
+  .playermap-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 966px;
+    height: 732px;
+    transform-origin: 0 0;
+  }
+  .map-layer, .points-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 966px;
+    height: 732px;
+  }
+  .map-layer { background-size: 966px 732px; background-repeat: no-repeat; }
+  #world       { z-index: 10; }
+  #outland     { z-index: 9;  visibility: hidden; }
+  #northrend   { z-index: 8;  visibility: hidden; }
+  #pointsOldworld  { z-index: 100; }
+  #pointsOutland   { z-index: 99;  visibility: hidden; }
+  #pointsNorthrend { z-index: 98;  visibility: hidden; }
+
+  .map-controls {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 11px;
+  }
+  .map-btn {
+    display: inline-block;
+    padding: 4px 14px;
+    margin: 0 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 11px;
+    font-family: arial, helvetica, sans-serif;
+    color: #C7C7C7;
+    background-color: #2E2D2B;
+    border: 1px solid;
+    border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C;
+    text-decoration: none;
+    transition: background-color 0.15s;
+  }
+  .map-btn:hover { background-color: #3e3d3b; color: #fff; }
+  .map-btn.active { background-color: #4a3f2a; color: #f4c400; border-color: #f4c400; }
+
+  .map-info-bar {
+    text-align: center;
+    padding: 6px 0;
+    font-size: 12px;
+    font-family: arial, helvetica, sans-serif;
+    color: rgb(35,67,3);
+  }
+  .map-info-bar b { font-size: 12px; }
+  .ally-count { color: #0096BE; }
+  .horde-count { color: #D2321E; }
+  .total-count { color: #234303; }
+
+  /* Tooltip */
+  #maptip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    left: -1000px;
+    top: -1000px;
+  }
+  #maptip table { background: #1a1a1a; border: 1px solid #555; border-collapse: collapse; }
+  .tip_header td { background: #2E2D2B; color: #f4c400; font-weight: bold; font-size: 11px; padding: 4px 8px; text-align: center; }
+  .tip_head_text td { background: #3a3a3a; color: #aaa; font-size: 10px; padding: 2px 6px; }
+  .tip_text td { color: #ddd; font-size: 11px; padding: 2px 5px; white-space: nowrap; }
+  .tip_worldinfo td { color: #ddd; font-size: 11px; padding: 3px 6px; }
+  .tip_single { background: #1a1a1a; border: 1px solid #555; padding: 6px; }
+  .tip_single .name { font-weight: bold; font-size: 12px; padding-bottom: 3px; }
+  .tip_single .info { font-size: 11px; color: #ccc; line-height: 1.5; }
+
+  .map-legend {
+    text-align: center;
+    padding: 4px 0 2px;
+    font-size: 10px;
+    color: #666;
+  }
+  .map-legend img { vertical-align: middle; margin: 0 2px; }
+</style>
+
+<!-- Controls -->
+<div class="map-controls">
+  <span class="map-btn active" onclick="switchWorld(0)" id="btn-azeroth">Azeroth</span>
+  <% if (showOutland) { %>
+    <span class="map-btn" onclick="switchWorld(1)" id="btn-outland">Outland</span>
+  <% } %>
+  <% if (showNorthrend) { %>
+    <span class="map-btn" onclick="switchWorld(2)" id="btn-northrend">Northrend</span>
+  <% } %>
+</div>
+
+<!-- Info bar -->
+<div class="map-info-bar" id="server_info">Loading map data...</div>
+
+<!-- Legend -->
+<div class="map-legend">
+  <img src="/images/playermap/allia.gif" width="8" height="8" alt="A"> Alliance
+  &nbsp;&nbsp;
+  <img src="/images/playermap/horde.gif" width="8" height="8" alt="H"> Horde
+  &nbsp;&nbsp;
+  <img src="/images/playermap/group-icon.gif" width="12" height="12" alt="G"> Group
+  &nbsp;&nbsp;
+  <img src="/images/playermap/inst-icon.gif" width="12" height="12" alt="I"> Instance
+</div>
+
+<!-- Map container — scales to fit parent -->
+<div class="playermap-outer" id="playermap-outer">
+  <div class="playermap-inner" id="playermap-inner">
+    <!-- Map backgrounds -->
+    <div id="world" class="map-layer" style="background-image: url('/images/playermap/azeroth.jpg'); visibility: visible;"></div>
+    <% if (showOutland) { %>
+      <div id="outland" class="map-layer" style="background-image: url('/images/playermap/outland.jpg');"></div>
+    <% } %>
+    <% if (showNorthrend) { %>
+      <div id="northrend" class="map-layer" style="background-image: url('/images/playermap/northrend.jpg');"></div>
+    <% } %>
+
+    <!-- Point layers -->
+    <div id="pointsOldworld" class="points-layer" style="visibility: visible;"></div>
+    <% if (showOutland) { %>
+      <div id="pointsOutland" class="points-layer"></div>
+    <% } %>
+    <% if (showNorthrend) { %>
+      <div id="pointsNorthrend" class="points-layer"></div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Tooltip element -->
+<div id="maptip"></div>
+
+<div style="text-align:center; padding:6px 0; font-size:10px; color:#888;">
+  Auto-refresh every 15 seconds
+</div>
+
+<script type="text/javascript">
+(function() {
+  'use strict';
+
+  // ===== RESPONSIVE SCALING =====
+  var MAP_W = 966, MAP_H = 732;
+
+  function scaleMap() {
+    var outer = document.getElementById('playermap-outer');
+    var inner = document.getElementById('playermap-inner');
+    if (!outer || !inner) return;
+    // Measure available width from the content container, not outer itself
+    var container = document.getElementById('compcont') || outer.parentNode;
+    var availW = container.clientWidth - 4; // minus border
+    var scale = Math.min(availW / MAP_W, 1); // never upscale
+    inner.style.transform = 'scale(' + scale + ')';
+    outer.style.height = Math.floor(MAP_H * scale) + 'px';
+  }
+
+  scaleMap();
+  window.addEventListener('resize', scaleMap);
+
+  // ===== CONFIG =====
+  var REFRESH_INTERVAL = 15000;
+  var MAPS_COUNT = <%= mapsCount %>;
+  var SHOW_OUTLAND = <%= showOutland ? 'true' : 'false' %>;
+  var SHOW_NORTHREND = <%= showNorthrend ? 'true' : 'false' %>;
+  var IMG_BASE = '/images/playermap/';
+  var currentMap = 0;
+
+  // ===== RACE / CLASS NAMES =====
+  var raceName = {
+    1:'Human', 2:'Orc', 3:'Dwarf', 4:'Night Elf', 5:'Undead',
+    6:'Tauren', 7:'Gnome', 8:'Troll', 9:'Goblin', 10:'Blood Elf', 11:'Draenei'
+  };
+  var className = {
+    1:'Warrior', 2:'Paladin', 3:'Hunter', 4:'Rogue', 5:'Priest',
+    6:'Death Knight', 7:'Shaman', 8:'Mage', 9:'Warlock', 11:'Druid'
+  };
+
+  // ===== INSTANCE POSITIONS =====
+  var instances_x = [];
+  var instances_y = [];
+  instances_x[0] = {30:762,33:712,34:732,35:732,36:712,43:245,47:238,48:172,70:833,90:738,109:849,129:254,189:773,209:269,229:782,230:778,249:290,269:315,289:816,309:782,329:834,349:123,369:745,389:308,409:783,429:164,449:741,450:305,469:778,489:244,509:160,529:820,531:144,532:798,534:317,560:320,568:897,572:750,580:868,585:883,595:322,618:313};
+  instances_y[0] = {30:278,33:295,34:511,35:503,36:567,43:419,47:508,48:291,70:443,90:419,109:551,129:516,189:216,209:568,229:481,230:484,249:514,269:601,289:258,309:589,329:203,349:432,369:497,389:352,409:484,429:496,449:508,450:352,469:480,489:364,509:607,529:321,531:603,532:569,534:596,560:606,568:172,572:245,580:26,585:16,595:601,618:348};
+  instances_x[1] = {540:593,542:586,543:593,544:588,545:393,546:399,547:388,548:399,550:683,552:680,553:672,554:669,555:495,556:506,557:495,558:483,559:408,562:443,564:740,565:485};
+  instances_y[1] = {540:399,542:398,543:405,544:402,545:355,546:350,547:353,548:357,550:226,552:215,553:210,554:239,555:569,556:557,557:545,558:557,559:489,562:239,564:567,565:204};
+  instances_x[2] = {533:568,574:749,575:751,576:161,578:159,599:553,600:605,601:395,602:575,603:559,604:740,608:470,615:491,616:155,617:457,619:400,624:363,631:400,632:415,649:475,650:465,658:393,668:410,724:491};
+  instances_y[2] = {533:456,574:577,575:583,576:443,578:451,599:195,600:406,601:462,602:180,603:169,604:292,608:360,615:465,616:447,617:352,619:462,624:369,631:350,632:350,649:207,650:207,658:362,668:365,724:455};
+
+  // Maps array: which game map IDs are rendered as world dots (not instances)
+  var maps_array = [0, 1, 530, 571, 609];
+
+  // ===== COORDINATE CONVERSION =====
+  function getPlayerPosition(x, y, m) {
+    var where530 = 0;
+    x = Math.round(x);
+    y = Math.round(y);
+
+    if (m == 530) {
+      if (y < -1000 && y > -10000 && x > 5000) { x -= 10349; y += 6357; where530 = 1; }
+      else if (y < -7000 && x < 0) { x += 3961; y += 13931; where530 = 2; }
+      else { x -= 3070; y -= 1265; where530 = 3; }
+    } else if (m == 609) {
+      x -= 2355; y += 5662;
+    }
+
+    var xpos, ypos;
+    if (where530 === 3) {
+      xpos = Math.round(x * 0.051446);
+      ypos = Math.round(y * 0.051446);
+    } else if (m == 571) {
+      xpos = Math.round(x * 0.050085);
+      ypos = Math.round(y * 0.050085);
+    } else {
+      xpos = Math.round(x * 0.025140);
+      ypos = Math.round(y * 0.025140);
+    }
+
+    var px = 0, py = 0;
+    switch (String(m)) {
+      case '530':
+        if (where530 === 1) { px = 858 - ypos; py = 84 - xpos; }
+        else if (where530 === 2) { px = 103 - ypos; py = 261 - xpos; }
+        else if (where530 === 3) { px = 684 - ypos; py = 229 - xpos; }
+        break;
+      case '571': px = 505 - ypos; py = 642 - xpos; break;
+      case '609': px = 896 - ypos; py = 232 - xpos; break;
+      case '1':   px = 194 - ypos; py = 398 - xpos; break;
+      case '0':   px = 752 - ypos; py = 291 - xpos; break;
+      default:    px = 194 - ypos; py = 398 - xpos; break;
+    }
+    return { x: px, y: py };
+  }
+
+  // ===== MAP LAYER HELPERS =====
+  var mapIds = ['world', 'outland', 'northrend'];
+  var pointIds = ['pointsOldworld', 'pointsOutland', 'pointsNorthrend'];
+  var btnIds = ['btn-azeroth', 'btn-outland', 'btn-northrend'];
+
+  function getMapLayer(id) { return document.getElementById(mapIds[id]); }
+  function getPointsLayer(id) { return document.getElementById(pointIds[id]); }
+
+  function switchWorld(n) {
+    for (var i = 0; i < 3; i++) {
+      var ml = getMapLayer(i);
+      var pl = getPointsLayer(i);
+      var btn = document.getElementById(btnIds[i]);
+      if (ml) ml.style.visibility = (i === n) ? 'visible' : 'hidden';
+      if (pl) pl.style.visibility = (i === n) ? 'visible' : 'hidden';
+      if (btn) btn.className = (i === n) ? 'map-btn active' : 'map-btn';
+    }
+    currentMap = n;
+  }
+  window.switchWorld = switchWorld;
+
+  // ===== TOOLTIP =====
+  var mouseX = 0, mouseY = 0;
+  document.addEventListener('mousemove', function(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  function showTip(html) {
+    var tip = document.getElementById('maptip');
+    tip.innerHTML = html;
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var tx = mouseX + 15;
+    var ty = mouseY - 5;
+    if (tx + tw > vw - 10) tx = mouseX - tw - 15;
+    if (ty + th > vh - 10) ty = vh - th - 10;
+    if (ty < 5) ty = 5;
+    tip.style.left = tx + 'px';
+    tip.style.top = ty + 'px';
+  }
+
+  function hideTip() {
+    var tip = document.getElementById('maptip');
+    tip.innerHTML = '';
+    tip.style.left = '-1000px';
+    tip.style.top = '-1000px';
+  }
+
+  // ===== RACE ICON PATH =====
+  function raceIcon(race, gender) {
+    return IMG_BASE + 'c_icons/' + race + '-' + gender + '.gif';
+  }
+  function classIcon(cl) {
+    return IMG_BASE + 'c_icons/' + cl + '.gif';
+  }
+
+  // ===== IN_ARRAY helper =====
+  function inArray(val, arr) {
+    for (var i = 0; i < arr.length; i++) { if (val == arr[i]) return true; }
+    return false;
+  }
+
+  // ===== RENDER PLAYERS =====
+  function renderData(data) {
+    if (!data || !data.online) {
+      for (var i = 0; i < 3; i++) {
+        var pl = getPointsLayer(i);
+        if (pl) pl.innerHTML = '';
+      }
+      document.getElementById('server_info').innerHTML = '<span style="color:#8b0000;">Server offline</span>';
+      return;
+    }
+
+    var online = data.online;
+    var factionCounts = [];
+    for (var m = 0; m < 3; m++) {
+      factionCounts[m] = (m < online.length && Array.isArray(online[m])) ? online[m] : [0, 0];
+    }
+
+    var players = [];
+    for (var p = 3; p < online.length; p++) {
+      players.push(online[p]);
+    }
+
+    var layerHtml = ['', '', ''];
+
+    for (var pi = 0; pi < players.length; pi++) {
+      var ch = players[pi];
+      var ext = ch.Extention;
+
+      if (ext === 1 && !SHOW_OUTLAND) continue;
+      if (ext === 2 && !SHOW_NORTHREND) continue;
+
+      var isHorde = (ch.race == 2 || ch.race == 5 || ch.race == 6 || ch.race == 8 || ch.race == 10);
+      var factionColor = isHorde ? '#D2321E' : '#0096BE';
+      var factionIcon = isHorde ? 'horde.gif' : 'allia.gif';
+
+      if (inArray(parseInt(ch.map), maps_array)) {
+        var pos = getPlayerPosition(ch.x, ch.y, ch.map);
+        if (pos.x < 0 || pos.x > 966 || pos.y < 0 || pos.y > 732) continue;
+
+        var tooltipHtml = '<div class="tip_single">'
+          + '<div class="name" style="color:' + factionColor + ';">' + escHtml(ch.name) + '</div>'
+          + '<div class="info">'
+          + '<img src="' + raceIcon(ch.race, ch.gender) + '" width="18" height="18"> '
+          + '<img src="' + classIcon(ch.cl) + '" width="18" height="18"><br>'
+          + escHtml(raceName[ch.race] || '?') + ' ' + escHtml(className[ch.cl] || '?') + '<br>'
+          + 'Level ' + ch.level + '<br>'
+          + escHtml(ch.zone)
+          + '</div></div>';
+
+        layerHtml[ext] += '<img src="' + IMG_BASE + factionIcon + '" '
+          + 'style="position:absolute;left:' + pos.x + 'px;top:' + pos.y + 'px;cursor:pointer;" '
+          + 'width="8" height="8" border="0" '
+          + 'data-tip="' + escAttr(tooltipHtml) + '" '
+          + 'onmousemove="this.parentNode._showTip(this)" '
+          + 'onmouseout="this.parentNode._hideTip()">';
+      } else {
+        var ix = instances_x[ext] && instances_x[ext][parseInt(ch.map)];
+        var iy = instances_y[ext] && instances_y[ext][parseInt(ch.map)];
+        if (ix === undefined || iy === undefined) continue;
+
+        var instTip = '<div class="tip_single">'
+          + '<div class="name" style="color:' + factionColor + ';">' + escHtml(ch.name) + '</div>'
+          + '<div class="info">'
+          + escHtml(raceName[ch.race] || '?') + ' ' + escHtml(className[ch.cl] || '?') + '<br>'
+          + 'Level ' + ch.level + '<br>'
+          + escHtml(ch.zone) + ' (Instance)'
+          + '</div></div>';
+
+        layerHtml[ext] += '<img src="' + IMG_BASE + 'inst-icon.gif" '
+          + 'style="position:absolute;left:' + ix + 'px;top:' + iy + 'px;cursor:pointer;" '
+          + 'width="12" height="12" border="0" '
+          + 'data-tip="' + escAttr(instTip) + '" '
+          + 'onmousemove="this.parentNode._showTip(this)" '
+          + 'onmouseout="this.parentNode._hideTip()">';
+      }
+    }
+
+    for (var li = 0; li < 3; li++) {
+      var layer = getPointsLayer(li);
+      if (layer) {
+        layer.innerHTML = layerHtml[li];
+        layer._showTip = function(el) { showTip(el.getAttribute('data-tip')); };
+        layer._hideTip = hideTip;
+      }
+    }
+
+    // Update info bar
+    var totalAlly = 0, totalHorde = 0;
+    var infoHtml = '';
+    for (var fi = 0; fi < 3; fi++) {
+      totalAlly += factionCounts[fi][0];
+      totalHorde += factionCounts[fi][1];
+    }
+    var total = totalAlly + totalHorde;
+    infoHtml += '<b class="total-count">Online: ' + total + '</b>';
+    infoHtml += ' &nbsp;( <img src="' + IMG_BASE + 'allianceicon.gif" width="14" height="14" style="vertical-align:middle;"> ';
+    infoHtml += '<b class="ally-count">' + totalAlly + '</b>';
+    infoHtml += ' &nbsp;<img src="' + IMG_BASE + 'hordeicon.gif" width="14" height="14" style="vertical-align:middle;"> ';
+    infoHtml += '<b class="horde-count">' + totalHorde + '</b> )';
+
+    var mapLabels = ['Azeroth', 'Outland', 'Northrend'];
+    var mapEnabled = [true, SHOW_OUTLAND, SHOW_NORTHREND];
+    for (var ci = 0; ci < 3; ci++) {
+      if (!mapEnabled[ci]) continue;
+      var mc = factionCounts[ci][0] + factionCounts[ci][1];
+      infoHtml += ' &nbsp;&mdash; <b style="cursor:pointer;color:#d0a803;" onclick="switchWorld(' + ci + ')">' + mapLabels[ci] + '</b>: ' + mc;
+    }
+
+    document.getElementById('server_info').innerHTML = infoHtml;
+  }
+
+  // ===== HTML ESCAPE UTILS =====
+  function escHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(s) {
+    return escHtml(s).replace(/'/g,'&#39;');
+  }
+
+  // ===== DATA FETCHING =====
+  function loadData() {
+    fetch('/server/playermap/data')
+      .then(function(res) { return res.json(); })
+      .then(function(data) { renderData(data); })
+      .catch(function() {
+        document.getElementById('server_info').innerHTML = '<span style="color:#8b0000;">Failed to load map data</span>';
+      });
+  }
+
+  // ===== INIT =====
+  loadData();
+  setInterval(loadData, REFRESH_INTERVAL);
+})();
+</script>

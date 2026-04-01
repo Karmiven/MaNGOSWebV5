@@ -235,6 +235,7 @@ INSERT INTO `mw_menu_items` (`menu_id`, `link_title`, `link`, `order`, `account_
 (4, 'Characters', '/server/chars', 2, 1, 0),
 (4, 'Players Online', '/server/online', 3, 1, 0),
 (4, 'Server Statistics', '/server/stats', 4, 1, 0),
+(4, 'Player Map', '/server/playermap', 5, 1, 0),
 (7, 'Donate', '/donate', 1, 1, 0),
 (7, 'Vote', '/vote', 2, 1, 0),
 (7, 'Shop', '/shop', 3, 1, 0),

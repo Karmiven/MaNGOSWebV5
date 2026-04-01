@@ -4,8 +4,6 @@
   var _transactions = typeof transactions !== 'undefined' ? transactions : [];
 %>
 <!-- Transactions — V4 Blizzlike Style -->
-<br>
-<%- include('../../partials/builddiv_start', { type: 0, title: 'My Transactions' }) %>
 
 <style type="text/css">
   td.txRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; }
@@ -108,4 +106,3 @@
 </table>
 <%- include('../../partials/metalborder_footer') %>
 
-<%- include('../../partials/builddiv_end') %>

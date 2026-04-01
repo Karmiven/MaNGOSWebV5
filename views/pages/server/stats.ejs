@@ -2,8 +2,6 @@
   var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
 %>
 <!-- Statistics — V4 Blizzlike Style -->
-<br>
-<%- include('../../partials/builddiv_start', { type: 1, title: 'Statistics' }) %>
 <center>
 
 <% if (totalChars === 0) { %>
@@ -67,4 +65,3 @@
 <% } %>
 
 </center>
-<%- include('../../partials/builddiv_end') %>
