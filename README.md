@@ -46,7 +46,7 @@ A modern Node.js/Express rewrite of MaNGOSWeb — a CMS for World of Warcraft pr
 | ✅ Disabled Realm Fix | Done | Disabled realms no longer appear on public pages |
 | ✅ V4 Theme (Public) | Done | Authentic WotLK Blizzard CMS design |
 | ✅ V4 Theme (Admin) | Done | Admin panel uses same V4 look with dark variant |
-| 🔄 Installer | In Progress | `/install` route exists, polish needed |
+| ✅ Installer | Done | V4 Blizzlike 4-step wizard with DB validation |
 | 🔄 Gamemail | In Progress | Admin UI done, SOAP delivery in progress |
 | ⬜ Multi-realm | Planned | Per-realm character counts |
 
@@ -110,11 +110,13 @@ sql/
 
 ## Setup
 
-1. Import `sql/full_install.sql` into your CMS database
-2. Configure `.env` or `src/config/database.js` with your MySQL credentials
-3. `npm install`
-4. `npm start` or `node server.js`
-5. Visit `http://localhost:3000/install` for first-run setup (or log in directly if DB is pre-populated)
+1. `npm install`
+2. `npm start` or `node server.js`
+3. Visit `http://localhost:3000/install` — the V4 Blizzlike installer will guide you through:
+   - Database configuration (CMS, Auth, Characters, World) with connection testing
+   - Admin account setup (new or existing game account)
+   - SOAP configuration (optional)
+   - Automatic `.env` generation and CMS schema creation
 
 ### Environment Variables
 
@@ -147,4 +149,4 @@ GPL-2.0
 
 ---
 
-**Last Updated:** March 2026
+**Last Updated:** April 2026

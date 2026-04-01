@@ -1,261 +1,563 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MaNGOSWebV5 - Installation</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    body { background: #0d1117; color: #e6e6e6; }
-    .text-gold { color: #F8B700 !important; }
-    .btn-gold { background: #F8B700; color: #000; border: none; font-weight: 600; }
-    .btn-gold:hover { background: #e0a500; color: #000; }
-    .install-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; }
-    .step-indicator .step { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin: 0 4px; background: #21262d; color: #8b949e; font-weight: bold; }
-    .step-indicator .step.active { background: #F8B700; color: #000; }
-    .step-indicator .step.done { background: #238636; color: #fff; }
-  </style>
-</head>
-<body>
-  <div class="container py-5" style="max-width: 800px;">
-    <div class="text-center mb-4">
-      <h2 class="text-gold">MaNGOSWebV5</h2>
-      <p class="text-muted">Installation Wizard</p>
-    </div>
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<style type="text/css">
+  td.installRow1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 6px 8px; }
+  td.installRow2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 6px 8px; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px; }
+  .install-input {
+    font-family: Verdana, Arial, sans-serif; font-size: 11px;
+    border: 1px solid #928058; background-color: #f5ecd7; color: #333;
+    padding: 3px 6px; width: 100%; box-sizing: border-box;
+  }
+  .install-input:focus { border-color: #5a4a2a; background-color: #fff; outline: none; }
+  .install-btn {
+    font-family: Verdana, Arial, sans-serif; font-size: 11px; font-weight: bold;
+    background: #2E2D2B; color: #C7C7C7; border: 1px solid #5D5D5D;
+    padding: 4px 16px; cursor: pointer;
+  }
+  .install-btn:hover { background: #3E3D3B; color: #fff; }
+  .install-btn-gold {
+    font-family: Verdana, Arial, sans-serif; font-size: 11px; font-weight: bold;
+    background: linear-gradient(to bottom, #d4a817, #a07c0c); color: #fff; border: 1px solid #8a6d0a;
+    padding: 5px 20px; cursor: pointer; text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  }
+  .install-btn-gold:hover { background: linear-gradient(to bottom, #e4b827, #b08c1c); }
+  .install-btn-test {
+    font-family: Verdana, Arial, sans-serif; font-size: 10px; font-weight: bold;
+    background: #05374a; color: #fff; border: 1px solid #03273a; padding: 3px 10px; cursor: pointer;
+  }
+  .install-btn-test:hover { background: #075a7a; }
+  .step-box { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; font-weight: bold; font-size: 12px; margin: 0 3px; border: 1px solid #5D5D5D; }
+  .step-pending { background: #2E2D2B; color: #8b949e; }
+  .step-active { background: linear-gradient(to bottom, #d4a817, #a07c0c); color: #fff; border-color: #8a6d0a; }
+  .step-done { background: #234303; color: #fff; border-color: #1a3202; }
+  .test-result { font-size: 10px; font-family: Verdana, Arial, sans-serif; }
+  .text-ok { color: #234303; }
+  .text-fail { color: #640909; }
+  .text-wait { color: #1e4378; }
+  .install-progress-bar {
+    height: 8px; background: #2E2D2B; border: 1px solid #5D5D5D; margin: 8px 0;
+  }
+  .install-progress-fill {
+    height: 100%; background: linear-gradient(to right, #d4a817, #a07c0c); width: 0%; transition: width 0.5s;
+  }
+  .install-alert {
+    padding: 8px 12px; margin: 8px 0; font-size: 12px; font-family: Verdana, Arial, sans-serif;
+  }
+  .install-alert-success { background: #d4edda; border: 1px solid #234303; color: #234303; }
+  .install-alert-error { background: #f8d7da; border: 1px solid #640909; color: #640909; }
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+</style>
 
-    <!-- Step Indicator -->
-    <div class="text-center mb-4 step-indicator">
-      <span class="step" id="si-1">1</span>
-      <span class="step" id="si-2">2</span>
-      <span class="step" id="si-3">3</span>
-      <span class="step" id="si-4">4</span>
-    </div>
+<!-- Step Indicator -->
+<table width="550" align="center"><tr><td>
+<div style="text-align: center; padding: 8px 0;">
+  <span class="step-box step-active" id="si-1">1</span>
+  <span class="step-box step-pending" id="si-2">2</span>
+  <span class="step-box step-pending" id="si-3">3</span>
+  <span class="step-box step-pending" id="si-4">4</span>
+</div>
+</td></tr></table>
 
-    <!-- Alert -->
-    <div id="alert-box" class="alert d-none" role="alert"></div>
+<!-- Alert Box -->
+<table width="550" align="center"><tr><td>
+<div id="alert-box" style="display:none;"></div>
+</td></tr></table>
 
-    <!-- Step 1: Welcome -->
-    <div class="install-card p-4 mb-4 step-panel" id="step-1">
-      <h4 class="text-gold mb-3">Welcome</h4>
-      <p>This wizard will guide you through setting up MaNGOSWebV5 for your AzerothCore server.</p>
-      <p>You will need:</p>
-      <ul>
-        <li>MySQL database credentials</li>
-        <li>AzerothCore database names (auth, characters, world)</li>
-        <li>SOAP access credentials</li>
-        <li>A desired admin username and password</li>
-      </ul>
-      <button class="btn btn-gold" onclick="goStep(2)">Begin <i class="fas fa-arrow-right ms-1"></i></button>
-    </div>
+<!-- ========== Step 1: Welcome ========== -->
+<div class="step-panel active" id="step-1">
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Welcome' }) %>
+<table width="550" align="center"><tr><td>
+  <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;"><tr><td>
+    <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= tp %>/images/light3.jpg');"><tr><td>
+      <table border="0" cellspacing="0" cellpadding="6" width="540">
+        <tr>
+          <td style="font-size:12px; font-family: Verdana, Arial, sans-serif; color:#333; line-height: 1.6;">
+            <p>This wizard will guide you through setting up <b style="color:#234303;">MaNGOSWebV5</b> for your AzerothCore server.</p>
+            <p style="margin-top:8px;"><b>You will need:</b></p>
+            <table border="0" cellspacing="0" cellpadding="2" style="margin-left:10px;">
+              <tr><td style="font-size:12px;">&#8226; MySQL database credentials</td></tr>
+              <tr><td style="font-size:12px;">&#8226; AzerothCore database names (auth, characters, world)</td></tr>
+              <tr><td style="font-size:12px;">&#8226; SOAP access credentials</td></tr>
+              <tr><td style="font-size:12px;">&#8226; A desired admin username and password</td></tr>
+            </table>
+            <div style="text-align:right; margin-top:12px;">
+              <button class="install-btn-gold" onclick="goStep(2)">Begin &#187;</button>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td></tr></table>
+  </td></tr></table>
+</td></tr></table>
+<%- include('../../partials/builddiv_end') %>
+</div>
 
-    <!-- Step 2: Database Configuration -->
-    <div class="install-card p-4 mb-4 step-panel d-none" id="step-2">
-      <h4 class="text-gold mb-3">Database Configuration</h4>
+<!-- ========== Step 2: Database Configuration ========== -->
+<div class="step-panel" id="step-2">
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Database Configuration' }) %>
 
-      <h6 class="text-gold mt-3">CMS Database</h6>
-      <p class="text-muted small">A new database for the website data. It will be created if it doesn't exist.</p>
-      <div class="row g-2 mb-3">
-        <div class="col-md-4"><input type="text" id="cms_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
-        <div class="col-md-2"><input type="text" id="cms_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
-        <div class="col-md-2"><input type="text" id="cms_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="mangosweb" placeholder="DB Name"></div>
-        <div class="col-md-2"><input type="text" id="cms_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
-        <div class="col-md-2"><input type="password" id="cms_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
-      </div>
-      <button class="btn btn-sm btn-outline-info mb-3" onclick="testDb('cms')"><i class="fas fa-plug me-1"></i>Test CMS Connection</button>
-      <span id="cms-result" class="ms-2 small"></span>
+<!-- CMS Database -->
+<table width="550" align="center"><tr><td>
+  <%- include('../../partials/subheader', { subheader: 'CMS Database' }) %>
+  <p style="font-size:10px; color:#666; margin:4px 0 6px 0; font-family:Verdana,Arial,sans-serif;">A new database for website data. It will be created if it doesn't exist.</p>
+  <%- include('../../partials/metalborder_header') %>
+  <table cellpadding="4" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td class="rankingHeader" align="center" width="30%">Host</td>
+      <td class="rankingHeader" align="center" width="14%">Port</td>
+      <td class="rankingHeader" align="center" width="20%">DB Name</td>
+      <td class="rankingHeader" align="center" width="18%">User</td>
+      <td class="rankingHeader" align="center" width="18%">Password</td>
+    </tr>
+    <tr>
+      <td class="installRow1"><input type="text" id="cms_host" class="install-input" value="127.0.0.1"></td>
+      <td class="installRow1"><input type="text" id="cms_port" class="install-input" value="3306"></td>
+      <td class="installRow1"><input type="text" id="cms_db" class="install-input" value="mangosweb"></td>
+      <td class="installRow1"><input type="text" id="cms_user" class="install-input" value="acore"></td>
+      <td class="installRow1"><input type="password" id="cms_pass" class="install-input" value=""></td>
+    </tr>
+  </tbody>
+  </table>
+  <%- include('../../partials/metalborder_footer') %>
+</td></tr></table>
 
-      <h6 class="text-gold mt-3">Auth Database</h6>
-      <div class="row g-2 mb-3">
-        <div class="col-md-4"><input type="text" id="auth_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
-        <div class="col-md-2"><input type="text" id="auth_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
-        <div class="col-md-2"><input type="text" id="auth_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore_auth" placeholder="DB Name"></div>
-        <div class="col-md-2"><input type="text" id="auth_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
-        <div class="col-md-2"><input type="password" id="auth_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
-      </div>
-      <button class="btn btn-sm btn-outline-info mb-3" onclick="testDb('auth')"><i class="fas fa-plug me-1"></i>Test Auth Connection</button>
-      <span id="auth-result" class="ms-2 small"></span>
+<!-- Auth Database -->
+<table width="550" align="center"><tr><td>
+  <%- include('../../partials/subheader', { subheader: 'Auth Database' }) %>
+  <%- include('../../partials/metalborder_header') %>
+  <table cellpadding="4" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td class="rankingHeader" align="center" width="30%">Host</td>
+      <td class="rankingHeader" align="center" width="14%">Port</td>
+      <td class="rankingHeader" align="center" width="20%">DB Name</td>
+      <td class="rankingHeader" align="center" width="18%">User</td>
+      <td class="rankingHeader" align="center" width="18%">Password</td>
+    </tr>
+    <tr>
+      <td class="installRow1"><input type="text" id="auth_host" class="install-input" value="127.0.0.1"></td>
+      <td class="installRow1"><input type="text" id="auth_port" class="install-input" value="3306"></td>
+      <td class="installRow1"><input type="text" id="auth_db" class="install-input" value="acore_auth"></td>
+      <td class="installRow1"><input type="text" id="auth_user" class="install-input" value="acore"></td>
+      <td class="installRow1"><input type="password" id="auth_pass" class="install-input" value=""></td>
+    </tr>
+  </tbody>
+  </table>
+  <%- include('../../partials/metalborder_footer') %>
+</td></tr></table>
 
-      <h6 class="text-gold mt-3">Characters Database</h6>
-      <div class="row g-2 mb-3">
-        <div class="col-md-4"><input type="text" id="char_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
-        <div class="col-md-2"><input type="text" id="char_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
-        <div class="col-md-2"><input type="text" id="char_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore_characters" placeholder="DB Name"></div>
-        <div class="col-md-2"><input type="text" id="char_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
-        <div class="col-md-2"><input type="password" id="char_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
-      </div>
+<!-- Characters Database -->
+<table width="550" align="center"><tr><td>
+  <%- include('../../partials/subheader', { subheader: 'Characters Database' }) %>
+  <%- include('../../partials/metalborder_header') %>
+  <table cellpadding="4" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td class="rankingHeader" align="center" width="30%">Host</td>
+      <td class="rankingHeader" align="center" width="14%">Port</td>
+      <td class="rankingHeader" align="center" width="20%">DB Name</td>
+      <td class="rankingHeader" align="center" width="18%">User</td>
+      <td class="rankingHeader" align="center" width="18%">Password</td>
+    </tr>
+    <tr>
+      <td class="installRow1"><input type="text" id="char_host" class="install-input" value="127.0.0.1"></td>
+      <td class="installRow1"><input type="text" id="char_port" class="install-input" value="3306"></td>
+      <td class="installRow1"><input type="text" id="char_db" class="install-input" value="acore_characters"></td>
+      <td class="installRow1"><input type="text" id="char_user" class="install-input" value="acore"></td>
+      <td class="installRow1"><input type="password" id="char_pass" class="install-input" value=""></td>
+    </tr>
+  </tbody>
+  </table>
+  <%- include('../../partials/metalborder_footer') %>
+</td></tr></table>
 
-      <h6 class="text-gold mt-3">World Database</h6>
-      <div class="row g-2 mb-3">
-        <div class="col-md-4"><input type="text" id="world_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
-        <div class="col-md-2"><input type="text" id="world_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="3306" placeholder="Port"></div>
-        <div class="col-md-2"><input type="text" id="world_db" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore_world" placeholder="DB Name"></div>
-        <div class="col-md-2"><input type="text" id="world_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="acore" placeholder="User"></div>
-        <div class="col-md-2"><input type="password" id="world_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
-      </div>
+<!-- World Database -->
+<table width="550" align="center"><tr><td>
+  <%- include('../../partials/subheader', { subheader: 'World Database' }) %>
+  <%- include('../../partials/metalborder_header') %>
+  <table cellpadding="4" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td class="rankingHeader" align="center" width="30%">Host</td>
+      <td class="rankingHeader" align="center" width="14%">Port</td>
+      <td class="rankingHeader" align="center" width="20%">DB Name</td>
+      <td class="rankingHeader" align="center" width="18%">User</td>
+      <td class="rankingHeader" align="center" width="18%">Password</td>
+    </tr>
+    <tr>
+      <td class="installRow1"><input type="text" id="world_host" class="install-input" value="127.0.0.1"></td>
+      <td class="installRow1"><input type="text" id="world_port" class="install-input" value="3306"></td>
+      <td class="installRow1"><input type="text" id="world_db" class="install-input" value="acore_world"></td>
+      <td class="installRow1"><input type="text" id="world_user" class="install-input" value="acore"></td>
+      <td class="installRow1"><input type="password" id="world_pass" class="install-input" value=""></td>
+    </tr>
+  </tbody>
+  </table>
+  <%- include('../../partials/metalborder_footer') %>
+</td></tr></table>
 
-      <div class="d-flex justify-content-between mt-3">
-        <button class="btn btn-secondary" onclick="goStep(1)"><i class="fas fa-arrow-left me-1"></i>Back</button>
-        <button class="btn btn-gold" onclick="goStep(3)">Next <i class="fas fa-arrow-right ms-1"></i></button>
-      </div>
-    </div>
+<div id="db-test-result" style="display:none; margin:6px 0; font-size:11px; font-family:Verdana,Arial,sans-serif;"></div>
 
-    <!-- Step 3: Admin & SOAP -->
-    <div class="install-card p-4 mb-4 step-panel d-none" id="step-3">
-      <h4 class="text-gold mb-3">Admin Account & SOAP</h4>
+<table width="550" align="center"><tr>
+  <td align="left"><button class="install-btn" onclick="goStep(1)">&#171; Back</button></td>
+  <td align="right">
+    <button class="install-btn-test" id="btn-test-all" onclick="testAllAndShow()" style="margin-right:8px;">&#9889; Test Connection</button>
+    <button class="install-btn-gold" onclick="goStep(3)">Next &#187;</button>
+  </td>
+</tr></table>
 
-      <h6 class="text-gold">Admin Account</h6>
-      <div class="row g-2 mb-3">
-        <div class="col-md-4"><input type="text" id="admin_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="admin" placeholder="Username"></div>
-        <div class="col-md-4"><input type="password" id="admin_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Password"></div>
-        <div class="col-md-4"><input type="email" id="admin_email" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Email"></div>
-      </div>
+<%- include('../../partials/builddiv_end') %>
+</div>
 
-      <h6 class="text-gold mt-3">Site Settings</h6>
-      <div class="row g-2 mb-3">
-        <div class="col-md-12"><input type="text" id="site_title" class="form-control form-control-sm bg-dark text-light border-secondary" value="My WoW Server" placeholder="Site Title"></div>
-      </div>
+<!-- ========== Step 3: Admin Account & SOAP ========== -->
+<div class="step-panel" id="step-3">
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Admin Account & SOAP' }) %>
 
-      <h6 class="text-gold mt-3">SOAP Configuration</h6>
-      <p class="text-muted small">Used to execute in-game commands (send mail, items, etc.)</p>
-      <div class="row g-2 mb-3">
-        <div class="col-md-4"><input type="text" id="soap_host" class="form-control form-control-sm bg-dark text-light border-secondary" value="127.0.0.1" placeholder="Host"></div>
-        <div class="col-md-2"><input type="text" id="soap_port" class="form-control form-control-sm bg-dark text-light border-secondary" value="7878" placeholder="Port"></div>
-        <div class="col-md-3"><input type="text" id="soap_user" class="form-control form-control-sm bg-dark text-light border-secondary" value="admin" placeholder="User"></div>
-        <div class="col-md-3"><input type="password" id="soap_pass" class="form-control form-control-sm bg-dark text-light border-secondary" value="" placeholder="Pass"></div>
-      </div>
+<!-- Admin Account -->
+<table width="550" align="center"><tr><td>
+  <%- include('../../partials/subheader', { subheader: 'Admin Account' }) %>
+  <p style="font-size:10px; color:#666; margin:4px 0 6px 0; font-family:Verdana,Arial,sans-serif;">Enter credentials for the admin account. If you already have a game account, use those credentials to link it as admin.</p>
+  <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;"><tr><td>
+    <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= tp %>/images/light3.jpg');"><tr><td>
+      <table border="0" cellspacing="0" cellpadding="6" width="540">
+        <tr>
+          <td align="right" width="30%" style="font-size:12px;"><b>Username:</b> <span style="color:#640909;">*</span></td>
+          <td align="left"><input type="text" id="admin_user" class="install-input" style="width:200px;" value="admin"></td>
+        </tr>
+        <tr>
+          <td align="right" style="font-size:12px;"><b>Password:</b> <span style="color:#640909;">*</span></td>
+          <td align="left"><input type="password" id="admin_pass" class="install-input" style="width:200px;"></td>
+        </tr>
+        <tr>
+          <td align="right" style="font-size:12px;"><b>Email:</b> <span style="color:#999; font-size:10px;">(optional)</span></td>
+          <td align="left"><input type="email" id="admin_email" class="install-input" style="width:250px;"></td>
+        </tr>
+      </table>
+    </td></tr></table>
+  </td></tr></table>
+</td></tr></table>
 
-      <div class="d-flex justify-content-between mt-3">
-        <button class="btn btn-secondary" onclick="goStep(2)"><i class="fas fa-arrow-left me-1"></i>Back</button>
-        <button class="btn btn-gold" onclick="goStep(4)">Next <i class="fas fa-arrow-right ms-1"></i></button>
-      </div>
-    </div>
+<br>
 
-    <!-- Step 4: Install -->
-    <div class="install-card p-4 mb-4 step-panel d-none" id="step-4">
-      <h4 class="text-gold mb-3">Install</h4>
-      <p>Ready to install MaNGOSWebV5. This will:</p>
-      <ul>
-        <li>Create required CMS tables</li>
-        <li>Set up the admin account with SRP6 authentication</li>
-        <li>Configure realm settings</li>
-        <li>Generate the <code>.env</code> configuration file</li>
-      </ul>
-      <div id="install-progress" class="d-none mb-3">
-        <div class="progress" style="height: 6px;">
-          <div class="progress-bar bg-gold" role="progressbar" style="width: 0%"></div>
-        </div>
-        <p class="text-muted small mt-2" id="install-status">Starting...</p>
-      </div>
-      <div class="d-flex justify-content-between">
-        <button class="btn btn-secondary" onclick="goStep(3)" id="btn-back-4"><i class="fas fa-arrow-left me-1"></i>Back</button>
-        <button class="btn btn-gold btn-lg" id="btn-install" onclick="runInstall()">
-          <i class="fas fa-download me-1"></i>Install Now
-        </button>
-      </div>
-    </div>
-  </div>
+<!-- Site Settings -->
+<table width="550" align="center"><tr><td>
+  <%- include('../../partials/subheader', { subheader: 'Site Settings' }) %>
+  <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;"><tr><td>
+    <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= tp %>/images/light3.jpg');"><tr><td>
+      <table border="0" cellspacing="0" cellpadding="6" width="540">
+        <tr>
+          <td align="right" width="30%" style="font-size:12px;"><b>Site Title:</b></td>
+          <td align="left"><input type="text" id="site_title" class="install-input" style="width:250px;" value="My WoW Server"></td>
+        </tr>
+      </table>
+    </td></tr></table>
+  </td></tr></table>
+</td></tr></table>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    let currentStep = 1;
+<br>
 
-    function goStep(n) {
-      document.querySelectorAll('.step-panel').forEach(p => p.classList.add('d-none'));
-      document.getElementById('step-' + n).classList.remove('d-none');
-      for (let i = 1; i <= 4; i++) {
-        const el = document.getElementById('si-' + i);
-        el.classList.remove('active', 'done');
-        if (i < n) el.classList.add('done');
-        else if (i === n) el.classList.add('active');
+<!-- SOAP Configuration -->
+<table width="550" align="center"><tr><td>
+  <%- include('../../partials/subheader', { subheader: 'SOAP Configuration (Optional)' }) %>
+  <p style="font-size:10px; color:#666; margin:4px 0 6px 0; font-family:Verdana,Arial,sans-serif;">Used to execute in-game commands (send mail, items, etc.). Can be configured later.</p>
+  <%- include('../../partials/metalborder_header') %>
+  <table cellpadding="4" cellspacing="0" width="100%">
+  <tbody>
+    <tr>
+      <td class="rankingHeader" align="center" width="34%">Host</td>
+      <td class="rankingHeader" align="center" width="16%">Port</td>
+      <td class="rankingHeader" align="center" width="25%">User</td>
+      <td class="rankingHeader" align="center" width="25%">Password</td>
+    </tr>
+    <tr>
+      <td class="installRow1"><input type="text" id="soap_host" class="install-input" value="127.0.0.1"></td>
+      <td class="installRow1"><input type="text" id="soap_port" class="install-input" value="7878"></td>
+      <td class="installRow1"><input type="text" id="soap_user" class="install-input" value="admin"></td>
+      <td class="installRow1"><input type="password" id="soap_pass" class="install-input" value=""></td>
+    </tr>
+  </tbody>
+  </table>
+  <%- include('../../partials/metalborder_footer') %>
+</td></tr></table>
+
+<table width="550" align="center"><tr>
+  <td align="left"><button class="install-btn" onclick="goStep(2)">&#171; Back</button></td>
+  <td align="right"><button class="install-btn-gold" onclick="goStep(4)">Next &#187;</button></td>
+</tr></table>
+
+<%- include('../../partials/builddiv_end') %>
+</div>
+
+<!-- ========== Step 4: Install ========== -->
+<div class="step-panel" id="step-4">
+<%- include('../../partials/builddiv_start', { type: 0, title: 'Install' }) %>
+<table width="550" align="center"><tr><td>
+  <table width="550" style="border-width:1px; border-style:dotted; border-color:#928058;"><tr><td>
+    <table width="545" style="border-width:1px; border-style:solid; border-color:black; background-image:url('<%= tp %>/images/light3.jpg');"><tr><td>
+      <table border="0" cellspacing="0" cellpadding="6" width="540">
+        <tr>
+          <td style="font-size:12px; font-family: Verdana, Arial, sans-serif; color:#333; line-height: 1.6;">
+            <p>Ready to install <b style="color:#234303;">MaNGOSWebV5</b>. This will:</p>
+            <table border="0" cellspacing="0" cellpadding="2" style="margin-left:10px;">
+              <tr><td style="font-size:12px;">&#8226; Create required CMS tables</td></tr>
+              <tr><td style="font-size:12px;">&#8226; Set up the admin account with SRP6 authentication</td></tr>
+              <tr><td style="font-size:12px;">&#8226; Configure realm settings</td></tr>
+              <tr><td style="font-size:12px;">&#8226; Generate the <b>.env</b> configuration file</td></tr>
+            </table>
+
+            <!-- Progress -->
+            <div id="install-progress" style="display:none; margin-top:12px;">
+              <div class="install-progress-bar">
+                <div class="install-progress-fill" id="progress-fill"></div>
+              </div>
+              <p id="install-status" style="font-size:10px; color:#1e4378; margin:4px 0 0 0;">Starting...</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td></tr></table>
+  </td></tr></table>
+</td></tr></table>
+
+<table width="550" align="center"><tr>
+  <td align="left"><button class="install-btn" onclick="goStep(3)" id="btn-back-4">&#171; Back</button></td>
+  <td align="right"><button class="install-btn-gold" id="btn-install" onclick="runInstall()">Install Now &#187;</button></td>
+</tr></table>
+
+<%- include('../../partials/builddiv_end') %>
+</div>
+
+<script type="text/javascript">
+  var currentStep = 1;
+
+  function clearValidation() {
+    var els = document.querySelectorAll('.install-input');
+    for (var i = 0; i < els.length; i++) { els[i].style.borderColor = '#928058'; els[i].style.backgroundColor = '#f5ecd7'; }
+    var alertEl = document.getElementById('alert-box');
+    alertEl.style.display = 'none';
+  }
+
+  function validateStep2() {
+    var prefixes = ['cms', 'auth', 'char', 'world'];
+    var fields = ['host', 'port', 'db', 'user', 'pass'];
+    var missing = [];
+    for (var p = 0; p < prefixes.length; p++) {
+      for (var f = 0; f < fields.length; f++) {
+        var el = document.getElementById(prefixes[p] + '_' + fields[f]);
+        if (!el.value.trim()) {
+          el.style.borderColor = '#cc0000';
+          el.style.backgroundColor = '#f8d7da';
+          missing.push(prefixes[p].toUpperCase() + ' ' + fields[f]);
+        } else {
+          el.style.borderColor = '#928058';
+          el.style.backgroundColor = '#f5ecd7';
+        }
       }
-      currentStep = n;
+    }
+    if (missing.length > 0) {
+      showAlert('error', 'Please fill in all required database fields (highlighted in red).');
+      return false;
+    }
+    return true;
+  }
+
+  function validateStep3() {
+    var user = document.getElementById('admin_user');
+    var pass = document.getElementById('admin_pass');
+    var missing = [];
+    if (!user.value.trim()) { user.style.borderColor = '#cc0000'; user.style.backgroundColor = '#f8d7da'; missing.push('Username'); }
+    else { user.style.borderColor = '#928058'; user.style.backgroundColor = '#f5ecd7'; }
+    if (!pass.value.trim()) { pass.style.borderColor = '#cc0000'; pass.style.backgroundColor = '#f8d7da'; missing.push('Password'); }
+    else { pass.style.borderColor = '#928058'; pass.style.backgroundColor = '#f5ecd7'; }
+    if (missing.length > 0) {
+      showAlert('error', 'Admin ' + missing.join(' and ') + ' required.');
+      return false;
+    }
+    return true;
+  }
+
+  function switchToStep(n) {
+    var panels = document.querySelectorAll('.step-panel');
+    for (var i = 0; i < panels.length; i++) { panels[i].className = 'step-panel'; }
+    document.getElementById('step-' + n).className = 'step-panel active';
+    for (var i = 1; i <= 4; i++) {
+      var el = document.getElementById('si-' + i);
+      el.className = 'step-box';
+      if (i < n) el.className += ' step-done';
+      else if (i === n) el.className += ' step-active';
+      else el.className += ' step-pending';
+    }
+    currentStep = n;
+    window.scrollTo(0, 0);
+  }
+
+  function testAllDbs(callback) {
+    var dbPrefixes = ['cms', 'auth', 'char', 'world'];
+    var tested = 0;
+    var errors = [];
+    for (var d = 0; d < dbPrefixes.length; d++) {
+      (function(prefix) {
+        var testData = {
+          host: document.getElementById(prefix + '_host').value,
+          port: document.getElementById(prefix + '_port').value,
+          user: document.getElementById(prefix + '_user').value,
+          password: document.getElementById(prefix + '_pass').value,
+          database: document.getElementById(prefix + '_db').value
+        };
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/install/test-db', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+          tested++;
+          if (xhr.status === 200) {
+            var result = JSON.parse(xhr.responseText);
+            if (!result.success) errors.push(prefix.toUpperCase() + ': ' + result.message);
+          } else {
+            errors.push(prefix.toUpperCase() + ': request failed');
+          }
+          if (tested === 4) callback(errors);
+        };
+        xhr.onerror = function() {
+          tested++;
+          errors.push(prefix.toUpperCase() + ': connection error');
+          if (tested === 4) callback(errors);
+        };
+        xhr.send(JSON.stringify(testData));
+      })(dbPrefixes[d]);
+    }
+  }
+
+  function goStep(n) {
+    clearValidation();
+    // Going backward — always allow
+    if (n <= currentStep) { switchToStep(n); return; }
+    // Validate Step 2 fields
+    if (currentStep === 2) {
+      if (!validateStep2()) return;
+      // Test all DB connections before allowing next
+      showAlert('success', 'Testing database connections...');
+      testAllDbs(function(errors) {
+        if (errors.length > 0) {
+          showAlert('error', 'Database connection failed:<br>' + errors.join('<br>'));
+        } else {
+          clearValidation();
+          switchToStep(n);
+        }
+      });
+      return;
+    }
+    // Validate Step 3
+    if (currentStep === 3 && !validateStep3()) return;
+    switchToStep(n);
+  }
+
+  function testAllAndShow() {
+    if (!validateStep2()) return;
+    var el = document.getElementById('db-test-result');
+    var btn = document.getElementById('btn-test-all');
+    el.style.display = 'block';
+    el.innerHTML = '<span class="text-wait">Testing all connections...</span>';
+    btn.disabled = true;
+    testAllDbs(function(errors) {
+      btn.disabled = false;
+      if (errors.length > 0) {
+        el.innerHTML = '<span class="text-fail"><b>Failed:</b><br>' + errors.join('<br>') + '</span>';
+      } else {
+        el.innerHTML = '<span class="text-ok"><b>All 4 databases connected successfully!</b></span>';
+      }
+    });
+  }
+
+  function runInstall() {
+    clearValidation();
+    if (!validateStep2()) { switchToStep(2); return; }
+    if (!validateStep3()) { switchToStep(3); return; }
+
+    var btn = document.getElementById('btn-install');
+    var progress = document.getElementById('install-progress');
+    var status = document.getElementById('install-status');
+    var bar = document.getElementById('progress-fill');
+
+    btn.disabled = true;
+    btn.textContent = 'Checking connections...';
+    document.getElementById('btn-back-4').disabled = true;
+    progress.style.display = 'block';
+    bar.style.width = '10%';
+    status.textContent = 'Verifying database connections...';
+
+    testAllDbs(function(errors) {
+      if (errors.length > 0) {
+        showAlert('error', 'Database connection failed:<br>' + errors.join('<br>'));
+        btn.disabled = false;
+        btn.textContent = 'Install Now \u00BB';
+        document.getElementById('btn-back-4').disabled = false;
+        progress.style.display = 'none';
+        bar.style.width = '0%';
+        return;
+      }
+      bar.style.width = '30%';
+      status.textContent = 'Connections OK. Running installation...';
+
+    var fields = ['cms_host','cms_port','cms_user','cms_pass','cms_db',
+      'auth_host','auth_port','auth_user','auth_pass','auth_db',
+      'char_host','char_port','char_user','char_pass','char_db',
+      'world_host','world_port','world_user','world_pass','world_db',
+      'site_title','admin_user','admin_pass','admin_email',
+      'soap_host','soap_port','soap_user','soap_pass'];
+    var data = {};
+    for (var i = 0; i < fields.length; i++) {
+      data[fields[i]] = document.getElementById(fields[i]).value;
     }
 
-    async function testDb(prefix) {
-      const data = {
-        host: document.getElementById(prefix + '_host').value,
-        port: document.getElementById(prefix + '_port').value,
-        user: document.getElementById(prefix + '_user').value,
-        password: document.getElementById(prefix + '_pass').value,
-        database: document.getElementById(prefix + '_db').value
-      };
-      const el = document.getElementById(prefix + '-result');
-      el.textContent = 'Testing...';
-      el.className = 'ms-2 small text-warning';
-      try {
-        const resp = await fetch('/install/test-db', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        const result = await resp.json();
-        el.textContent = result.message;
-        el.className = 'ms-2 small ' + (result.success ? 'text-success' : 'text-danger');
-      } catch (err) {
-        el.textContent = err.message;
-        el.className = 'ms-2 small text-danger';
-      }
-    }
+    bar.style.width = '50%';
+    status.textContent = 'Running installation...';
 
-    async function runInstall() {
-      const btn = document.getElementById('btn-install');
-      const progress = document.getElementById('install-progress');
-      const status = document.getElementById('install-status');
-      const bar = progress.querySelector('.progress-bar');
-
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Installing...';
-      document.getElementById('btn-back-4').disabled = true;
-      progress.classList.remove('d-none');
-      bar.style.width = '20%';
-      status.textContent = 'Connecting to databases...';
-
-      const fields = ['cms_host','cms_port','cms_user','cms_pass','cms_db',
-        'auth_host','auth_port','auth_user','auth_pass','auth_db',
-        'char_host','char_port','char_user','char_pass','char_db',
-        'world_host','world_port','world_user','world_pass','world_db',
-        'site_title','admin_user','admin_pass','admin_email',
-        'soap_host','soap_port','soap_user','soap_pass'];
-      const data = {};
-      fields.forEach(f => data[f] = document.getElementById(f).value);
-
-      bar.style.width = '40%';
-      status.textContent = 'Running installation...';
-
-      try {
-        const resp = await fetch('/install/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        const result = await resp.json();
-        bar.style.width = '100%';
-
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/install/run', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+      bar.style.width = '100%';
+      if (xhr.status === 200) {
+        var result = JSON.parse(xhr.responseText);
         if (result.success) {
           status.textContent = result.message;
-          showAlert('success', '<i class="fas fa-check-circle me-1"></i>' + result.message + ' <a href="/" class="alert-link">Go to Homepage</a>');
-          btn.innerHTML = '<i class="fas fa-check me-1"></i>Done!';
+          showAlert('success', result.message + ' <a href="/">Go to Homepage</a>');
+          btn.textContent = 'Done!';
         } else {
-          throw new Error(result.message);
+          onError(result.message);
         }
-      } catch (err) {
-        bar.style.width = '100%';
-        bar.classList.remove('bg-gold');
-        bar.classList.add('bg-danger');
-        status.textContent = 'Error: ' + err.message;
-        showAlert('danger', '<i class="fas fa-times-circle me-1"></i>Installation failed: ' + err.message);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-redo me-1"></i>Retry';
-        document.getElementById('btn-back-4').disabled = false;
+      } else {
+        onError('Server returned status ' + xhr.status);
       }
-    }
+    };
+    xhr.onerror = function() {
+      bar.style.width = '100%';
+      onError('Connection error');
+    };
+    xhr.send(JSON.stringify(data));
 
-    function showAlert(type, msg) {
-      const el = document.getElementById('alert-box');
-      el.className = 'alert alert-' + type;
-      el.innerHTML = msg;
+    function onError(msg) {
+      bar.style.background = '#640909';
+      status.textContent = 'Error: ' + msg;
+      status.style.color = '#640909';
+      showAlert('error', 'Installation failed: ' + msg);
+      btn.disabled = false;
+      btn.textContent = 'Retry';
+      document.getElementById('btn-back-4').disabled = false;
     }
-  </script>
-</body>
-</html>
+    }); // end testAllDbs callback
+  } // end runInstall
+
+  function showAlert(type, msg) {
+    var el = document.getElementById('alert-box');
+    el.style.display = 'block';
+    el.className = 'install-alert install-alert-' + type;
+    el.innerHTML = msg;
+  }
+
+  goStep(1);
+</script>

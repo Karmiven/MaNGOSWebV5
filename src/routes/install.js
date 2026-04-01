@@ -18,7 +18,8 @@ router.use((req, res, next) => {
 router.get('/', (req, res) => {
   res.render('pages/install/index', {
     title: 'Installation Wizard',
-    layout: false,
+    layout: 'layouts/install',
+    themePath: '/themes/wotlk',
     step: parseInt(req.query.step) || 1,
     error: null,
     success: null
