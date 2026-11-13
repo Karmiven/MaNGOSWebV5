@@ -1,4 +1,3 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const News = require('../models/News');
 const helpers = require('../utils/helpers');
@@ -6,7 +5,7 @@ const helpers = require('../utils/helpers');
 /* GET /news/archive — Paginated news archive */
 router.get('/archive', async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
+    const page = helpers.toPage(req.query.page);
     const perPage = 15;
     const totalNews = await News.count();
     const pag = helpers.paginate(totalNews, page, perPage);

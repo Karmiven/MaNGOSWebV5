@@ -28,7 +28,7 @@
           <label class="form-label text-muted">Template</label>
           <select name="templates" class="form-control bg-dark text-light border-secondary">
             <% (availableThemes || []).forEach(function(t) { %>
-              <option value="<%= t.slug %>" <%= (config.templates || 'wotlk') === t.slug ? 'selected' : '' %>><%= t.name %> (<%= t.expansion %>)</option>
+              <option value="<%= t.slug %>" <%= String(config.templates || 'wotlk').toLowerCase() === t.slug ? 'selected' : '' %>><%= t.name %> (<%= t.expansion %>)</option>
             <% }); %>
           </select>
         </div>
@@ -78,6 +78,7 @@
       <%
         var fpModules = [
           { key: 'fp_serverinfo',      label: 'Server Info' },
+          { key: 'fp_hide_server_ip',  label: 'Hide Server IP' },
           { key: 'fp_realm_status',    label: 'Realm Status' },
           { key: 'fp_players_online',  label: 'Players Online' },
           { key: 'fp_vote_banner',     label: 'Vote Banner' },
@@ -217,15 +218,6 @@
           </div>
         </div>
       <% }) %>
-    </div>
-  </div>
-
-  <!-- PayPal -->
-  <div class="card bg-dark border-secondary mb-4">
-    <div class="card-header text-gold">PayPal</div>
-    <div class="card-body">
-      <label class="form-label text-muted">PayPal Email</label>
-      <input type="email" name="paypal_email" class="form-control bg-dark text-light border-secondary" value="<%= config.paypal_email || '' %>">
     </div>
   </div>
 

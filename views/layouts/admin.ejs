@@ -104,7 +104,7 @@
                       <i class="fas fa-crown" style="font-size:10px;"></i>
                       Admin: <%= typeof user !== 'undefined' && user ? user.username : 'Admin' %>
                       <a href="/account/manage"><img src="<%= tp %>/images/button-profile.gif" alt="Profile"/></a>
-                      <a href="/auth/logout"><img src="<%= tp %>/images/button-logout.gif" alt="Logout"/></a>
+                      <form action="/auth/logout" method="post" style="margin:0; display:inline;"><input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>"/><input type="image" src="<%= tp %>/images/button-logout.gif" alt="Logout"/></form>
                     </span>
                   </div>
                   <div class="loginboxright"></div>
@@ -203,6 +203,9 @@
                           <div><a class="menufiller<%= currentPath.startsWith('/admin/siteconfig') ? ' admin-link-active' : '' %>" href="/admin/siteconfig">Site Config</a></div>
                           <% if (typeof user !== 'undefined' && user && user.isSuperAdmin) { %>
                           <div><a class="menufiller<%= currentPath.startsWith('/admin/realms') ? ' admin-link-active' : '' %>" href="/admin/realms">Realms</a></div>
+                          <% } %>
+                          <% if (typeof user !== 'undefined' && user && user.isSuperAdmin) { %>
+                          <div><a class="menufiller<%= currentPath.startsWith('/admin/auditlog') ? ' admin-link-active' : '' %>" href="/admin/auditlog">Audit Log</a></div>
                           <% } %>
                           <div><a class="menufiller<%= currentPath.startsWith('/admin/errorlog') ? ' admin-link-active' : '' %>" href="/admin/errorlog">Error Log</a></div>
                           <div><a class="menufiller<%= currentPath.startsWith('/admin/info') ? ' admin-link-active' : '' %>" href="/admin/info">System Info</a></div>

@@ -21,7 +21,7 @@
             <div class="col-md-2"><input type="text" name="db_char_port" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Port" value="<%= cfg.db_char_port || '3306' %>"></div>
             <div class="col-md-2"><input type="text" name="db_char_name" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="DB Name" value="<%= cfg.db_char_name || '' %>"></div>
             <div class="col-md-2"><input type="text" name="db_char_user" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="User" value="<%= cfg.db_char_user || '' %>"></div>
-            <div class="col-md-2"><input type="password" name="db_char_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Pass" value="<%= cfg.db_char_pass || '' %>"></div>
+            <div class="col-md-2"><input type="password" name="db_char_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="<%= cfg.db_char_pass ? 'unchanged' : 'Pass' %>" value="" autocomplete="new-password"></div>
           </div>
 
           <h6 class="text-gold mt-3">World Database</h6>
@@ -30,7 +30,7 @@
             <div class="col-md-2"><input type="text" name="db_world_port" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Port" value="<%= cfg.db_world_port || '3306' %>"></div>
             <div class="col-md-2"><input type="text" name="db_world_name" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="DB Name" value="<%= cfg.db_world_name || '' %>"></div>
             <div class="col-md-2"><input type="text" name="db_world_user" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="User" value="<%= cfg.db_world_user || '' %>"></div>
-            <div class="col-md-2"><input type="password" name="db_world_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Pass" value="<%= cfg.db_world_pass || '' %>"></div>
+            <div class="col-md-2"><input type="password" name="db_world_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="<%= cfg.db_world_pass ? 'unchanged' : 'Pass' %>" value="" autocomplete="new-password"></div>
           </div>
 
           <h6 class="text-gold mt-3">SOAP / Remote Access</h6>
@@ -43,7 +43,7 @@
             </div>
             <div class="col-md-3"><input type="number" name="ra_port" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Port" value="<%= cfg.ra_port || 7878 %>"></div>
             <div class="col-md-3"><input type="text" name="ra_user" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="User" value="<%= cfg.ra_user || '' %>"></div>
-            <div class="col-md-3"><input type="password" name="ra_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Pass" value="<%= cfg.ra_pass || '' %>"></div>
+            <div class="col-md-3"><input type="password" name="ra_pass" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="<%= cfg.ra_pass ? 'unchanged' : 'Pass' %>" value="" autocomplete="new-password"></div>
           </div>
 
           <h6 class="text-gold mt-3">Server Info Refresh</h6>

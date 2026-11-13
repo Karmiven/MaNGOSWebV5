@@ -93,14 +93,14 @@ Welcome to our World of Warcraft server!
 <% if (typeof siteConfig === 'undefined' || !siteConfig || siteConfig.fp_players_online != '0') { %>
 <li><div>
 <b>Online:</b>&nbsp;
-<span title="Players online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlinePlayers || 0 %></a></span>
- / <span title="Bots online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlineBots || 0 %></a></span>
+<span title="Real players currently online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlinePlayers || 0 %> player<%= (serverInfo.onlinePlayers || 0) !== 1 ? 's' : '' %></a></span>
+ / <span title="Bot accounts currently online" style="cursor:help; border-bottom:1px dotted #666;"><a href="/server/online"><%= serverInfo.onlineBots || 0 %> bot<%= (serverInfo.onlineBots || 0) !== 1 ? 's' : '' %></a></span>
  (<a href="/server/online">Playermap</a>)
 </div></li>
 <% } %>
 
 <li><div>
-<b>Server IP:</b>&nbsp;<%= serverInfo.address %>
+<b>Server IP:</b>&nbsp;<%= (typeof siteConfig !== 'undefined' && siteConfig && siteConfig.fp_hide_server_ip == '1') ? 'Hidden by the Kirin Tor' : serverInfo.address %>
 </div></li>
 
 <li><div>

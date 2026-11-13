@@ -1,4 +1,3 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
 const Account = require('../models/Account');
@@ -15,11 +14,31 @@ const { clearThemeCache } = require('../middleware/theme');
 const SoapService = require('../services/soap');
 const db = require('../config/database');
 const helpers = require('../utils/helpers');
+const logger = require('../utils/logger');
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+
+const { toInt, toPage, safeUrl } = helpers;
 
 router.use(requireAdmin);
+
+/* Audit trail: every successful admin POST is written to mw_admin_log */
+router.use((req, res, next) => {
+  if (req.method === 'POST') {
+    res.on('finish', () => {
+      if (res.statusCode >= 400 || !req.user) return;
+      const body = {};
+      for (const [k, v] of Object.entries(req.body || {})) {
+        if (/pass|token|secret|_csrf/i.test(k)) continue;
+        body[k] = typeof v === 'string' ? v.slice(0, 200) : v;
+      }
+      db.cms.query(
+        'INSERT INTO mw_admin_log (account_id, username, ip, action, details) VALUES (?, ?, ?, ?, ?)',
+        [req.user.id, req.user.username, req.ip || '', req.originalUrl.slice(0, 100), JSON.stringify(body).slice(0, 2000)]
+      ).catch(() => {});
+    });
+  }
+  next();
+});
 
 /* ================================================================== */
 /*  Dashboard                                                          */
@@ -49,8 +68,8 @@ router.get('/', async (req, res, next) => {
 /* ================================================================== */
 router.get('/users', async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const search = req.query.search || '';
+    const page = toPage(req.query.page);
+    const search = typeof req.query.search === 'string' ? req.query.search.slice(0, 50) : '';
     const data = await Account.list(page, 20, search);
     res.render('pages/admin/users', {
       title: 'User Management', layout: 'layouts/admin',
@@ -64,48 +83,82 @@ router.get('/users', async (req, res, next) => {
 router.post('/users/edit', async (req, res, next) => {
   try {
     const { account_id, account_level, action } = req.body;
-    const id = parseInt(account_id);
+    const page = toPage(req.body.page);
+    const back = '/admin/users' + (page > 1 ? `?page=${page}` : '');
+    const fail = (msg) => { req.flash('error', msg); return res.redirect(back); };
+
+    const id = parseInt(account_id, 10);
+    if (!Number.isInteger(id) || id <= 0) return fail('Invalid account.');
+
+    const target = await Account.getExtended(id);
+    const targetLevel = target ? parseInt(target.account_level, 10) || 1 : 1;
+    const actorLevel = req.user.level;
+    const isSelf = id === req.user.id;
 
     if (action === 'set_level') {
-      await Account.setLevel(id, parseInt(account_level));
+      if (!req.user.isSuperAdmin || isSelf) return fail('Only another super admin can change web access levels.');
+      const level = parseInt(account_level, 10);
+      if (!Number.isInteger(level) || level < 1 || level > 5) return fail('Invalid account level.');
+      if (level === 5 && targetLevel !== 5) {
+        await Account.ban(id, req.user.username, 'Set to banned level by admin');
+      } else if (level !== 5 && targetLevel === 5) {
+        await Account.unban(id);
+      }
+      await Account.setLevel(id, level);
       req.flash('success', 'User level updated.');
     } else if (action === 'ban') {
-      await Account.ban(id, req.user.username, req.body.ban_reason || 'Admin ban');
+      if (isSelf || targetLevel >= actorLevel) return fail('You cannot ban this account.');
+      const reason = (typeof req.body.ban_reason === 'string' ? req.body.ban_reason : '').slice(0, 250) || 'Admin ban';
+      await Account.ban(id, req.user.username, reason);
       await Account.setLevel(id, 5);
       req.flash('success', 'User banned.');
     } else if (action === 'unban') {
       await Account.unban(id);
-      await Account.setLevel(id, 2);
       req.flash('success', 'User unbanned.');
     } else if (action === 'change_password') {
+      if (!req.user.isSuperAdmin && (isSelf || targetLevel >= 3)) return fail('Only a super admin can change this password.');
       const acc = await Account.findById(id);
-      if (acc && req.body.new_password) {
-        await Account.changePassword(id, acc.username, req.body.new_password);
-        req.flash('success', 'Password changed.');
-      }
+      if (!acc) return fail('Account not found.');
+      const passErr = Account.validatePassword(req.body.new_password);
+      if (passErr) return fail(passErr);
+      await Account.changePassword(id, acc.username, req.body.new_password);
+      req.flash('success', 'Password changed.');
     } else if (action === 'add_points') {
-      const pts = parseInt(req.body.points_amount) || 0;
+      if (!req.user.isSuperAdmin && targetLevel >= 3) return fail('Only a super admin can modify admin points.');
+      const pts = toInt(req.body.points_amount, { min: -1000000, max: 1000000 });
       if (pts > 0) {
         await Account.addPoints(id, pts);
         req.flash('success', `Added ${pts} points.`);
       } else if (pts < 0) {
-        await Account.spendPoints(id, Math.abs(pts));
-        req.flash('success', `Removed ${Math.abs(pts)} points.`);
+        const removed = await Account.spendPointsIfEnough(id, Math.abs(pts));
+        req.flash(removed ? 'success' : 'error', removed ? `Removed ${Math.abs(pts)} points.` : 'Not enough points to remove.');
       }
-    } else if (action === 'delete' && req.user.isSuperAdmin) {
-      // Delete extended data, then auth account
+    } else if (action === 'delete') {
+      if (!req.user.isSuperAdmin) return fail('Only a super admin can delete accounts.');
+      if (isSelf) return fail('You cannot delete your own account.');
+      if (targetLevel >= 4) return fail('Super admin accounts cannot be deleted here.');
+      if (await Character.countByAccount(id) > 0) {
+        return fail('This account still has characters. Delete them in game first.');
+      }
       await db.cms.query('DELETE FROM mw_account_extend WHERE account_id = ?', [id]);
+      await db.auth.query('DELETE FROM account_access WHERE AccountID = ?', [id]);
       await db.auth.query('DELETE FROM account WHERE id = ?', [id]);
       req.flash('success', 'Account deleted.');
     }
 
-    res.redirect('/admin/users' + (req.body.page ? `?page=${req.body.page}` : ''));
+    res.redirect(back);
   } catch (err) { next(err); }
 });
 
 /* ================================================================== */
 /*  News                                                               */
 /* ================================================================== */
+function newsFields(body) {
+  const title = typeof body.title === 'string' ? body.title.trim().slice(0, 255) : '';
+  const message = typeof body.message === 'string' ? body.message.slice(0, 20000) : '';
+  return title && message ? { title, message } : null;
+}
+
 router.get('/news', async (req, res, next) => {
   try {
     const news = await News.getAll(100);
@@ -118,7 +171,9 @@ router.get('/news', async (req, res, next) => {
 
 router.post('/news/add', async (req, res, next) => {
   try {
-    await News.create(req.body.title, req.body.message, req.user.id);
+    const f = newsFields(req.body);
+    if (!f) { req.flash('error', 'Title and message are required.'); return res.redirect('/admin/news'); }
+    await News.create(f.title, f.message, req.user.id);
     req.flash('success', 'News posted.');
     res.redirect('/admin/news');
   } catch (err) { next(err); }
@@ -126,7 +181,10 @@ router.post('/news/add', async (req, res, next) => {
 
 router.post('/news/edit', async (req, res, next) => {
   try {
-    await News.update(req.body.id, req.body.title, req.body.message);
+    const f = newsFields(req.body);
+    const id = parseInt(req.body.id, 10);
+    if (!f || !Number.isInteger(id)) { req.flash('error', 'Title and message are required.'); return res.redirect('/admin/news'); }
+    await News.update(id, f.title, f.message);
     req.flash('success', 'News updated.');
     res.redirect('/admin/news');
   } catch (err) { next(err); }
@@ -134,7 +192,7 @@ router.post('/news/edit', async (req, res, next) => {
 
 router.post('/news/delete', async (req, res, next) => {
   try {
-    await News.delete(req.body.id);
+    await News.delete(parseInt(req.body.id, 10) || 0);
     req.flash('success', 'News deleted.');
     res.redirect('/admin/news');
   } catch (err) { next(err); }
@@ -159,28 +217,37 @@ router.get('/realms', requireSuperAdmin, async (req, res, next) => {
 
 router.post('/realms/update', requireSuperAdmin, async (req, res, next) => {
   try {
-    const realmId = parseInt(req.body.realm_id);
+    const realmId = parseInt(req.body.realm_id, 10);
+    if (!Number.isInteger(realmId) || realmId <= 0) {
+      req.flash('error', 'Invalid realm.');
+      return res.redirect('/admin/realms');
+    }
+    const str = (k, max = 255) => (typeof req.body[k] === 'string' ? req.body[k].trim().slice(0, max) : '');
+    const port = (k, def) => String(toInt(req.body[k], { min: 1, max: 65535, def }));
+
+    const existing = await Realm.getRealmConfig(realmId);
+    // blank password fields keep the stored value (the form never shows it)
+    const pass = (k) => str(k) || (existing ? existing[k] || '' : '');
+
     const data = {
       site_enabled: req.body.site_enabled ? 1 : 0,
-      db_char_host: req.body.db_char_host,
-      db_char_port: req.body.db_char_port || '3306',
-      db_char_name: req.body.db_char_name,
-      db_char_user: req.body.db_char_user,
-      db_char_pass: req.body.db_char_pass || '',
-      db_world_host: req.body.db_world_host,
-      db_world_port: req.body.db_world_port || '3306',
-      db_world_name: req.body.db_world_name,
-      db_world_user: req.body.db_world_user,
-      db_world_pass: req.body.db_world_pass || '',
-      ra_type: parseInt(req.body.ra_type) || 1,
-      ra_port: parseInt(req.body.ra_port) || 7878,
-      ra_user: req.body.ra_user || '',
-      ra_pass: req.body.ra_pass || '',
-      info_refresh_interval: parseInt(req.body.info_refresh_interval) || 5
+      db_char_host: str('db_char_host'),
+      db_char_port: port('db_char_port', 3306),
+      db_char_name: str('db_char_name', 100),
+      db_char_user: str('db_char_user', 100),
+      db_char_pass: pass('db_char_pass'),
+      db_world_host: str('db_world_host'),
+      db_world_port: port('db_world_port', 3306),
+      db_world_name: str('db_world_name', 100),
+      db_world_user: str('db_world_user', 100),
+      db_world_pass: pass('db_world_pass'),
+      ra_type: toInt(req.body.ra_type, { min: 0, max: 1, def: 1 }),
+      ra_port: toInt(req.body.ra_port, { min: 1, max: 65535, def: 7878 }),
+      ra_user: str('ra_user', 100),
+      ra_pass: pass('ra_pass'),
+      info_refresh_interval: toInt(req.body.info_refresh_interval, { min: 1, max: 60, def: 5 })
     };
 
-    // Check if config exists
-    const existing = await Realm.getRealmConfig(realmId);
     if (existing) {
       await Realm.updateConfig(realmId, data);
     } else {
@@ -204,7 +271,6 @@ router.post('/realms/update', requireSuperAdmin, async (req, res, next) => {
 router.get('/siteconfig', async (req, res, next) => {
   try {
     const config = SiteConfig.get();
-    // availableThemes already set by theme middleware (from theme.json manifests)
     res.render('pages/admin/siteconfig', {
       title: 'Site Configuration', layout: 'layouts/admin',
       config
@@ -219,7 +285,7 @@ router.post('/siteconfig', async (req, res, next) => {
       'templates', 'default_lang', 'available_lang',
       'site_armory', 'site_forums', 'default_realm_id',
       'site_notice_enable', 'site_notice_text',
-      'fp_serverinfo', 'fp_realm_status', 'fp_players_online',
+      'fp_serverinfo', 'fp_hide_server_ip', 'fp_realm_status', 'fp_players_online',
       'fp_vote_banner', 'fp_newbie_guide', 'fp_hitcounter',
       'module_online_list', 'module_voting',
       'module_fp_ssotd', 'module_news_items', 'module_news_open',
@@ -229,14 +295,13 @@ router.post('/siteconfig', async (req, res, next) => {
       'allow_user_pass_change', 'allow_user_email_change',
       'module_char_rename', 'module_char_customize',
       'module_char_race_change', 'module_char_faction_change',
-      'rename_cost', 'customize_cost', 'racechange_cost', 'factionchange_cost',
-      'paypal_email'
+      'rename_cost', 'customize_cost', 'racechange_cost', 'factionchange_cost'
     ];
 
     const data = {};
     for (const field of fields) {
-      if (req.body[field] !== undefined) {
-        data[field] = req.body[field];
+      if (typeof req.body[field] === 'string') {
+        data[field] = req.body[field].slice(0, 1000);
       }
     }
 
@@ -250,6 +315,21 @@ router.post('/siteconfig', async (req, res, next) => {
 /* ================================================================== */
 /*  Shop Items                                                         */
 /* ================================================================== */
+function shopFields(body) {
+  const item_number = typeof body.item_number === 'string' ? body.item_number.replace(/\s+/g, '') : '';
+  const desc = typeof body.desc === 'string' ? body.desc.trim().slice(0, 255) : '';
+  if (!/^\d+(,\d+)*$/.test(item_number) || item_number.length > 100 || !desc) return null;
+  return {
+    item_number,
+    itemset: toInt(body.itemset, { min: 0, max: 100000 }),
+    gold: toInt(body.gold, { min: 0, max: 2147483647 }),
+    quantity: toInt(body.quantity, { min: 1, max: 1000, def: 1 }),
+    desc,
+    wp_cost: toInt(body.wp_cost, { min: 0, max: 10000000 }),
+    realms: toInt(body.realms, { min: 0, max: 1000 })
+  };
+}
+
 router.get('/shop', async (req, res, next) => {
   try {
     const items = await Shop.getAll();
@@ -262,15 +342,9 @@ router.get('/shop', async (req, res, next) => {
 
 router.post('/shop/add', async (req, res, next) => {
   try {
-    await Shop.create({
-      item_number: req.body.item_number,
-      itemset: parseInt(req.body.itemset) || 0,
-      gold: parseInt(req.body.gold) || 0,
-      quantity: parseInt(req.body.quantity) || 1,
-      desc: req.body.desc,
-      wp_cost: req.body.wp_cost,
-      realms: parseInt(req.body.realms) || 0
-    });
+    const f = shopFields(req.body);
+    if (!f) { req.flash('error', 'Item IDs must be numbers separated by commas, and a description is required.'); return res.redirect('/admin/shop'); }
+    await Shop.create(f);
     req.flash('success', 'Shop item added.');
     res.redirect('/admin/shop');
   } catch (err) { next(err); }
@@ -278,15 +352,10 @@ router.post('/shop/add', async (req, res, next) => {
 
 router.post('/shop/edit', async (req, res, next) => {
   try {
-    await Shop.update(req.body.id, {
-      item_number: req.body.item_number,
-      itemset: parseInt(req.body.itemset) || 0,
-      gold: parseInt(req.body.gold) || 0,
-      quantity: parseInt(req.body.quantity) || 1,
-      desc: req.body.desc,
-      wp_cost: req.body.wp_cost,
-      realms: parseInt(req.body.realms) || 0
-    });
+    const f = shopFields(req.body);
+    const id = parseInt(req.body.id, 10);
+    if (!f || !Number.isInteger(id)) { req.flash('error', 'Item IDs must be numbers separated by commas, and a description is required.'); return res.redirect('/admin/shop'); }
+    await Shop.update(id, f);
     req.flash('success', 'Shop item updated.');
     res.redirect('/admin/shop');
   } catch (err) { next(err); }
@@ -294,15 +363,74 @@ router.post('/shop/edit', async (req, res, next) => {
 
 router.post('/shop/delete', async (req, res, next) => {
   try {
-    await Shop.delete(req.body.id);
+    await Shop.delete(parseInt(req.body.id, 10) || 0);
     req.flash('success', 'Shop item deleted.');
     res.redirect('/admin/shop');
   } catch (err) { next(err); }
 });
 
+/* Purchases that were charged but whose delivery could not be confirmed */
+router.get('/shop/pending', async (req, res, next) => {
+  try {
+    const [rows] = await db.cms.query(
+      "SELECT * FROM mw_shop_transactions WHERE status = 'pending' ORDER BY id DESC LIMIT 200"
+    );
+    res.render('pages/admin/shop-pending', {
+      title: 'Pending Purchases', layout: 'layouts/admin',
+      purchases: rows, helpers
+    });
+  } catch (err) { next(err); }
+});
+
+router.post('/shop/pending/resolve', async (req, res, next) => {
+  let conn = null;
+  try {
+    const id = parseInt(req.body.id, 10);
+    const action = req.body.action;
+    if (!Number.isInteger(id) || !['complete', 'refund'].includes(action)) {
+      req.flash('error', 'Invalid request.');
+      return res.redirect('/admin/shop/pending');
+    }
+
+    conn = await db.cms.getConnection();
+    await conn.beginTransaction();
+    const [rows] = await conn.query(
+      "SELECT account_id, wp_cost FROM mw_shop_transactions WHERE id = ? AND status = 'pending' FOR UPDATE",
+      [id]
+    );
+    if (!rows.length) {
+      await conn.rollback();
+      req.flash('error', 'Purchase is no longer pending.');
+      return res.redirect('/admin/shop/pending');
+    }
+    await conn.query(
+      'UPDATE mw_shop_transactions SET status = ? WHERE id = ?',
+      [action === 'complete' ? 'completed' : 'failed', id]
+    );
+    if (action === 'refund') {
+      await Account.refundPoints(rows[0].account_id, rows[0].wp_cost, conn);
+    }
+    await conn.commit();
+    req.flash('success', action === 'refund' ? 'Purchase refunded.' : 'Purchase marked as delivered.');
+    res.redirect('/admin/shop/pending');
+  } catch (err) {
+    if (conn) { try { await conn.rollback(); } catch (_) {} }
+    next(err);
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 /* ================================================================== */
 /*  Donate Packages                                                    */
 /* ================================================================== */
+function packageFields(body) {
+  const desc = typeof body.desc === 'string' ? body.desc.trim().slice(0, 255) : '';
+  const cost = parseFloat(body.cost);
+  if (!desc || !Number.isFinite(cost) || cost < 0 || cost > 100000) return null;
+  return { desc, cost: cost.toFixed(2), points: toInt(body.points, { min: 0, max: 10000000 }) };
+}
+
 router.get('/donate', async (req, res, next) => {
   try {
     const packages = await Donate.getPackages();
@@ -315,7 +443,9 @@ router.get('/donate', async (req, res, next) => {
 
 router.post('/donate/add', async (req, res, next) => {
   try {
-    await Donate.createPackage(req.body.desc, req.body.cost, parseInt(req.body.points));
+    const f = packageFields(req.body);
+    if (!f) { req.flash('error', 'A description and a valid price are required.'); return res.redirect('/admin/donate'); }
+    await Donate.createPackage(f.desc, f.cost, f.points);
     req.flash('success', 'Package added.');
     res.redirect('/admin/donate');
   } catch (err) { next(err); }
@@ -323,7 +453,10 @@ router.post('/donate/add', async (req, res, next) => {
 
 router.post('/donate/edit', async (req, res, next) => {
   try {
-    await Donate.updatePackage(req.body.id, req.body.desc, req.body.cost, parseInt(req.body.points));
+    const f = packageFields(req.body);
+    const id = parseInt(req.body.id, 10);
+    if (!f || !Number.isInteger(id)) { req.flash('error', 'A description and a valid price are required.'); return res.redirect('/admin/donate'); }
+    await Donate.updatePackage(id, f.desc, f.cost, f.points);
     req.flash('success', 'Package updated.');
     res.redirect('/admin/donate');
   } catch (err) { next(err); }
@@ -331,7 +464,7 @@ router.post('/donate/edit', async (req, res, next) => {
 
 router.post('/donate/delete', async (req, res, next) => {
   try {
-    await Donate.deletePackage(req.body.id);
+    await Donate.deletePackage(parseInt(req.body.id, 10) || 0);
     req.flash('success', 'Package deleted.');
     res.redirect('/admin/donate');
   } catch (err) { next(err); }
@@ -340,6 +473,20 @@ router.post('/donate/delete', async (req, res, next) => {
 /* ================================================================== */
 /*  Vote Sites                                                         */
 /* ================================================================== */
+function voteFields(body) {
+  const hostname = typeof body.hostname === 'string' ? body.hostname.trim().slice(0, 255) : '';
+  if (!hostname) return null;
+  return {
+    hostname,
+    vote_type: body.vote_type === 'fake' ? 'fake' : 'link',
+    votelink: safeUrl(body.votelink).slice(0, 500),
+    image_url: safeUrl(body.image_url).slice(0, 500),
+    points: toInt(body.points, { min: 0, max: 1000, def: 1 }),
+    reset_time: toInt(body.reset_time, { min: 1, max: 168, def: 12 }),
+    active: body.active ? 1 : 0
+  };
+}
+
 router.get('/vote', async (req, res, next) => {
   try {
     const sites = await Vote.getAllSites();
@@ -352,15 +499,9 @@ router.get('/vote', async (req, res, next) => {
 
 router.post('/vote/add', async (req, res, next) => {
   try {
-    await Vote.createSite({
-      hostname: req.body.hostname,
-      vote_type: req.body.vote_type || 'link',
-      votelink: req.body.votelink || '',
-      image_url: req.body.image_url || '',
-      points: parseInt(req.body.points) || 1,
-      reset_time: parseInt(req.body.reset_time) || 12,
-      active: req.body.active ? 1 : 0
-    });
+    const f = voteFields(req.body);
+    if (!f) { req.flash('error', 'Hostname is required.'); return res.redirect('/admin/vote'); }
+    await Vote.createSite(f);
     req.flash('success', 'Vote site added.');
     res.redirect('/admin/vote');
   } catch (err) { next(err); }
@@ -368,15 +509,10 @@ router.post('/vote/add', async (req, res, next) => {
 
 router.post('/vote/edit', async (req, res, next) => {
   try {
-    await Vote.updateSite(req.body.id, {
-      hostname: req.body.hostname,
-      vote_type: req.body.vote_type || 'link',
-      votelink: req.body.votelink || '',
-      image_url: req.body.image_url || '',
-      points: parseInt(req.body.points) || 1,
-      reset_time: parseInt(req.body.reset_time) || 12,
-      active: req.body.active ? 1 : 0
-    });
+    const f = voteFields(req.body);
+    const id = parseInt(req.body.id, 10);
+    if (!f || !Number.isInteger(id)) { req.flash('error', 'Hostname is required.'); return res.redirect('/admin/vote'); }
+    await Vote.updateSite(id, f);
     req.flash('success', 'Vote site updated.');
     res.redirect('/admin/vote');
   } catch (err) { next(err); }
@@ -384,7 +520,7 @@ router.post('/vote/edit', async (req, res, next) => {
 
 router.post('/vote/delete', async (req, res, next) => {
   try {
-    await Vote.deleteSite(req.body.id);
+    await Vote.deleteSite(parseInt(req.body.id, 10) || 0);
     req.flash('success', 'Vote site deleted.');
     res.redirect('/admin/vote');
   } catch (err) { next(err); }
@@ -393,6 +529,10 @@ router.post('/vote/delete', async (req, res, next) => {
 /* ================================================================== */
 /*  Character Tools                                                    */
 /* ================================================================== */
+const AT_LOGIN_RENAME = 1;
+const AT_LOGIN_RESET_TALENTS = 4;
+const AT_LOGIN_CUSTOMIZE = 8;
+
 router.get('/chartools', async (req, res, next) => {
   try {
     res.render('pages/admin/chartools', {
@@ -404,8 +544,9 @@ router.get('/chartools', async (req, res, next) => {
 
 router.post('/chartools', async (req, res, next) => {
   try {
-    const { guid, action } = req.body;
-    const char = await Character.findByGuid(parseInt(guid));
+    const { action } = req.body;
+    const guid = parseInt(req.body.guid, 10);
+    const char = Number.isInteger(guid) && guid > 0 ? await Character.findByGuid(guid) : null;
     if (!char) {
       req.flash('error', 'Character not found.');
       return res.redirect('/admin/chartools');
@@ -413,15 +554,15 @@ router.post('/chartools', async (req, res, next) => {
 
     switch (action) {
       case 'rename':
-        await Character.setAtLoginFlag(char.guid, 1);
+        await Character.setAtLoginFlag(char.guid, AT_LOGIN_RENAME);
         req.flash('success', `${char.name} flagged for rename.`);
         break;
       case 'customize':
-        await Character.setAtLoginFlag(char.guid, 8);
+        await Character.setAtLoginFlag(char.guid, AT_LOGIN_CUSTOMIZE);
         req.flash('success', `${char.name} flagged for customization.`);
         break;
       case 'reset_talents':
-        await Character.setAtLoginFlag(char.guid, 32);
+        await Character.setAtLoginFlag(char.guid, AT_LOGIN_RESET_TALENTS);
         req.flash('success', `${char.name} flagged for talent reset.`);
         break;
       case 'reset_flags':
@@ -429,9 +570,17 @@ router.post('/chartools', async (req, res, next) => {
         req.flash('success', `${char.name} flags cleared.`);
         break;
       case 'delete':
-        await Character.deleteCharacter(char.guid);
-        req.flash('success', `${char.name} deleted.`);
+        if (!req.user.isSuperAdmin) {
+          req.flash('error', 'Only a super admin can delete characters.');
+        } else if (char.online) {
+          req.flash('error', `${char.name} is online.`);
+        } else {
+          await Character.deleteCharacter(char.guid);
+          req.flash('success', `${char.name} deleted.`);
+        }
         break;
+      default:
+        req.flash('error', 'Unknown action.');
     }
 
     res.redirect('/admin/chartools');
@@ -443,14 +592,13 @@ router.post('/chartools', async (req, res, next) => {
 /* ================================================================== */
 router.get('/deleted-chars', requireSuperAdmin, async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const search = req.query.search || '';
+    const page = toPage(req.query.page);
+    const search = typeof req.query.search === 'string' ? req.query.search.slice(0, 50) : '';
     const perPage = 25;
     const [total, chars] = await Promise.all([
       Character.countDeleted(search),
       Character.getDeleted(perPage, (page - 1) * perPage, search)
     ]);
-    // Fetch account names for display
     const accountIds = [...new Set(chars.map(c => c.account).filter(Boolean))];
     let accountMap = {};
     if (accountIds.length) {
@@ -470,7 +618,7 @@ router.get('/deleted-chars', requireSuperAdmin, async (req, res, next) => {
 
 router.post('/restore-char', requireSuperAdmin, async (req, res, next) => {
   try {
-    const guid = parseInt(req.body.guid);
+    const guid = parseInt(req.body.guid, 10);
     if (!guid) {
       req.flash('error', 'Invalid character.');
       return res.redirect('/admin/deleted-chars');
@@ -501,6 +649,12 @@ router.get('/banlist', async (req, res, next) => {
 /* ================================================================== */
 /*  FAQ                                                                */
 /* ================================================================== */
+function faqFields(body) {
+  const question = typeof body.question === 'string' ? body.question.trim().slice(0, 500) : '';
+  const answer = typeof body.answer === 'string' ? body.answer.slice(0, 20000) : '';
+  return question && answer ? { question, answer } : null;
+}
+
 router.get('/faq', async (req, res, next) => {
   try {
     const faqs = await FAQ.getAll();
@@ -513,7 +667,9 @@ router.get('/faq', async (req, res, next) => {
 
 router.post('/faq/add', async (req, res, next) => {
   try {
-    await FAQ.create(req.body.question, req.body.answer);
+    const f = faqFields(req.body);
+    if (!f) { req.flash('error', 'Question and answer are required.'); return res.redirect('/admin/faq'); }
+    await FAQ.create(f.question, f.answer);
     req.flash('success', 'FAQ added.');
     res.redirect('/admin/faq');
   } catch (err) { next(err); }
@@ -521,7 +677,10 @@ router.post('/faq/add', async (req, res, next) => {
 
 router.post('/faq/edit', async (req, res, next) => {
   try {
-    await FAQ.update(req.body.id, req.body.question, req.body.answer);
+    const f = faqFields(req.body);
+    const id = parseInt(req.body.id, 10);
+    if (!f || !Number.isInteger(id)) { req.flash('error', 'Question and answer are required.'); return res.redirect('/admin/faq'); }
+    await FAQ.update(id, f.question, f.answer);
     req.flash('success', 'FAQ updated.');
     res.redirect('/admin/faq');
   } catch (err) { next(err); }
@@ -529,7 +688,7 @@ router.post('/faq/edit', async (req, res, next) => {
 
 router.post('/faq/delete', async (req, res, next) => {
   try {
-    await FAQ.delete(req.body.id);
+    await FAQ.delete(parseInt(req.body.id, 10) || 0);
     req.flash('success', 'FAQ deleted.');
     res.redirect('/admin/faq');
   } catch (err) { next(err); }
@@ -538,6 +697,19 @@ router.post('/faq/delete', async (req, res, next) => {
 /* ================================================================== */
 /*  Menu Links                                                         */
 /* ================================================================== */
+function menuFields(body) {
+  const menu_id = parseInt(body.menu_id, 10);
+  const link_title = typeof body.link_title === 'string' ? body.link_title.trim().slice(0, 255) : '';
+  const link = safeUrl(body.link).slice(0, 500);
+  if (!Menu.CATEGORY_IDS.includes(menu_id) || !link_title || !link) return null;
+  return {
+    menu_id, link_title, link,
+    order: toInt(body.order, { min: 0, max: 1000 }),
+    account_level: toInt(body.account_level, { min: 1, max: 4, def: 1 }),
+    guest_only: body.guest_only ? 1 : 0
+  };
+}
+
 router.get('/menus', async (req, res, next) => {
   try {
     const items = await Menu.getAll();
@@ -550,14 +722,9 @@ router.get('/menus', async (req, res, next) => {
 
 router.post('/menus/add', async (req, res, next) => {
   try {
-    await Menu.create({
-      menu_id: parseInt(req.body.menu_id),
-      link_title: req.body.link_title,
-      link: req.body.link,
-      order: parseInt(req.body.order) || 0,
-      account_level: parseInt(req.body.account_level) || 1,
-      guest_only: req.body.guest_only ? 1 : 0
-    });
+    const f = menuFields(req.body);
+    if (!f) { req.flash('error', 'Pick a category, a title and a valid link (a site path or http/https URL).'); return res.redirect('/admin/menus'); }
+    await Menu.create(f);
     req.flash('success', 'Menu item added.');
     res.redirect('/admin/menus');
   } catch (err) { next(err); }
@@ -565,14 +732,10 @@ router.post('/menus/add', async (req, res, next) => {
 
 router.post('/menus/edit', async (req, res, next) => {
   try {
-    await Menu.update(req.body.id, {
-      menu_id: parseInt(req.body.menu_id),
-      link_title: req.body.link_title,
-      link: req.body.link,
-      order: parseInt(req.body.order) || 0,
-      account_level: parseInt(req.body.account_level) || 1,
-      guest_only: req.body.guest_only ? 1 : 0
-    });
+    const f = menuFields(req.body);
+    const id = parseInt(req.body.id, 10);
+    if (!f || !Number.isInteger(id)) { req.flash('error', 'Pick a category, a title and a valid link (a site path or http/https URL).'); return res.redirect('/admin/menus'); }
+    await Menu.update(id, f);
     req.flash('success', 'Menu item updated.');
     res.redirect('/admin/menus');
   } catch (err) { next(err); }
@@ -580,7 +743,7 @@ router.post('/menus/edit', async (req, res, next) => {
 
 router.post('/menus/delete', async (req, res, next) => {
   try {
-    await Menu.delete(req.body.id);
+    await Menu.delete(parseInt(req.body.id, 10) || 0);
     req.flash('success', 'Menu item deleted.');
     res.redirect('/admin/menus');
   } catch (err) { next(err); }
@@ -601,8 +764,8 @@ router.get('/regkeys', async (req, res, next) => {
 
 router.post('/regkeys/generate', async (req, res, next) => {
   try {
-    const count = parseInt(req.body.count) || 1;
-    for (let i = 0; i < Math.min(count, 50); i++) {
+    const count = toInt(req.body.count, { min: 1, max: 50, def: 1 });
+    for (let i = 0; i < count; i++) {
       const key = crypto.randomBytes(8).toString('hex').toUpperCase();
       await db.cms.query('INSERT INTO mw_regkeys (`key`, used) VALUES (?, 0)', [key]);
     }
@@ -613,7 +776,7 @@ router.post('/regkeys/generate', async (req, res, next) => {
 
 router.post('/regkeys/delete', async (req, res, next) => {
   try {
-    await db.cms.query('DELETE FROM mw_regkeys WHERE id = ?', [req.body.id]);
+    await db.cms.query('DELETE FROM mw_regkeys WHERE id = ?', [parseInt(req.body.id, 10) || 0]);
     req.flash('success', 'Key deleted.');
     res.redirect('/admin/regkeys');
   } catch (err) { next(err); }
@@ -634,7 +797,7 @@ router.get('/gamemail', async (req, res, next) => {
 router.post('/soap-test', async (req, res) => {
   try {
     const soapHost = process.env.SOAP_HOST;
-    const soapPort = parseInt(process.env.SOAP_PORT);
+    const soapPort = parseInt(process.env.SOAP_PORT, 10);
     const soapUser = process.env.SOAP_USER;
     const soapPass = process.env.SOAP_PASS;
 
@@ -649,21 +812,20 @@ router.post('/soap-test', async (req, res) => {
   }
 });
 
-router.post('/gamemail', async (req, res, next) => {
+router.post('/gamemail', async (req, res) => {
   try {
     const { character, subject, message } = req.body;
     const soapHost = process.env.SOAP_HOST;
-    const soapPort = parseInt(process.env.SOAP_PORT);
+    const soapPort = parseInt(process.env.SOAP_PORT, 10);
     const soapUser = process.env.SOAP_USER;
     const soapPass = process.env.SOAP_PASS;
 
     await SoapService.sendMail(soapHost, soapPort, soapUser, soapPass, character, subject, message);
     req.flash('success', `Mail sent to ${character}.`);
-    res.redirect('/admin/gamemail');
   } catch (err) {
     req.flash('error', `Failed: ${err.message}`);
-    res.redirect('/admin/gamemail');
   }
+  res.redirect('/admin/gamemail');
 });
 
 /* ================================================================== */
@@ -671,7 +833,7 @@ router.post('/gamemail', async (req, res, next) => {
 /* ================================================================== */
 router.get('/progression', async (req, res, next) => {
   try {
-    const currentPhase = parseInt(SiteConfig.get('progression_phase')) || 0;
+    const currentPhase = parseInt(SiteConfig.get('progression_phase'), 10) || 0;
     const [phases] = await db.cms.query('SELECT phase, release_date FROM mw_progression_phases ORDER BY phase');
     const phaseMap = {};
     phases.forEach(p => { phaseMap[p.phase] = p.release_date || ''; });
@@ -684,13 +846,13 @@ router.get('/progression', async (req, res, next) => {
 
 router.post('/progression', async (req, res, next) => {
   try {
-    const newPhase = parseInt(req.body.current_phase);
+    const newPhase = parseInt(req.body.current_phase, 10);
     if (!isNaN(newPhase) && newPhase >= 0 && newPhase <= 15) {
       await SiteConfig.update({ progression_phase: String(newPhase) });
     }
-    // Update release dates
     for (let i = 0; i <= 15; i++) {
-      const dateVal = req.body['date_' + i] || '';
+      const raw = req.body['date_' + i];
+      const dateVal = typeof raw === 'string' ? raw.trim().slice(0, 50) : '';
       await db.cms.query(
         'INSERT INTO mw_progression_phases (phase, release_date) VALUES (?, ?) ON DUPLICATE KEY UPDATE release_date = ?',
         [i, dateVal, dateVal]
@@ -702,27 +864,32 @@ router.post('/progression', async (req, res, next) => {
 });
 
 /* ================================================================== */
+/*  Audit Log                                                          */
+/* ================================================================== */
+router.get('/auditlog', requireSuperAdmin, async (req, res, next) => {
+  try {
+    const [rows] = await db.cms.query(
+      'SELECT id, username, ip, action, details, created_at FROM mw_admin_log ORDER BY id DESC LIMIT 300'
+    );
+    res.render('pages/admin/auditlog', {
+      title: 'Audit Log', layout: 'layouts/admin',
+      entries: rows, helpers
+    });
+  } catch (err) { next(err); }
+});
+
+/* ================================================================== */
 /*  Error Log                                                          */
 /* ================================================================== */
 router.get('/errorlog', (req, res) => {
-  const logFile = path.join(__dirname, '../../logs/error.log');
-  let logContent = '';
-  try {
-    if (fs.existsSync(logFile)) {
-      logContent = fs.readFileSync(logFile, 'utf8');
-    }
-  } catch { }
   res.render('pages/admin/errorlog', {
     title: 'Error Log', layout: 'layouts/admin',
-    logContent
+    logContent: logger.readTail()
   });
 });
 
 router.post('/errorlog/clear', (req, res) => {
-  const logFile = path.join(__dirname, '../../logs/error.log');
-  try {
-    fs.writeFileSync(logFile, '');
-  } catch { }
+  logger.clear();
   req.flash('success', 'Error log cleared.');
   res.redirect('/admin/errorlog');
 });

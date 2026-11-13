@@ -40,7 +40,7 @@
           <%= faq.question %>
         </div>
         <div class="faq-answer" id="faq-answer-<%= idx %>">
-          <%- faq.answer %>
+          <%- helpers.richText(faq.answer || '') %>
         </div>
       </td>
     </tr>

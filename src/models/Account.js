@@ -1,9 +1,29 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 const SRP6 = require('../services/srp6');
 const crypto = require('crypto');
+const { escapeLike } = require('../utils/helpers');
+
+const PASSWORD_MAX = 16; // WoW client / AzerothCore MAX_PASS_STR
+const PASSWORD_MIN = 6;
+const LOGIN_BLOCK_SECONDS = 900;
+const IP_FAIL_LIMIT = 20;
+const USER_FAIL_LIMIT = 5;
+
+let _botIds = null;
+let _botIdsTime = 0;
 
 const Account = {
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+
+  /** Validate a new password. Returns an error string or null. */
+  validatePassword(password) {
+    if (typeof password !== 'string' || password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
+      return `Password must be ${PASSWORD_MIN}-${PASSWORD_MAX} characters.`;
+    }
+    return null;
+  },
+
   /** Find account by username */
   async findByUsername(username) {
     const [rows] = await db.auth.query(
@@ -32,7 +52,7 @@ const Account = {
   },
 
   /** Create new account with SRP6 */
-  async create(username, password, email, expansion = 2) {
+  async create(username, password, email, expansion = 2, registrationIp = '') {
     const { salt, verifier } = SRP6.generateCredentials(username, password);
 
     const [result] = await db.auth.query(
@@ -41,21 +61,28 @@ const Account = {
     );
 
     const accountId = result.insertId;
-
-    // Create extended CMS record
     const activationCode = crypto.randomBytes(20).toString('hex');
-    await db.cms.query(
-      `INSERT INTO mw_account_extend (account_id, account_level, activation_code, registration_ip)
-       VALUES (?, 1, ?, '')`,
-      [accountId, activationCode]
-    );
+    try {
+      await db.cms.query(
+        `INSERT INTO mw_account_extend (account_id, account_level, activation_code, registration_ip)
+         VALUES (?, 1, ?, ?)`,
+        [accountId, activationCode, registrationIp]
+      );
+    } catch (err) {
+      await db.auth.query('DELETE FROM account WHERE id = ?', [accountId]).catch(() => {});
+      throw err;
+    }
 
     return { id: accountId, activationCode };
   },
 
   /** Verify password using SRP6 */
   verifyPassword(username, password, salt, verifier) {
-    return SRP6.verifyPassword(username, password, Buffer.from(salt), Buffer.from(verifier));
+    try {
+      return SRP6.verifyPassword(username, password, Buffer.from(salt), Buffer.from(verifier));
+    } catch {
+      return false;
+    }
   },
 
   /** Change password */
@@ -79,17 +106,13 @@ const Account = {
 
   /** Activate account */
   async activate(accountId, code) {
-    const [rows] = await db.cms.query(
-      'SELECT activation_code FROM mw_account_extend WHERE account_id = ? AND activation_code = ?',
-      [accountId, code]
+    if (!Number.isInteger(accountId) || accountId <= 0 || !code) return false;
+    const [result] = await db.cms.query(
+      `UPDATE mw_account_extend SET account_level = 2, activation_code = ''
+       WHERE account_id = ? AND activation_code = ? AND activation_code <> '' AND account_level = 1`,
+      [accountId, String(code)]
     );
-    if (!rows.length) return false;
-
-    await db.cms.query(
-      'UPDATE mw_account_extend SET account_level = 2, activation_code = "" WHERE account_id = ?',
-      [accountId]
-    );
-    return true;
+    return result.affectedRows === 1;
   },
 
   /** Get CMS extended data */
@@ -101,9 +124,7 @@ const Account = {
     return rows[0] || null;
   },
 
-  /** Sync GM level from acore_auth.account_access to CMS account level.
-   *  GM level 3+ in account_access → CMS level 3 (admin), GM level 4 → CMS level 4 (super admin).
-   *  If no GM access, keep current CMS level (don't downgrade normal users). */
+  /** Sync GM level from account_access to CMS account level (upgrade only). */
   async syncGmLevel(accountId) {
     try {
       const [rows] = await db.auth.query(
@@ -113,7 +134,8 @@ const Account = {
       if (rows.length && rows[0].SecurityLevel >= 3) {
         const gmLevel = rows[0].SecurityLevel >= 4 ? 4 : 3;
         await db.cms.query(
-          'UPDATE mw_account_extend SET account_level = GREATEST(account_level, ?) WHERE account_id = ?',
+          `UPDATE mw_account_extend SET account_level = GREATEST(account_level, ?)
+           WHERE account_id = ? AND account_level < 5`,
           [gmLevel, accountId]
         );
       }
@@ -130,10 +152,29 @@ const Account = {
     );
   },
 
-  async spendPoints(accountId, points) {
-    await db.cms.query(
-      'UPDATE mw_account_extend SET web_points = web_points - ?, points_spent = points_spent + ? WHERE account_id = ?',
-      [points, points, accountId]
+  async spendPointsIfEnough(accountId, points, conn) {
+    const cost = parseInt(points, 10) || 0;
+    if (cost <= 0) return true;
+    const pool = conn || db.cms;
+    const [result] = await pool.query(
+      `UPDATE mw_account_extend
+       SET web_points = web_points - ?, points_spent = points_spent + ?
+       WHERE account_id = ? AND web_points >= ?`,
+      [cost, cost, accountId, cost]
+    );
+    return result.affectedRows === 1;
+  },
+
+  /** Give spent points back (failed service / delivery) */
+  async refundPoints(accountId, points, conn) {
+    const cost = parseInt(points, 10) || 0;
+    if (cost <= 0) return;
+    const pool = conn || db.cms;
+    await pool.query(
+      `UPDATE mw_account_extend
+       SET web_points = web_points + ?, points_spent = GREATEST(points_spent - ?, 0)
+       WHERE account_id = ?`,
+      [cost, cost, accountId]
     );
   },
 
@@ -145,20 +186,24 @@ const Account = {
     );
   },
 
-  /** Ban account */
+  /** Ban account. duration 0 = permanent (unbandate = bandate, AzerothCore convention). */
   async ban(accountId, bannedBy, reason, duration = 0) {
     const now = Math.floor(Date.now() / 1000);
-    const unban = duration > 0 ? now + duration : 0;
+    const unban = duration > 0 ? now + duration : now;
     await db.auth.query(
       'INSERT INTO account_banned (id, bandate, unbandate, bannedby, banreason, active) VALUES (?, ?, ?, ?, ?, 1)',
       [accountId, now, unban, bannedBy, reason]
     );
   },
 
-  /** Unban account */
+  /** Unban account; restores a web-banned account to the normal level. */
   async unban(accountId) {
     await db.auth.query(
       'UPDATE account_banned SET active = 0 WHERE id = ? AND active = 1',
+      [accountId]
+    );
+    await db.cms.query(
+      'UPDATE mw_account_extend SET account_level = 2 WHERE account_id = ? AND account_level = 5',
       [accountId]
     );
   },
@@ -166,7 +211,8 @@ const Account = {
   /** Check if banned */
   async isBanned(accountId) {
     const [rows] = await db.auth.query(
-      'SELECT id FROM account_banned WHERE id = ? AND active = 1 LIMIT 1',
+      `SELECT id FROM account_banned
+       WHERE id = ? AND active = 1 AND (unbandate = bandate OR unbandate > UNIX_TIMESTAMP()) LIMIT 1`,
       [accountId]
     );
     return rows.length > 0;
@@ -177,20 +223,29 @@ const Account = {
     const [rows] = await db.auth.query(
       `SELECT ab.*, a.username FROM account_banned ab
        JOIN account a ON a.id = ab.id
-       WHERE ab.active = 1 ORDER BY ab.bandate DESC LIMIT ?`,
+       WHERE ab.active = 1 AND (ab.unbandate = ab.bandate OR ab.unbandate > UNIX_TIMESTAMP())
+       ORDER BY ab.bandate DESC LIMIT ?`,
       [limit]
     );
     return rows;
   },
 
-  /** Brute force check */
+  /** Brute force check: per (ip, username) and per ip across usernames */
   async checkBruteForce(ip, username) {
     const now = Math.floor(Date.now() / 1000);
+
+    const [ipRows] = await db.cms.query(
+      'SELECT COALESCE(SUM(attempts), 0) AS s, MAX(last_attempt) AS last FROM mw_failed_logins WHERE ip_address = ? AND last_attempt > ?',
+      [ip, now - LOGIN_BLOCK_SECONDS]
+    );
+    if (Number(ipRows[0].s) >= IP_FAIL_LIMIT) {
+      return { blocked: true, until: Number(ipRows[0].last) + LOGIN_BLOCK_SECONDS };
+    }
+
     const [rows] = await db.cms.query(
       'SELECT * FROM mw_failed_logins WHERE ip_address = ? AND username = ? LIMIT 1',
       [ip, username]
     );
-
     if (!rows.length) return { blocked: false, attempts: 0 };
 
     const record = rows[0];
@@ -198,7 +253,6 @@ const Account = {
       return { blocked: true, until: record.block_until, attempts: record.attempts };
     }
 
-    // Reset if window expired
     if (record.last_attempt < now - 3600) {
       await db.cms.query('DELETE FROM mw_failed_logins WHERE id = ?', [record.id]);
       return { blocked: false, attempts: 0 };
@@ -217,7 +271,7 @@ const Account = {
 
     if (existing.length) {
       const attempts = existing[0].attempts + 1;
-      const blockUntil = attempts >= 5 ? now + 900 : 0; // 15 min lockout
+      const blockUntil = attempts >= USER_FAIL_LIMIT ? now + LOGIN_BLOCK_SECONDS : 0;
       await db.cms.query(
         'UPDATE mw_failed_logins SET attempts = ?, last_attempt = ?, block_until = ? WHERE id = ?',
         [attempts, now, blockUntil, existing[0].id]
@@ -238,15 +292,25 @@ const Account = {
     );
   },
 
+  /** Drop stale brute-force rows */
+  async purgeFailedLogins() {
+    await db.cms.query(
+      'DELETE FROM mw_failed_logins WHERE last_attempt < ?',
+      [Math.floor(Date.now() / 1000) - 86400]
+    );
+  },
+
   /** List all accounts with extended info (admin) */
   async list(page = 1, perPage = 20, search = '') {
+    page = Math.max(1, parseInt(page, 10) || 1);
     const offset = (page - 1) * perPage;
     let where = '';
     let params = [];
 
     if (search) {
       where = 'WHERE a.username LIKE ? OR a.email LIKE ?';
-      params = [`%${search}%`, `%${search}%`];
+      const like = `%${escapeLike(search)}%`;
+      params = [like, like];
     }
 
     const [countRows] = await db.auth.query(
@@ -259,7 +323,6 @@ const Account = {
       [...params, perPage, offset]
     );
 
-    // Get extended info for these accounts
     if (rows.length) {
       const ids = rows.map(r => r.id);
       const [extRows] = await db.cms.query(
@@ -288,24 +351,39 @@ const Account = {
     return rows[0].c;
   },
 
-  /** Check registration key */
-  async checkRegKey(key) {
-    const [rows] = await db.cms.query(
-      'SELECT * FROM mw_regkeys WHERE `key` = ? AND used = 0 LIMIT 1',
+  /** Atomically claim an unused registration key. */
+  async claimRegKey(key) {
+    const [result] = await db.cms.query(
+      'UPDATE mw_regkeys SET used = 1 WHERE `key` = ? AND used = 0',
       [key]
     );
-    return rows[0] || null;
+    return result.affectedRows === 1;
   },
 
-  /** Mark reg key used */
-  async useRegKey(key) {
-    await db.cms.query('UPDATE mw_regkeys SET used = 1 WHERE `key` = ?', [key]);
+  /** Give a claimed key back (account creation failed) */
+  async releaseRegKey(key) {
+    await db.cms.query('UPDATE mw_regkeys SET used = 0, used_by = NULL WHERE `key` = ?', [key]);
   },
 
-  /** Get online stats */
+  async setRegKeyUser(key, accountId) {
+    await db.cms.query('UPDATE mw_regkeys SET used_by = ? WHERE `key` = ?', [accountId, key]);
+  },
+
+  /** Ids of bot accounts (RNDBOT*), cached for a minute */
+  async getBotIds() {
+    const now = Date.now();
+    if (_botIds && now - _botIdsTime < 60000) return _botIds;
+    const [rows] = await db.auth.query("SELECT id FROM account WHERE UPPER(username) LIKE 'RNDBOT%'");
+    _botIds = new Set(rows.map(r => r.id));
+    _botIdsTime = now;
+    return _botIds;
+  },
+
+  /** Visitors seen in the last 5 minutes */
   async getOnlineStats() {
     const [rows] = await db.cms.query(
-      'SELECT user_id, user_name FROM mw_online ORDER BY logged DESC'
+      'SELECT user_id, user_name FROM mw_online WHERE logged > ? ORDER BY logged DESC',
+      [Math.floor(Date.now() / 1000) - 300]
     );
     const guests = rows.filter(r => r.user_id === 0).length;
     const members = rows.filter(r => r.user_id > 0);

@@ -1,8 +1,6 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 
 const News = {
-  // [FIXED] N+1 query replaced with single LEFT JOIN
   async getAll(limit = 20, offset = 0) {
     const [rows] = await db.cms.query(
       `SELECT n.*, a.username AS authorName

@@ -90,7 +90,7 @@
 <script src="<%= tp %>/js/tooltip.js" type="text/javascript"></script>
 <!-- TOOLTIP end -->
 
-    <div style="background: url(<%= tp %>/images/page-bg-top.jpg) repeat-x 0 0; height: 88px; position: relative; width: 100%; "></div>
+    <div id="page-bg-top" style="background: url(<%= tp %>/images/page-bg-top.jpg) repeat-x 0 0; height: 88px; position: relative; width: 100%; "></div>
     <center>
       <table align="center" border="0" cellpadding="0" cellspacing="0">
         <tr>
@@ -105,7 +105,7 @@
                       <span style="color:#FFAC04; font-size:11px;">
                         <%= user.username %>
                         <a href="/account/manage"><img src="<%= tp %>/images/button-profile.gif" alt="Profile"/></a>
-                        <a href="/auth/logout"><img src="<%= tp %>/images/button-logout.gif" alt="Logout"/></a>
+                        <form action="/auth/logout" method="post" style="margin:0; display:inline;"><input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>"/><input type="image" src="<%= tp %>/images/button-logout.gif" alt="Logout"/></form>
                       </span>
                     <% } else { %>
                       <form action="/auth/login" method="post" style="margin:0; display:inline;">

@@ -1,5 +1,7 @@
 const db = require('../config/database');
 const { getZoneName } = require('../utils/zones');
+const Realm = require('./Realm');
+const Account = require('./Account');
 
 /**
  * Playermap model — fetches online player positions for the world map.
@@ -16,13 +18,35 @@ const Playermap = {
    * Returns { players, bots, status, factionCounts, botCounts } ready for the frontend.
    */
   async getData() {
+    // Real server availability must come from the realm TCP port, not from
+    // stale `uptime` rows or stale `characters.online` flags.
+    let status = { online: 0, uptime: 0, maxplayers: 0 };
+    let realm = null;
+    try {
+      const realms = await Realm.getEnabled();
+      realm = realms[0] || null;
+      if (realm && await Realm.checkStatus(realm.address, realm.port, 800)) {
+        status.online = 1;
+      }
+    } catch { /* keep offline status */ }
+
+    if (!status.online) {
+      return {
+        players: [],
+        bots: [],
+        factionCounts: [[0, 0], [0, 0], [0, 0]],
+        botCounts: [[0, 0], [0, 0], [0, 0]],
+        status
+      };
+    }
+
     // 1) Get GM account IDs
     let gmAccountIds = new Set();
     try {
       const [gmRows] = await db.auth.query(
-        "SELECT `id` FROM `account_access` WHERE `gmlevel` > 0"
+        'SELECT AccountID FROM account_access WHERE SecurityLevel > 0'
       );
-      gmRows.forEach(r => gmAccountIds.add(r.id));
+      gmRows.forEach(r => gmAccountIds.add(r.AccountID));
     } catch { /* account_access may not exist */ }
 
     // 2) Get group membership for online players
@@ -42,10 +66,7 @@ const Playermap = {
     // 3) Get bot account IDs
     let botIds = new Set();
     try {
-      const [botRows] = await db.auth.query(
-        "SELECT id FROM account WHERE UPPER(username) LIKE 'RNDBOT%'"
-      );
-      botRows.forEach(r => botIds.add(r.id));
+      botIds = await Account.getBotIds();
     } catch { /* ignore */ }
 
     // 4) Get all online characters with positions
@@ -55,16 +76,15 @@ const Playermap = {
        FROM characters WHERE online = 1 ORDER BY name`
     );
 
-    // 5) Uptime/status
-    let status = { online: 0, uptime: 0, maxplayers: 0 };
+    // 5) Uptime/max players for the already-confirmed online realm.
     try {
       const [uptimeRows] = await db.auth.query(
         `SELECT UNIX_TIMESTAMP() as now, starttime, maxplayers FROM uptime
-         WHERE realmid = 1
-         ORDER BY starttime DESC LIMIT 1`
+         WHERE realmid = ?
+         ORDER BY starttime DESC LIMIT 1`,
+        [realm ? realm.id : 1]
       );
       if (uptimeRows.length) {
-        status.online = 1;
         status.uptime = uptimeRows[0].now - uptimeRows[0].starttime;
         status.maxplayers = uptimeRows[0].maxplayers;
       }

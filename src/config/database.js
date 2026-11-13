@@ -1,4 +1,3 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 /**
  * Database connection pools for all four databases.
  * cms  = mangosweb   (CMS tables)
@@ -10,6 +9,7 @@ const mysql = require('mysql2/promise');
 
 let pools = {};
 let _installed = false;
+let _unreachable = false;
 
 /** Create a pool with standard options */
 function makePool(prefix) {
@@ -38,6 +38,7 @@ function makePool(prefix) {
 const db = {
   /** Initialise pools. Returns true if CMS DB is reachable and installed. */
   async init() {
+    _unreachable = false;
     try {
       pools.cms = makePool('CMS');
       pools.auth = makePool('AUTH');
@@ -60,12 +61,15 @@ const db = {
     } catch (err) {
       console.warn('DB init warning:', err.message);
       _installed = false;
+      // Configured but unreachable is an outage, not a fresh install.
+      _unreachable = err.code !== 'ER_BAD_DB_ERROR';
       return false;
     }
   },
 
   isInstalled() { return _installed; },
-  setInstalled(v) { _installed = v; },
+  /** CMS database is configured but could not be reached at startup */
+  isUnreachable() { return _unreachable; },
 
   /** Get CMS pool */
   get cms()   { return pools.cms; },

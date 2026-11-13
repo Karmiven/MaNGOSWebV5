@@ -1,13 +1,70 @@
 /* TBC (The Burning Crusade) Theme Override */
 /* Uses Vanilla color scheme (warm browns & gold) for consistency */
 
+html {
+  background: #000 !important;
+}
+
 /* Page backgrounds — dark green/fel */
 body {
-  background-color: #0a1200 !important;
+  background: #000 !important;
+  background-color: #000 !important;
+}
+
+#hpwrapper,
+#main {
+  background: #000 !important;
+  background-image: none !important;
+  background-color: #000 !important;
+}
+
+#left-bg {
+  background: url('../images/leftbg.png') no-repeat 0 0, #000 !important;
+}
+
+#left-bg::before {
+  content: "";
+  position: absolute;
+  left: -220px;
+  top: 82px;
+  width: 260px;
+  height: 350px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.64) 56%, #000 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.72) 74%, #000 100%);
+}
+
+#left-bg::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 101px;
+  width: 150px;
+  height: 320px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.92) 20%, rgba(0, 0, 0, 0.52) 58%, rgba(0, 0, 0, 0) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.54) 100%);
+}
+
+#right-bg {
+  background: #000 !important;
+  background-image: none !important;
+  box-shadow:
+    inset 60px 0 70px rgba(0, 0, 0, 0.42),
+    inset -36px 0 54px rgba(0, 0, 0, 0.82),
+    0 0 80px rgba(0, 0, 0, 0.55);
+}
+
+#hp {
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.45));
 }
 
 #page-bg-top {
-  background-color: #0f1a04 !important;
+  background: #000 !important;
+  background-image: none !important;
+  background-color: #000 !important;
 }
 
 /* Top navigation — dark green */

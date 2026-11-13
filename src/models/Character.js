@@ -1,5 +1,5 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
+const { escapeLike } = require('../utils/helpers');
 
 const Character = {
   /** Get characters for an account on default realm */
@@ -64,9 +64,15 @@ const Character = {
     const [rows] = await db.char.query(
       `SELECT guid, account, name, race, class, level, zone, online
        FROM characters WHERE name LIKE ? LIMIT ?`,
-      [`%${query}%`, limit]
+      [`%${escapeLike(query)}%`, limit]
     );
     return rows;
+  },
+
+  /** Count characters owned by an account */
+  async countByAccount(accountId) {
+    const [rows] = await db.char.query('SELECT COUNT(*) AS c FROM characters WHERE account = ? AND deleteDate IS NULL', [accountId]);
+    return rows[0].c;
   },
 
   /** Count total characters */
@@ -157,7 +163,7 @@ const Character = {
     const params = [];
     if (search) {
       query += ' AND deleteInfos_Name LIKE ?';
-      params.push('%' + search + '%');
+      params.push('%' + escapeLike(search) + '%');
     }
     query += ' ORDER BY deleteDate DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
@@ -171,7 +177,7 @@ const Character = {
     const params = [];
     if (search) {
       query += ' AND deleteInfos_Name LIKE ?';
-      params.push('%' + search + '%');
+      params.push('%' + escapeLike(search) + '%');
     }
     const [rows] = await db.char.query(query, params);
     return rows[0].c;
@@ -211,8 +217,6 @@ const Character = {
       // Get unique IPs from account table for online players
       if (rows.length) {
         try {
-          const accountIds = [...new Set(rows.map(r => r.account))];
-          // Get IPs from auth DB
           const [ipRows] = await db.auth.query(
             'SELECT DISTINCT last_ip FROM account WHERE online = 1'
           );

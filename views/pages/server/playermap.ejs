@@ -1,82 +1,261 @@
 <%
   var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
   var currentTheme = typeof theme !== 'undefined' ? theme : 'wotlk';
-  // Theme-based map availability
-  // vanilla = only Azeroth, tbc = Azeroth + Outland, wotlk = all three
+  // Theme-based map availability:
+  // vanilla = Azeroth, tbc = Azeroth + Outland, wotlk = all maps.
   var showOutland = (currentTheme === 'tbc' || currentTheme === 'wotlk');
   var showNorthrend = (currentTheme === 'wotlk');
   var mapsCount = 1 + (showOutland ? 1 : 0) + (showNorthrend ? 1 : 0);
 %>
 
 <style type="text/css">
-  /* Outer wrapper: clips the scaled map */
+  /* Playermap is a wide utility page inside the classic V4 shell. */
+  #left-bg {
+    background-image: url('<%= tp %>/images/leftbg.png') !important;
+    background-repeat: no-repeat !important;
+    background-position: 0 0 !important;
+    background-color: transparent !important;
+  }
+  #left-bg::before,
+  #left-bg::after {
+    content: none !important;
+    display: none !important;
+  }
+  .playermap-page {
+    width: 650px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: -8px auto 0 auto;
+    color: #1f1608;
+    font-family: Georgia, "Times New Roman", Times, serif;
+    font-size: 13px;
+  }
+  .playermap-page a,
+  .playermap-page a:visited {
+    color: #d0a803;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .playermap-page a:hover,
+  .playermap-page button:hover {
+    color: #fff4bf;
+  }
+  .playermap-frame {
+    width: 100%;
+    margin: 0 0 8px 0;
+  }
+  .playermap-frame > table,
+  .playermap-status-wrap > table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  .playermap-toolbar {
+    min-height: 31px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    background: #070707 url('<%= tp %>/images/shadow.gif') repeat-x 0 100%;
+    border: 1px solid #1e1d1c;
+    border-bottom-color: #050505;
+  }
+  .playermap-tabs,
+  .playermap-actions {
+    display: flex;
+    align-items: center;
+    padding: 0 11px;
+    white-space: nowrap;
+  }
+  .playermap-tabs {
+    flex: 0 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .playermap-actions {
+    flex: 1 0 auto;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  .map-tab,
+  .map-action {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-block;
+    margin: 0;
+    padding: 2px 8px;
+    border: 0;
+    background: transparent;
+    color: #d0a803;
+    cursor: pointer;
+    font: bold 12px Georgia, "Times New Roman", Times, serif;
+    text-decoration: none;
+    text-shadow: 1px 1px 0 #000;
+  }
+  .map-zoom {
+    min-width: 18px;
+    padding-left: 6px;
+    padding-right: 6px;
+    text-align: center;
+  }
+  .map-zoom-reset {
+    min-width: 42px;
+  }
+  .playermap-zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    margin: 0 3px;
+    padding: 0 4px;
+    border-left: 1px solid #34240d;
+    border-right: 1px solid #34240d;
+  }
+  .map-tab.active {
+    color: #f4c400;
+    background: rgba(99, 9, 9, 0.42);
+    outline: 1px solid #352613;
+  }
+  .playermap-separator {
+    color: #806028;
+    padding: 0 5px;
+    font-weight: bold;
+  }
+  .playermap-stage {
+    width: 100%;
+    overflow: hidden;
+    padding: 6px;
+    background: #000;
+    border-left: 1px solid #1e1d1c;
+    border-right: 1px solid #1e1d1c;
+    border-bottom: 1px solid #1e1d1c;
+    text-align: center;
+    box-sizing: border-box;
+  }
   .playermap-outer {
     position: relative;
-    width: 100%;
-    max-width: 966px;
+    box-sizing: content-box;
+    width: 640px;
+    height: 320px;
+    margin: 0 auto;
     overflow: hidden;
-    border: 2px solid #1a1a1a;
-    box-shadow: 0 0 12px rgba(0,0,0,0.5);
+    background: #000;
+    border: 1px solid #000;
+    outline: 1px solid #3d321d;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
   }
-  /* Inner: always 966x732, scaled via transform from top-left */
+  .playermap-outer.dragging {
+    cursor: grabbing;
+  }
   .playermap-inner {
     position: absolute;
     top: 0;
     left: 0;
     width: 966px;
     height: 732px;
-    transform-origin: 0 0;
   }
-  .map-layer, .points-layer {
+  .map-layer,
+  .points-layer {
     position: absolute;
-    top: 0; left: 0;
+    top: 0;
+    left: 0;
     width: 966px;
     height: 732px;
   }
-  .map-layer { background-size: 966px 732px; background-repeat: no-repeat; }
-  #world       { z-index: 10; }
-  #outland     { z-index: 9;  visibility: hidden; }
-  #northrend   { z-index: 8;  visibility: hidden; }
-  #pointsOldworld  { z-index: 100; }
-  #pointsOutland   { z-index: 99;  visibility: hidden; }
-  #pointsNorthrend { z-index: 98;  visibility: hidden; }
-
-  .map-controls {
-    text-align: center;
-    padding: 8px 0;
-    font-size: 11px;
+  .map-layer {
+    background-size: 966px 732px;
+    background-repeat: no-repeat;
+    image-rendering: auto;
   }
-  .map-btn {
-    display: inline-block;
-    padding: 4px 14px;
-    margin: 0 4px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 11px;
-    font-family: arial, helvetica, sans-serif;
-    color: #C7C7C7;
-    background-color: #2E2D2B;
-    border: 1px solid;
-    border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C;
-    text-decoration: none;
-    transition: background-color 0.15s;
+  .points-layer {
+    transform-origin: 0 0;
   }
-  .map-btn:hover { background-color: #3e3d3b; color: #fff; }
-  .map-btn.active { background-color: #4a3f2a; color: #f4c400; border-color: #f4c400; }
+  #world { z-index: 10; }
+  #outland { z-index: 9; visibility: hidden; }
+  #northrend { z-index: 8; visibility: hidden; }
+  #pointsOldworld { z-index: 100; }
+  #pointsOutland { z-index: 99; visibility: hidden; }
+  #pointsNorthrend { z-index: 98; visibility: hidden; }
 
-  .map-info-bar {
-    text-align: center;
-    padding: 6px 0;
+  td.playermapRow1 {
     font-size: 12px;
-    font-family: arial, helvetica, sans-serif;
-    color: rgb(35,67,3);
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    border-color: #D8BF95;
+    padding: 4px 8px;
   }
-  .map-info-bar b { font-size: 12px; }
-  .ally-count { color: #0096BE; }
-  .horde-count { color: #D2321E; }
-  .total-count { color: #234303; }
+  td.playermapRow2 {
+    font-size: 12px;
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    border-color: #D8BF95;
+    background-color: #C3AD89;
+    padding: 4px 8px;
+  }
+  td.rankingHeader {
+    color: #C7C7C7;
+    font-size: 10pt;
+    font-family: arial, helvetica, sans-serif;
+    font-weight: bold;
+    background-color: #2E2D2B;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C;
+    padding: 2px 3px;
+  }
+  .playermap-status-wrap {
+    margin-top: 5px;
+  }
+  .playermap-status-wrap table {
+    border-collapse: collapse;
+  }
+  .playermap-loading,
+  .playermap-error {
+    padding: 10px;
+    color: #660d02;
+    font-weight: bold;
+  }
+  .ally-count {
+    color: #064ea8;
+    font-size: 14px;
+  }
+  .horde-count {
+    color: #9a1000;
+    font-size: 14px;
+  }
+  .total-count {
+    color: rgb(35, 67, 3);
+    font-size: 14px;
+  }
+  .bot-count {
+    color: #49268f;
+    font-size: 14px;
+  }
+  .playermap-legend {
+    margin: 5px 4px 0;
+    padding: 5px 8px 5px;
+    border-top: 1px solid #a88950;
+    border-bottom: 1px solid #a88950;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 12px;
+    color: #2b1707;
+  }
+  .playermap-legend b {
+    color: #640909;
+    margin-right: 14px;
+  }
+  .playermap-legend span {
+    display: inline-block;
+    margin-right: 18px;
+    white-space: nowrap;
+  }
+  .playermap-legend img {
+    vertical-align: -2px;
+    margin-right: 6px;
+  }
 
-  /* Tooltip */
   #maptip {
     position: fixed;
     z-index: 9999;
@@ -84,110 +263,350 @@
     left: -1000px;
     top: -1000px;
   }
-  #maptip table { background: #1a1a1a; border: 1px solid #555; border-collapse: collapse; }
-  .tip_header td { background: #2E2D2B; color: #f4c400; font-weight: bold; font-size: 11px; padding: 4px 8px; text-align: center; }
-  .tip_head_text td { background: #3a3a3a; color: #aaa; font-size: 10px; padding: 2px 6px; }
-  .tip_text td { color: #ddd; font-size: 11px; padding: 2px 5px; white-space: nowrap; }
-  .tip_worldinfo td { color: #ddd; font-size: 11px; padding: 3px 6px; }
-  .tip_single { background: #1a1a1a; border: 1px solid #555; padding: 6px; }
-  .tip_single .name { font-weight: bold; font-size: 12px; padding-bottom: 3px; }
-  .tip_single .info { font-size: 11px; color: #ccc; line-height: 1.5; }
-
-  .map-legend {
-    text-align: center;
-    padding: 4px 0 2px;
-    font-size: 10px;
-    color: #666;
+  #maptip table {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    border-collapse: collapse;
   }
-  .map-legend img { vertical-align: middle; margin: 0 2px; }
+  .tip_header td {
+    background: #2E2D2B;
+    color: #f4c400;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 4px 8px;
+    text-align: center;
+  }
+  .tip_head_text td {
+    background: #3a3a3a;
+    color: #aaa;
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  .tip_text td {
+    color: #ddd;
+    font-size: 11px;
+    padding: 2px 5px;
+    white-space: nowrap;
+  }
+  .tip_worldinfo td {
+    color: #ddd;
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  .tip_single {
+    background: #1a1a1a;
+    border: 1px solid #555;
+    padding: 6px;
+  }
+  .tip_single .name {
+    font-weight: bold;
+    font-size: 12px;
+    padding-bottom: 3px;
+  }
+  .tip_single .info {
+    font-size: 11px;
+    color: #ccc;
+    line-height: 1.5;
+  }
+
+  .playermap-page:fullscreen {
+    overflow: auto;
+    padding: 12px;
+    background: #000;
+  }
+  .playermap-page:fullscreen .playermap-stage {
+    min-height: calc(100vh - 170px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .playermap-page:fullscreen .playermap-status-wrap,
+  .playermap-page:fullscreen .playermap-legend {
+    max-width: 966px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 </style>
 
-<!-- Controls -->
-<div class="map-controls">
-  <span class="map-btn active" onclick="switchWorld(0)" id="btn-azeroth">Azeroth</span>
-  <% if (showOutland) { %>
-    <span class="map-btn" onclick="switchWorld(1)" id="btn-outland">Outland</span>
-  <% } %>
-  <% if (showNorthrend) { %>
-    <span class="map-btn" onclick="switchWorld(2)" id="btn-northrend">Northrend</span>
-  <% } %>
-</div>
+<div class="playermap-page" id="playermap-page">
+  <div class="playermap-frame">
+    <%- include('../../partials/metalborder_header') %>
+      <div class="playermap-toolbar">
+        <div class="playermap-tabs">
+          <button type="button" class="map-tab active" onclick="switchWorld(0)" id="btn-azeroth">Azeroth</button>
+          <% if (showOutland) { %>
+            <span class="playermap-separator">|</span>
+            <button type="button" class="map-tab" onclick="switchWorld(1)" id="btn-outland">Outland</button>
+          <% } %>
+          <% if (showNorthrend) { %>
+            <span class="playermap-separator">|</span>
+            <button type="button" class="map-tab" onclick="switchWorld(2)" id="btn-northrend">Northrend</button>
+          <% } %>
+        </div>
+        <div class="playermap-actions">
+          <a class="map-action" href="/server">Server Status</a>
+          <span class="playermap-separator">|</span>
+          <a class="map-action" href="/">Back to Site</a>
+          <span class="playermap-zoom-controls" aria-label="Map zoom controls">
+            <button type="button" class="map-action map-zoom" onclick="zoomMapOut()" title="Zoom out">-</button>
+            <button type="button" class="map-action map-zoom map-zoom-reset" onclick="resetMapZoom()" title="Reset zoom" id="map-zoom-label">100%</button>
+            <button type="button" class="map-action map-zoom" onclick="zoomMapIn()" title="Zoom in">+</button>
+          </span>
+          <span class="playermap-separator">|</span>
+          <button type="button" class="map-action" onclick="toggleMapFullscreen()">Fullscreen</button>
+        </div>
+      </div>
 
-<!-- Info bar -->
-<div class="map-info-bar" id="server_info">Loading map data...</div>
+      <div class="playermap-stage">
+        <div class="playermap-outer" id="playermap-outer">
+          <div class="playermap-inner" id="playermap-inner">
+            <div id="world" class="map-layer" style="background-image: url('/images/playermap/azeroth-redraw-ai-v2-4x.jpg'); visibility: visible;"></div>
+            <% if (showOutland) { %>
+              <div id="outland" class="map-layer" style="background-image: url('/images/playermap/outland-4x.jpg');"></div>
+            <% } %>
+            <% if (showNorthrend) { %>
+              <div id="northrend" class="map-layer" style="background-image: url('/images/playermap/northrend-4x.jpg');"></div>
+            <% } %>
 
-<!-- Legend -->
-<div class="map-legend">
-  <img src="/images/playermap/allia.gif" width="8" height="8" alt="A"> Alliance
-  &nbsp;&nbsp;
-  <img src="/images/playermap/horde.gif" width="8" height="8" alt="H"> Horde
-  &nbsp;&nbsp;
-  <img src="/images/playermap/group-icon.gif" width="12" height="12" alt="G"> Group
-  &nbsp;&nbsp;
-  <img src="/images/playermap/inst-icon.gif" width="12" height="12" alt="I"> Instance
-</div>
-
-<!-- Map container — scales to fit parent -->
-<div class="playermap-outer" id="playermap-outer">
-  <div class="playermap-inner" id="playermap-inner">
-    <!-- Map backgrounds -->
-    <div id="world" class="map-layer" style="background-image: url('/images/playermap/azeroth.jpg'); visibility: visible;"></div>
-    <% if (showOutland) { %>
-      <div id="outland" class="map-layer" style="background-image: url('/images/playermap/outland.jpg');"></div>
-    <% } %>
-    <% if (showNorthrend) { %>
-      <div id="northrend" class="map-layer" style="background-image: url('/images/playermap/northrend.jpg');"></div>
-    <% } %>
-
-    <!-- Point layers -->
-    <div id="pointsOldworld" class="points-layer" style="visibility: visible;"></div>
-    <% if (showOutland) { %>
-      <div id="pointsOutland" class="points-layer"></div>
-    <% } %>
-    <% if (showNorthrend) { %>
-      <div id="pointsNorthrend" class="points-layer"></div>
-    <% } %>
+            <div id="pointsOldworld" class="points-layer" style="visibility: visible;"></div>
+            <% if (showOutland) { %>
+              <div id="pointsOutland" class="points-layer"></div>
+            <% } %>
+            <% if (showNorthrend) { %>
+              <div id="pointsNorthrend" class="points-layer"></div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <%- include('../../partials/metalborder_footer') %>
   </div>
-</div>
 
-<!-- Tooltip element -->
-<div id="maptip"></div>
+  <div class="playermap-status-wrap">
+    <%- include('../../partials/metalborder_header') %>
+    <div id="server_info">
+      <table cellpadding="3" cellspacing="0" width="100%">
+        <tbody>
+          <tr>
+            <td class="rankingHeader" align="center">Status</td>
+            <td class="rankingHeader" align="center">Players</td>
+            <td class="rankingHeader" align="center">Bots</td>
+            <td class="rankingHeader" align="center">Alliance</td>
+            <td class="rankingHeader" align="center">Horde</td>
+          </tr>
+          <tr>
+            <td class="playermapRow1" colspan="5"><div class="playermap-loading">Loading map data...</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <%- include('../../partials/metalborder_footer') %>
+  </div>
 
-<div style="text-align:center; padding:6px 0; font-size:10px; color:#888;">
-  Auto-refresh every 15 seconds
+  <div class="playermap-legend">
+    <b>Legend:</b>
+    <span><img src="/images/playermap/allia.gif" width="8" height="8" alt="">Alliance</span>
+    <span><img src="/images/playermap/horde.gif" width="8" height="8" alt="">Horde</span>
+    <span><img src="/images/playermap/group-icon.gif" width="12" height="12" alt="">Group</span>
+    <span><img src="/images/playermap/inst-icon.gif" width="12" height="12" alt="">Instance</span>
+  </div>
+
+  <div id="maptip"></div>
 </div>
 
 <script type="text/javascript">
 (function() {
   'use strict';
 
-  // ===== RESPONSIVE SCALING =====
   var MAP_W = 966, MAP_H = 732;
+  var MAX_MAP_H = 430;
+  var baseScale = 1;
+  var userZoom = 1;
+  var panX = 0;
+  var panY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+  var dragPanX = 0;
+  var dragPanY = 0;
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function clampPan() {
+    var outer = document.getElementById('playermap-outer');
+    if (!outer) return;
+
+    var renderedW = MAP_W * baseScale * userZoom;
+    var renderedH = MAP_H * baseScale * userZoom;
+    var minX = Math.min(0, outer.clientWidth - renderedW);
+    var minY = Math.min(0, outer.clientHeight - renderedH);
+
+    panX = clamp(panX, minX, 0);
+    panY = clamp(panY, minY, 0);
+  }
+
+  function updateZoomLabel() {
+    var label = document.getElementById('map-zoom-label');
+    if (label) label.innerHTML = Math.round(userZoom * 100) + '%';
+  }
+
+  function applyMapTransform() {
+    var inner = document.getElementById('playermap-inner');
+    var outer = document.getElementById('playermap-outer');
+    if (!inner || !outer) return;
+
+    clampPan();
+    var renderScale = baseScale * userZoom;
+    var renderedW = Math.max(1, Math.round(MAP_W * renderScale));
+    var renderedH = Math.max(1, Math.round(MAP_H * renderScale));
+    var mapLayers = inner.querySelectorAll('.map-layer');
+    var pointLayers = inner.querySelectorAll('.points-layer');
+
+    inner.style.left = Math.round(panX) + 'px';
+    inner.style.top = Math.round(panY) + 'px';
+    inner.style.width = renderedW + 'px';
+    inner.style.height = renderedH + 'px';
+    inner.style.transform = 'none';
+
+    for (var i = 0; i < mapLayers.length; i++) {
+      mapLayers[i].style.width = renderedW + 'px';
+      mapLayers[i].style.height = renderedH + 'px';
+      mapLayers[i].style.backgroundSize = renderedW + 'px ' + renderedH + 'px';
+    }
+
+    for (var j = 0; j < pointLayers.length; j++) {
+      pointLayers[j].style.width = MAP_W + 'px';
+      pointLayers[j].style.height = MAP_H + 'px';
+      pointLayers[j].style.transform = 'scale(' + renderScale + ')';
+    }
+
+    outer.setAttribute('data-scale', renderScale.toFixed(3));
+    outer.setAttribute('data-zoom', userZoom.toFixed(2));
+    updateZoomLabel();
+  }
 
   function scaleMap() {
     var outer = document.getElementById('playermap-outer');
     var inner = document.getElementById('playermap-inner');
+    var stage = document.querySelector('.playermap-stage');
     if (!outer || !inner) return;
-    // Measure available width from the content container, not outer itself
-    var container = document.getElementById('compcont') || outer.parentNode;
-    var availW = container.clientWidth - 4; // minus border
-    var scale = Math.min(availW / MAP_W, 1); // never upscale
-    inner.style.transform = 'scale(' + scale + ')';
-    outer.style.height = Math.floor(MAP_H * scale) + 'px';
+
+    var availW = stage ? Math.max(stage.clientWidth - 16, 1) : MAP_W;
+    var heightScale = MAX_MAP_H / MAP_H;
+
+    if (document.fullscreenElement && stage) {
+      var availH = Math.max(stage.clientHeight - 18, 1);
+      heightScale = availH / MAP_H;
+    }
+
+    baseScale = Math.min(availW / MAP_W, heightScale, 1);
+    userZoom = clamp(userZoom, 1, 4);
+
+    var scaledW = Math.floor(MAP_W * baseScale);
+    var scaledH = Math.floor(MAP_H * baseScale);
+    outer.style.width = scaledW + 'px';
+    outer.style.height = scaledH + 'px';
+    applyMapTransform();
+  }
+
+  function setMapZoom(nextZoom, anchorX, anchorY) {
+    var outer = document.getElementById('playermap-outer');
+    if (!outer) return;
+
+    nextZoom = clamp(nextZoom, 1, 4);
+    var rect = outer.getBoundingClientRect();
+    var localX = typeof anchorX === 'number' ? anchorX - rect.left : outer.clientWidth / 2;
+    var localY = typeof anchorY === 'number' ? anchorY - rect.top : outer.clientHeight / 2;
+    var currentScale = baseScale * userZoom;
+    var nextScale = baseScale * nextZoom;
+    var mapX = (localX - panX) / currentScale;
+    var mapY = (localY - panY) / currentScale;
+
+    userZoom = nextZoom;
+    panX = localX - mapX * nextScale;
+    panY = localY - mapY * nextScale;
+    applyMapTransform();
+  }
+
+  function zoomMapIn() {
+    setMapZoom(userZoom * 1.25);
+  }
+  function zoomMapOut() {
+    setMapZoom(userZoom / 1.25);
+  }
+  function resetMapZoom() {
+    userZoom = 1;
+    panX = 0;
+    panY = 0;
+    applyMapTransform();
+  }
+
+  window.zoomMapIn = zoomMapIn;
+  window.zoomMapOut = zoomMapOut;
+  window.resetMapZoom = resetMapZoom;
+
+  function bindMapGestures() {
+    var outer = document.getElementById('playermap-outer');
+    if (!outer) return;
+
+    outer.onwheel = function(e) {
+      e.preventDefault();
+      var factor = e.deltaY < 0 ? 1.18 : 1 / 1.18;
+      setMapZoom(userZoom * factor, e.clientX, e.clientY);
+    };
+
+    outer.onmousedown = function(e) {
+      if (e.button !== 0 || userZoom <= 1) return;
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragPanX = panX;
+      dragPanY = panY;
+      outer.className = outer.className.replace(/\s*dragging/g, '') + ' dragging';
+      e.preventDefault();
+    };
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      panX = dragPanX + (e.clientX - dragStartX);
+      panY = dragPanY + (e.clientY - dragStartY);
+      applyMapTransform();
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (!isDragging) return;
+      isDragging = false;
+      outer.className = outer.className.replace(/\s*dragging/g, '');
+    });
   }
 
   scaleMap();
+  bindMapGestures();
+  if (window.requestAnimationFrame) {
+    window.requestAnimationFrame(scaleMap);
+  }
   window.addEventListener('resize', scaleMap);
+  document.addEventListener('fullscreenchange', scaleMap);
 
-  // ===== CONFIG =====
+  function toggleMapFullscreen() {
+    var el = document.getElementById('playermap-page') || document.getElementById('playermap-outer');
+    if (!document.fullscreenElement && el && el.requestFullscreen) {
+      el.requestFullscreen();
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+  window.toggleMapFullscreen = toggleMapFullscreen;
+
   var REFRESH_INTERVAL = 15000;
   var MAPS_COUNT = <%= mapsCount %>;
   var SHOW_OUTLAND = <%= showOutland ? 'true' : 'false' %>;
   var SHOW_NORTHREND = <%= showNorthrend ? 'true' : 'false' %>;
   var IMG_BASE = '/images/playermap/';
+  var THEME_PATH = '<%= tp %>';
   var currentMap = 0;
 
-  // ===== RACE / CLASS NAMES =====
   var raceName = {
     1:'Human', 2:'Orc', 3:'Dwarf', 4:'Night Elf', 5:'Undead',
     6:'Tauren', 7:'Gnome', 8:'Troll', 9:'Goblin', 10:'Blood Elf', 11:'Draenei'
@@ -197,7 +616,6 @@
     6:'Death Knight', 7:'Shaman', 8:'Mage', 9:'Warlock', 11:'Druid'
   };
 
-  // ===== INSTANCE POSITIONS =====
   var instances_x = [];
   var instances_y = [];
   instances_x[0] = {30:762,33:712,34:732,35:732,36:712,43:245,47:238,48:172,70:833,90:738,109:849,129:254,189:773,209:269,229:782,230:778,249:290,269:315,289:816,309:782,329:834,349:123,369:745,389:308,409:783,429:164,449:741,450:305,469:778,489:244,509:160,529:820,531:144,532:798,534:317,560:320,568:897,572:750,580:868,585:883,595:322,618:313};
@@ -207,10 +625,8 @@
   instances_x[2] = {533:568,574:749,575:751,576:161,578:159,599:553,600:605,601:395,602:575,603:559,604:740,608:470,615:491,616:155,617:457,619:400,624:363,631:400,632:415,649:475,650:465,658:393,668:410,724:491};
   instances_y[2] = {533:456,574:577,575:583,576:443,578:451,599:195,600:406,601:462,602:180,603:169,604:292,608:360,615:465,616:447,617:352,619:462,624:369,631:350,632:350,649:207,650:207,658:362,668:365,724:455};
 
-  // Maps array: which game map IDs are rendered as world dots (not instances)
   var maps_array = [0, 1, 530, 571, 609];
 
-  // ===== COORDINATE CONVERSION =====
   function getPlayerPosition(x, y, m) {
     var where530 = 0;
     x = Math.round(x);
@@ -245,14 +661,13 @@
         break;
       case '571': px = 505 - ypos; py = 642 - xpos; break;
       case '609': px = 896 - ypos; py = 232 - xpos; break;
-      case '1':   px = 194 - ypos; py = 398 - xpos; break;
-      case '0':   px = 752 - ypos; py = 291 - xpos; break;
-      default:    px = 194 - ypos; py = 398 - xpos; break;
+      case '1': px = 194 - ypos; py = 398 - xpos; break;
+      case '0': px = 752 - ypos; py = 291 - xpos; break;
+      default: px = 194 - ypos; py = 398 - xpos; break;
     }
     return { x: px, y: py };
   }
 
-  // ===== MAP LAYER HELPERS =====
   var mapIds = ['world', 'outland', 'northrend'];
   var pointIds = ['pointsOldworld', 'pointsOutland', 'pointsNorthrend'];
   var btnIds = ['btn-azeroth', 'btn-outland', 'btn-northrend'];
@@ -267,13 +682,12 @@
       var btn = document.getElementById(btnIds[i]);
       if (ml) ml.style.visibility = (i === n) ? 'visible' : 'hidden';
       if (pl) pl.style.visibility = (i === n) ? 'visible' : 'hidden';
-      if (btn) btn.className = (i === n) ? 'map-btn active' : 'map-btn';
+      if (btn) btn.className = (i === n) ? 'map-tab active' : 'map-tab';
     }
     currentMap = n;
   }
   window.switchWorld = switchWorld;
 
-  // ===== TOOLTIP =====
   var mouseX = 0, mouseY = 0;
   document.addEventListener('mousemove', function(e) {
     mouseX = e.clientX;
@@ -303,7 +717,6 @@
     tip.style.top = '-1000px';
   }
 
-  // ===== RACE ICON PATH =====
   function raceIcon(race, gender) {
     return IMG_BASE + 'c_icons/' + race + '-' + gender + '.gif';
   }
@@ -311,38 +724,64 @@
     return IMG_BASE + 'c_icons/' + cl + '.gif';
   }
 
-  // ===== IN_ARRAY helper =====
   function inArray(val, arr) {
-    for (var i = 0; i < arr.length; i++) { if (val == arr[i]) return true; }
+    for (var i = 0; i < arr.length; i++) {
+      if (val == arr[i]) return true;
+    }
     return false;
   }
 
-  // ===== RENDER PLAYERS =====
+  function statusTableHtml(online, total, totalBots, totalAlly, totalHorde) {
+    var icon = online ? THEME_PATH + '/images/uparrow2.gif' : THEME_PATH + '/images/downarrow2.gif';
+    var alt = online ? 'Up' : 'Down';
+    return '<table cellpadding="3" cellspacing="0" width="100%"><tbody>'
+      + '<tr>'
+      + '<td class="rankingHeader" align="center" nowrap="nowrap">Status</td>'
+      + '<td class="rankingHeader" align="center" nowrap="nowrap">Players</td>'
+      + '<td class="rankingHeader" align="center" nowrap="nowrap">Bots</td>'
+      + '<td class="rankingHeader" align="center" nowrap="nowrap">Alliance</td>'
+      + '<td class="rankingHeader" align="center" nowrap="nowrap">Horde</td>'
+      + '</tr>'
+      + '<tr>'
+      + '<td class="playermapRow1" align="center"><img src="' + icon + '" height="18" width="18" alt="' + alt + '" title="' + alt + '"></td>'
+      + '<td class="playermapRow1" align="center"><b class="total-count">' + total + '</b></td>'
+      + '<td class="playermapRow1" align="center"><b class="bot-count">' + totalBots + '</b></td>'
+      + '<td class="playermapRow1" align="center"><b class="ally-count">' + totalAlly + '</b></td>'
+      + '<td class="playermapRow1" align="center"><b class="horde-count">' + totalHorde + '</b></td>'
+      + '</tr>'
+      + '</tbody></table>';
+  }
+
   function renderData(data) {
-    if (!data || !data.online) {
+    var players = data && Array.isArray(data.players) ? data.players : [];
+    var bots = data && Array.isArray(data.bots) ? data.bots : [];
+    var status = data && data.status ? data.status : {};
+    var isRealmOnline = status.online === true || Number(status.online) === 1;
+
+    if (!data || (!isRealmOnline && players.length === 0 && bots.length === 0)) {
       for (var i = 0; i < 3; i++) {
         var pl = getPointsLayer(i);
         if (pl) pl.innerHTML = '';
       }
-      document.getElementById('server_info').innerHTML = '<span style="color:#8b0000;">Server offline</span>';
+      document.getElementById('server_info').innerHTML = statusTableHtml(false, 0, 0, 0, 0);
       return;
     }
 
-    var online = data.online;
     var factionCounts = [];
+    var botCounts = [];
     for (var m = 0; m < 3; m++) {
-      factionCounts[m] = (m < online.length && Array.isArray(online[m])) ? online[m] : [0, 0];
-    }
-
-    var players = [];
-    for (var p = 3; p < online.length; p++) {
-      players.push(online[p]);
+      factionCounts[m] = (data.factionCounts && Array.isArray(data.factionCounts[m])) ? data.factionCounts[m] : [0, 0];
+      botCounts[m] = (data.botCounts && Array.isArray(data.botCounts[m])) ? data.botCounts[m] : [0, 0];
     }
 
     var layerHtml = ['', '', ''];
+    var allEntries = [];
+    for (var ap = 0; ap < players.length; ap++) allEntries.push({ ch: players[ap], isBot: false });
+    for (var ab = 0; ab < bots.length; ab++) allEntries.push({ ch: bots[ab], isBot: true });
 
-    for (var pi = 0; pi < players.length; pi++) {
-      var ch = players[pi];
+    for (var pi = 0; pi < allEntries.length; pi++) {
+      var ch = allEntries[pi].ch;
+      var isBotEntry = allEntries[pi].isBot;
       var ext = ch.Extention;
 
       if (ext === 1 && !SHOW_OUTLAND) continue;
@@ -351,6 +790,8 @@
       var isHorde = (ch.race == 2 || ch.race == 5 || ch.race == 6 || ch.race == 8 || ch.race == 10);
       var factionColor = isHorde ? '#D2321E' : '#0096BE';
       var factionIcon = isHorde ? 'horde.gif' : 'allia.gif';
+      var iconOpacity = isBotEntry ? '0.55' : '1';
+      var entryType = isBotEntry ? 'Bot' : 'Player';
 
       if (inArray(parseInt(ch.map), maps_array)) {
         var pos = getPlayerPosition(ch.x, ch.y, ch.map);
@@ -363,11 +804,12 @@
           + '<img src="' + classIcon(ch.cl) + '" width="18" height="18"><br>'
           + escHtml(raceName[ch.race] || '?') + ' ' + escHtml(className[ch.cl] || '?') + '<br>'
           + 'Level ' + ch.level + '<br>'
+          + entryType + '<br>'
           + escHtml(ch.zone)
           + '</div></div>';
 
         layerHtml[ext] += '<img src="' + IMG_BASE + factionIcon + '" '
-          + 'style="position:absolute;left:' + pos.x + 'px;top:' + pos.y + 'px;cursor:pointer;" '
+          + 'style="position:absolute;left:' + pos.x + 'px;top:' + pos.y + 'px;cursor:pointer;opacity:' + iconOpacity + ';" '
           + 'width="8" height="8" border="0" '
           + 'data-tip="' + escAttr(tooltipHtml) + '" '
           + 'onmousemove="this.parentNode._showTip(this)" '
@@ -382,11 +824,12 @@
           + '<div class="info">'
           + escHtml(raceName[ch.race] || '?') + ' ' + escHtml(className[ch.cl] || '?') + '<br>'
           + 'Level ' + ch.level + '<br>'
+          + entryType + '<br>'
           + escHtml(ch.zone) + ' (Instance)'
           + '</div></div>';
 
         layerHtml[ext] += '<img src="' + IMG_BASE + 'inst-icon.gif" '
-          + 'style="position:absolute;left:' + ix + 'px;top:' + iy + 'px;cursor:pointer;" '
+          + 'style="position:absolute;left:' + ix + 'px;top:' + iy + 'px;cursor:pointer;opacity:' + iconOpacity + ';" '
           + 'width="12" height="12" border="0" '
           + 'data-tip="' + escAttr(instTip) + '" '
           + 'onmousemove="this.parentNode._showTip(this)" '
@@ -403,32 +846,18 @@
       }
     }
 
-    // Update info bar
-    var totalAlly = 0, totalHorde = 0;
-    var infoHtml = '';
+    var totalAlly = 0, totalHorde = 0, totalBotAlly = 0, totalBotHorde = 0;
     for (var fi = 0; fi < 3; fi++) {
       totalAlly += factionCounts[fi][0];
       totalHorde += factionCounts[fi][1];
+      totalBotAlly += botCounts[fi][0];
+      totalBotHorde += botCounts[fi][1];
     }
     var total = totalAlly + totalHorde;
-    infoHtml += '<b class="total-count">Online: ' + total + '</b>';
-    infoHtml += ' &nbsp;( <img src="' + IMG_BASE + 'allianceicon.gif" width="14" height="14" style="vertical-align:middle;"> ';
-    infoHtml += '<b class="ally-count">' + totalAlly + '</b>';
-    infoHtml += ' &nbsp;<img src="' + IMG_BASE + 'hordeicon.gif" width="14" height="14" style="vertical-align:middle;"> ';
-    infoHtml += '<b class="horde-count">' + totalHorde + '</b> )';
-
-    var mapLabels = ['Azeroth', 'Outland', 'Northrend'];
-    var mapEnabled = [true, SHOW_OUTLAND, SHOW_NORTHREND];
-    for (var ci = 0; ci < 3; ci++) {
-      if (!mapEnabled[ci]) continue;
-      var mc = factionCounts[ci][0] + factionCounts[ci][1];
-      infoHtml += ' &nbsp;&mdash; <b style="cursor:pointer;color:#d0a803;" onclick="switchWorld(' + ci + ')">' + mapLabels[ci] + '</b>: ' + mc;
-    }
-
-    document.getElementById('server_info').innerHTML = infoHtml;
+    var totalBots = totalBotAlly + totalBotHorde;
+    document.getElementById('server_info').innerHTML = statusTableHtml(isRealmOnline, total, totalBots, totalAlly, totalHorde);
   }
 
-  // ===== HTML ESCAPE UTILS =====
   function escHtml(s) {
     if (!s) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -437,17 +866,19 @@
     return escHtml(s).replace(/'/g,'&#39;');
   }
 
-  // ===== DATA FETCHING =====
   function loadData() {
     fetch('/server/playermap/data')
       .then(function(res) { return res.json(); })
       .then(function(data) { renderData(data); })
       .catch(function() {
-        document.getElementById('server_info').innerHTML = '<span style="color:#8b0000;">Failed to load map data</span>';
+        document.getElementById('server_info').innerHTML =
+          '<table cellpadding="3" cellspacing="0" width="100%"><tbody>'
+          + '<tr><td class="rankingHeader" align="center">Status</td></tr>'
+          + '<tr><td class="playermapRow1"><div class="playermap-error">Failed to load map data</div></td></tr>'
+          + '</tbody></table>';
       });
   }
 
-  // ===== INIT =====
   loadData();
   setInterval(loadData, REFRESH_INTERVAL);
 })();

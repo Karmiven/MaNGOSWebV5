@@ -1,6 +1,6 @@
 # MaNGOSWebV5
 
-A modern Node.js/Express rewrite of MaNGOSWeb — a CMS for World of Warcraft private servers running AzerothCore (WotLK 3.3.5a).
+A modern Node.js/Express rewrite of MaNGOSWeb, a CMS for World of Warcraft private servers running AzerothCore (WotLK 3.3.5a).
 
 ## Screenshots
 
@@ -14,139 +14,86 @@ A modern Node.js/Express rewrite of MaNGOSWeb — a CMS for World of Warcraft pr
 
 ## Status
 
-⚠️ **Work In Progress** — Active development
-
-### Progress
+Work in progress.
 
 | Area | Status | Notes |
 |------|--------|-------|
-| ✅ Core Setup | Done | Express, EJS, MySQL2 pools, sessions |
-| ✅ Authentication | Done | Login, register, SRP6, restore, CSRF |
-| ✅ Account Panel | Done | Characters, settings, transactions |
-| ✅ News System | Done | Create/edit/delete, archive, single-post |
-| ✅ Server Page | Done | Realm status, uptime, SOAP `.server info`, online count |
-| ✅ Server Sub-pages | Done | Players online, top kills, character search, statistics |
-| ✅ Shop & Donate | Done | Point shop, donation tracking |
-| ✅ Vote System | Done | Vote links with point rewards |
-| ✅ Support Pages | Done | FAQ, How To Play, commands list |
-| ✅ Admin Panel | Done | Full V4 WoW theme, sidebar navigation |
-| ✅ Admin — Site Config | Done | Site title, SMTP, theme, registration settings |
-| ✅ Admin — Realms | Done | SOAP config, refresh interval, enable/disable per-realm |
-| ✅ Admin — News | Done | Full CRUD with image upload |
-| ✅ Admin — Users | Done | Account list, ban/unban, level management |
-| ✅ Admin — Menus | Done | 5-category sidebar menu editor with inline add/edit |
-| ✅ Admin — Shop | Done | Item management |
-| ✅ Admin — Vote | Done | Vote site management |
-| ✅ Admin — Donate | Done | Donation package management |
-| ✅ Admin — FAQ | Done | FAQ CRUD |
-| ✅ Admin — Char Tools | Done | Force rename, etc. |
-| ✅ Admin — Banlist | Done | Active bans view |
-| ✅ Admin — Regkeys | Done | Registration key generation |
-| ✅ Admin — Error Log | Done | Server error log viewer |
-| ✅ Disabled Realm Fix | Done | Disabled realms no longer appear on public pages |
-| ✅ V4 Theme (Public) | Done | Authentic WotLK Blizzard CMS design |
-| ✅ V4 Theme (Admin) | Done | Admin panel uses same V4 look with dark variant |
-| ✅ Installer | Done | V4 Blizzlike 4-step wizard with DB validation |
-| 🔄 Gamemail | In Progress | Admin UI done, SOAP delivery in progress |
-| ⬜ Multi-realm | Planned | Per-realm character counts |
+| Core | Done | Express, EJS, MySQL pools, MySQL-backed sessions |
+| Authentication | Done | Login, registration, SRP6, password reset by emailed link |
+| Account panel | Done | Characters, settings, transactions, character services |
+| News, FAQ, menus | Done | Admin CRUD, limited HTML (see below) |
+| Server pages | Done | Realm status, players online, top kills, character search, statistics, player map |
+| Item shop | Done | Pays with Web Points, delivers by SOAP, admin screen for unconfirmed deliveries |
+| Daily reward | Done | `/vote`: press the button, get points, one claim per account per cooldown |
+| Donate | Placeholder | Lists packages, no online payment yet |
+| Admin panel | Done | Users, realms, shop, vote, donate, regkeys, game mail, progression, error log, audit log |
+| Installer | Done | 4-step wizard with connection checks |
+| Multi-realm | Planned | Shop and services use `default_realm_id` only |
 
 ## Features
 
-- **Authentic V4 WoW Theme** — WotLK Blizzard CMS design (newhp.css, topnav, collapsible sidebar menus)
-- **Express.js** backend with EJS templating
-- **Account System** — registration, login (SRP6), character management, account restore
-- **Admin Panel** — full admin with V4 styling, Bootstrap 5 for forms
-- **Server Management** — realm status, SOAP `.server info` with configurable auto-refresh, online tracking
-- **News System** — create/edit/delete with image support, archive, single-post
-- **Sidebar Menu Builder** — 5 categories (News, Account, Workshop, Community, Support) with drag-and-drop order
-- **Shop & Donate** — web point shop, donation packages, transaction history
-- **Vote System** — vote sites with reward tracking
-- **Visitor Tracking** — online users list per 24 hours
-- **Security** — CSRF protection, rate limiting, Helmet headers, bcrypt passwords
+- V4 Blizzlike WotLK theme (vanilla, TBC and WotLK variants)
+- Accounts compatible with the game server (SRP6), 6-16 character passwords (client limit)
+- Web Points: earned from the daily reward, spent in the item shop and character services
+- SOAP integration: server info, shop delivery, game mail
+- Visitor tracking: "online" means seen in the last 5 minutes
+- Security: signed double-submit CSRF cookie, rate limits, Helmet headers, brute-force lockout, admin audit log
+
+News and FAQ text allows only `b strong i em u p ul ol li h3 h4 blockquote br` and `a` with http(s) or site-relative links. Everything else is escaped.
 
 ## Stack
 
-- **Node.js 18+** 
-- **Express 4.x**
-- **EJS** (templating) + express-ejs-layouts
-- **MySQL 5.7+ / MariaDB** (separate pools: CMS, Auth, Characters, World)
-- **Bootstrap 5.3** (admin panel component base)
-- **SOAP** (AzerothCore remote admin for `.server info`, gamemail)
+- Node.js 18+, Express 4, EJS + express-ejs-layouts
+- MySQL 5.7+ / MariaDB, four pools: CMS, auth, characters, world (world is read-only)
+- Bootstrap 5.3 for admin forms
 
-## Sidebar Menu Categories
-
-The left sidebar uses V4 CSS IDs — these **must** match the `menu_id` values in the `mw_menu_items` DB table:
-
-| menu_id | Category | CSS Slug |
-|---------|----------|----------|
-| 1 | News | `menunews` |
-| 2 | Account | `menuaccount` |
-| 4 | Workshop | `menuinteractive` |
-| 7 | Community | `menucommunity` |
-| 8 | Support | `menusupport` |
-
-## Project Structure
+## Project structure
 
 ```
 src/
-  routes/           # Express route handlers
-  models/           # DB models (Account, Character, Realm, Menu, etc.)
-  middleware/       # Auth, CSRF, theme, online tracking, lang
-  services/         # SOAP, SRP6, mailer
-  config/           # Database config
-  utils/            # Helpers (zones, formatters)
-views/
-  pages/            # Page templates (admin/, account/, server/, etc.)
-  partials/         # Shared V4 components (navbar, leftmenu, subheader, etc.)
-  layouts/          # main.ejs, admin.ejs, install.ejs
-public/
-  themes/           # Theme folders (wotlk, tbc, vanilla)
-  css/              # Global overrides (admin.css, style.css, v5-override.css)
-  js/               # Frontend scripts
-screenshots/        # UI screenshots
-sql/
-  full_install.sql  # Full DB schema (run once on fresh install)
+  routes/       route handlers
+  models/       DB access
+  middleware/   auth, csrf, theme, online tracking, lang
+  services/     soap, srp6, mailer
+  config/       database pools, migrate.js (idempotent schema upgrades run at startup)
+  utils/        helpers, zones, logger
+views/          pages, partials, layouts (main, admin, install)
+public/         themes (wotlk, tbc, vanilla), css, js, images
+sql/            full_install.sql (fresh install)
+test/           node:test suite
 ```
 
 ## Setup
 
 1. `npm install`
-2. `npm start` or `node server.js`
-3. Visit `http://localhost:3000/install` — the V4 Blizzlike installer will guide you through:
-   - Database configuration (CMS, Auth, Characters, World) with connection testing
-   - Admin account setup (new or existing game account)
-   - SOAP configuration (optional)
-   - Automatic `.env` generation and CMS schema creation
+2. `npm start`
+3. Open `http://localhost:3000/install`. The wizard configures the databases, creates the admin account, writes `.env` and creates the CMS schema.
 
-### Environment Variables
+The installer is open to local requests only. For remote setup set `INSTALL_TOKEN` in `.env` and send it as `?token=` or the `x-install-token` header. If the CMS database is configured but unreachable at startup, the installer also requires the token.
 
-```env
-CMS_DB_HOST=localhost
-CMS_DB_USER=root
-CMS_DB_PASS=yourpassword
-CMS_DB_NAME=mangosweb
-AUTH_DB_HOST=localhost
-AUTH_DB_USER=root
-AUTH_DB_PASS=yourpassword
-AUTH_DB_NAME=auth
-CHAR_DB_NAME=characters
-WORLD_DB_NAME=world
-SESSION_SECRET=changeme
-```
+### Environment
+
+See `.env.example`. Notable variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `SESSION_SECRET` | Required once installed. Also signs CSRF and password-reset tokens |
+| `BASE_URL` | Used in activation and reset emails |
+| `TRUST_PROXY` | Set to the proxy hop count (e.g. `1`) behind nginx or Cloudflare, otherwise every visitor shares one IP |
+| `NODE_ENV=production` | Secure session cookies, HSTS |
+| `SMTP_*` | Required for registration email and password reset. Without SMTP, reset is unavailable and nothing is changed |
+| `SOAP_*` | Game server remote access for game mail and server info |
+
+### Upgrading
+
+Schema changes for existing installs are applied automatically at startup by `src/config/migrate.js`. Back up the CMS database before the first start after an update.
 
 ## Development
 
-- `npm start` — Start server
-- `node --watch server.js` — Watch mode (Node 18+)
-- Server runs on port `3000`
-- Menu cache TTL: 2 minutes (auto-clears on any edit)
-- Server data cache TTL: 60 seconds
-- SOAP server info cache: configurable per realm in Admin → Realms
+- `npm run dev` watch mode
+- `npm test` runs the test suite (no database needed, the DB layer is stubbed)
+- Menu cache: 30 s, cleared on any menu edit. Server info cache: 2 min. SOAP `.server info` cache: per realm in Admin, Realms
 
 ## License
 
 GPL-2.0
-
----
-
-**Last Updated:** April 2026

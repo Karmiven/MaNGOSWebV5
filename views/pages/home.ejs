@@ -55,7 +55,7 @@
               <li>
                 <div class="letter-box0"></div>
                 <div class="blog-post">
-                  <%- (item.message || '').replace(/\r\n|\r|\n/g, '<br>') %>
+                  <%- helpers.richText(item.message || '') %>
                 </div>
               </li>
             </ul>

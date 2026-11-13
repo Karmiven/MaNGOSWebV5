@@ -19,7 +19,7 @@
           <tr>
             <td><%= ban.id %></td>
             <td><%= helpers.formatDate(new Date(ban.bandate * 1000)) %></td>
-            <td><%= ban.unbandate ? helpers.formatDate(new Date(ban.unbandate * 1000)) : 'Permanent' %></td>
+            <td><%= ban.unbandate && ban.unbandate !== ban.bandate ? helpers.formatDate(new Date(ban.unbandate * 1000)) : 'Permanent' %></td>
             <td><%= ban.bannedby %></td>
             <td><%= ban.banreason %></td>
             <td>

@@ -1,67 +1,59 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
+const Account = require('../models/Account');
 
 /**
- * Track unique visitors in mw_online table.
+ * Track visitors in mw_online. At most one write per visitor per minute,
+ * and no tracking for crawlers or background polling endpoints.
  */
-// [FIXED] Probabilistic cleanup instead of every request
+const CLEANUP_INTERVAL = 300000;
+const WRITE_INTERVAL = 60000;
+const SKIP_PATH = /^\/(api|server\/playermap\/data)(\/|$)/;
+const BOT_AGENT = /bot|crawl|spider|slurp|curl|wget|python-requests|headless/i;
+
 let _lastCleanup = 0;
-const CLEANUP_INTERVAL = 300000; // 5 minutes
+const _lastWrite = new Map();
 
 async function onlineMiddleware(req, res, next) {
   if (!db.isInstalled()) return next();
 
-  // Fire-and-forget — tracking should never delay the response
-  const userId = req.user ? req.user.id : 0;
-  const userName = req.user ? req.user.username : 'Guest';
-  const userIp = req.ip || req.connection.remoteAddress || '0.0.0.0';
-  const now = Math.floor(Date.now() / 1000);
-  const url = req.originalUrl || '/';
-
-  _trackOnline(userId, userName, userIp, now, url).catch(() => {});
+  if (req.method === 'GET' && !SKIP_PATH.test(req.path) && !BOT_AGENT.test(req.headers['user-agent'] || '')) {
+    const userId = req.user ? req.user.id : 0;
+    const userIp = req.ip || (req.socket && req.socket.remoteAddress) || '0.0.0.0';
+    const key = userId ? `u${userId}` : `g${userIp}`;
+    const nowMs = Date.now();
+    if (nowMs - (_lastWrite.get(key) || 0) >= WRITE_INTERVAL) {
+      _lastWrite.set(key, nowMs);
+      _trackOnline(userId, req.user ? req.user.username : 'Guest', userIp, Math.floor(nowMs / 1000), req.originalUrl || '/')
+        .catch(() => {});
+    }
+  }
 
   next();
 }
 
 async function _trackOnline(userId, userName, userIp, now, url) {
-  // Clean entries only periodically
-  const nowMs = Date.now();
+  const nowMs = now * 1000;
   if (nowMs - _lastCleanup > CLEANUP_INTERVAL) {
     _lastCleanup = nowMs;
+    for (const [k, t] of _lastWrite) {
+      if (nowMs - t > WRITE_INTERVAL * 5) _lastWrite.delete(k);
+    }
     await db.cms.query('DELETE FROM mw_online WHERE logged < ?', [now - 86400]);
+    await Account.purgeFailedLogins();
   }
 
-  if (userId > 0) {
-    const [existing] = await db.cms.query(
-      'SELECT id FROM mw_online WHERE user_id = ? LIMIT 1', [userId]
+  const where = userId > 0 ? 'user_id = ?' : 'user_id = 0 AND user_ip = ?';
+  const [existing] = await db.cms.query(`SELECT id FROM mw_online WHERE ${where} LIMIT 1`, [userId > 0 ? userId : userIp]);
+  if (existing.length) {
+    await db.cms.query(
+      'UPDATE mw_online SET user_name = ?, user_ip = ?, logged = ?, currenturl = ? WHERE id = ?',
+      [userName, userIp, now, url.slice(0, 500), existing[0].id]
     );
-    if (existing.length) {
-      await db.cms.query(
-        'UPDATE mw_online SET user_name = ?, user_ip = ?, logged = ?, currenturl = ? WHERE id = ?',
-        [userName, userIp, now, url, existing[0].id]
-      );
-    } else {
-      await db.cms.query(
-        'INSERT INTO mw_online (user_id, user_name, user_ip, logged, currenturl) VALUES (?, ?, ?, ?, ?)',
-        [userId, userName, userIp, now, url]
-      );
-    }
   } else {
-    const [existing] = await db.cms.query(
-      'SELECT id FROM mw_online WHERE user_id = 0 AND user_ip = ? LIMIT 1',
-      [userIp]
+    await db.cms.query(
+      'INSERT INTO mw_online (user_id, user_name, user_ip, logged, currenturl) VALUES (?, ?, ?, ?, ?)',
+      [userId, userName, userIp, now, url.slice(0, 500)]
     );
-    if (existing.length) {
-      await db.cms.query(
-        'UPDATE mw_online SET logged = ?, currenturl = ? WHERE id = ?',
-        [now, url, existing[0].id]
-      );
-    } else {
-      await db.cms.query(
-        'INSERT INTO mw_online (user_id, user_name, user_ip, logged, currenturl) VALUES (0, "Guest", ?, ?, ?)',
-        [userIp, now, url]
-      );
-    }
   }
 }
 

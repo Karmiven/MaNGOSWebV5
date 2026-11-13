@@ -1,0 +1,30 @@
+
+<div class="row justify-content-center">
+  <div class="col-md-5 col-lg-4">
+    <div class="card wow-card">
+      <div class="card-header text-center">
+        <h4 class="font-cinzel text-gold mb-0"><i class="fas fa-key me-2"></i>Choose a New Password</h4>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="/auth/reset">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="id" value="<%= resetId %>">
+          <input type="hidden" name="exp" value="<%= resetExp %>">
+          <input type="hidden" name="sig" value="<%= resetSig %>">
+          <div class="mb-3">
+            <label class="form-label">New password (6-<%= passwordMax %> characters)</label>
+            <input type="password" name="password" class="form-control" minlength="6" maxlength="<%= passwordMax %>" autocomplete="new-password" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Repeat password</label>
+            <input type="password" name="password2" class="form-control" minlength="6" maxlength="<%= passwordMax %>" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="btn btn-gold w-100"><i class="fas fa-check me-2"></i>Change Password</button>
+        </form>
+      </div>
+      <div class="card-footer text-center small">
+        <a href="/auth/login" class="text-gold">Back to Login</a>
+      </div>
+    </div>
+  </div>
+</div>

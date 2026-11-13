@@ -1,11 +1,9 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const fs = require('fs');
 const path = require('path');
 
 // Cache loaded languages
 const langCache = {};
 
-// [FIXED] Validate language code to prevent path traversal
 function isValidLangCode(code) {
   return /^[a-z]{2}(-[a-z]{2})?$/i.test(code);
 }

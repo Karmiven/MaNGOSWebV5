@@ -8,7 +8,7 @@
     Posted by: <b><%= item.authorName || 'Admin' %></b> &mdash; <%= typeof helpers !== 'undefined' ? helpers.formatDate(item.post_time) : '' %>
   </div>
   <div class="blog-post">
-    <%- (item.message || '').replace(/\r\n|\r|\n/g, '<br>') %>
+    <%- helpers.richText(item.message || '') %>
   </div>
 </div>
 

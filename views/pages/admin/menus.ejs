@@ -103,7 +103,7 @@
                 <% if (m.guest_only) { %><span class="guest-badge ms-1">Guest</span><% } %>
               </td>
               <td>
-                <button class="btn-edit-sm me-1" onclick="editItem(<%= m.id %>, <%= m.menu_id %>, '<%= m.link_title.replace(/'/g, "\\'") %>', '<%= m.link.replace(/'/g, "\\'") %>', <%= m.order || 0 %>, <%= m.account_level %>, <%= m.guest_only ? 1 : 0 %>)"><i class="fas fa-pen"></i></button>
+                <button class="btn-edit-sm me-1" data-id="<%= m.id %>" data-menu="<%= m.menu_id %>" data-title="<%= m.link_title %>" data-link="<%= m.link %>" data-order="<%= m.order || 0 %>" data-level="<%= m.account_level %>" data-guest="<%= m.guest_only ? 1 : 0 %>" onclick="editItem(this)"><i class="fas fa-pen"></i></button>
                 <form method="POST" action="/admin/menus/delete" class="d-inline" onsubmit="return confirm('Delete &quot;<%= m.link_title %>&quot;?')">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <input type="hidden" name="id" value="<%= m.id %>">
@@ -202,14 +202,15 @@
 </div>
 
 <script>
-function editItem(id, menuId, title, link, order, level, guest) {
-  document.getElementById('edit-id').value = id;
-  document.getElementById('edit-menu_id').value = menuId;
-  document.getElementById('edit-title').value = title;
-  document.getElementById('edit-link').value = link;
-  document.getElementById('edit-order').value = order;
-  document.getElementById('edit-level').value = level;
-  document.getElementById('edit-guest').checked = !!guest;
+function editItem(btn) {
+  var d = btn.dataset;
+  document.getElementById('edit-id').value = d.id;
+  document.getElementById('edit-menu_id').value = d.menu;
+  document.getElementById('edit-title').value = d.title;
+  document.getElementById('edit-link').value = d.link;
+  document.getElementById('edit-order').value = d.order;
+  document.getElementById('edit-level').value = d.level;
+  document.getElementById('edit-guest').checked = d.guest === '1';
   new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 </script>

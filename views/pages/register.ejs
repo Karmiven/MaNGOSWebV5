@@ -63,7 +63,7 @@
   #regform label { display: block; margin-top: 1em; font-weight: bold; }
 </style>
 <script type="text/javascript">
-var MIN_LOGIN_L = 3, MAX_LOGIN_L = 16, MIN_PASS_L = 6, MAX_PASS_L = 32;
+var MIN_LOGIN_L = 3, MAX_LOGIN_L = 16, MIN_PASS_L = 6, MAX_PASS_L = 16;
 function check_login(){
   var v = document.getElementById('r_login').value;
   var t = document.getElementById('t_login');
@@ -116,11 +116,11 @@ function check_all(){
     <p id="t_login" style="display:none;" class="wm"></p>
 
     <label for="r_pass">Password:</label>
-    <input type="password" id="r_pass" name="password" size="40" maxlength="32" onblur="check_pass();" autocomplete="new-password"/>
+    <input type="password" id="r_pass" name="password" size="40" maxlength="16" onblur="check_pass();" autocomplete="new-password"/>
     <p id="t_pass" style="display:none;" class="wm"></p>
 
     <label for="r_cpass">Confirm Password:</label>
-    <input type="password" id="r_cpass" name="password2" size="40" maxlength="32" onblur="check_cpass();" autocomplete="new-password"/>
+    <input type="password" id="r_cpass" name="password2" size="40" maxlength="16" onblur="check_cpass();" autocomplete="new-password"/>
     <p id="t_cpass" style="display:none;" class="wm"></p>
 
     <label for="r_email">Email:</label>

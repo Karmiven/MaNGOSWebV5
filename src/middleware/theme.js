@@ -73,7 +73,8 @@ function clearThemeCache() {
 
 function getConfiguredTheme() {
   const config = SiteConfig.get();
-  const t = (config.templates || 'wotlk').toLowerCase();
+  let t = String(config.templates || 'wotlk').trim().toLowerCase();
+  if (t === 'default') t = 'wotlk';
   const slugs = getThemeSlugs();
   return slugs.includes(t) ? t : 'wotlk';
 }

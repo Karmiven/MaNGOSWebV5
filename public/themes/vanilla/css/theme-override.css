@@ -2,7 +2,26 @@
 
 /* Page backgrounds — warm sepia tone */
 body {
-  background-color: #1a0e00 !important;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 190px, rgba(0, 0, 0, 0.86) 305px, #000 405px, #000 100%),
+    url('../images/page-bg.jpg') repeat-x center 0,
+    #000 !important;
+  background-color: #000 !important;
+}
+
+#left-bg {
+  background: url('../images/leftbg.png') no-repeat 0 0 !important;
+}
+
+#right-bg {
+  box-shadow:
+    inset 60px 0 70px rgba(0, 0, 0, 0.42),
+    inset -36px 0 54px rgba(0, 0, 0, 0.82),
+    0 0 80px rgba(0, 0, 0, 0.55);
+}
+
+#hp {
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.45));
 }
 
 #page-bg-top {

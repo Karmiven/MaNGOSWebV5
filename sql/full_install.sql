@@ -28,17 +28,18 @@ INSERT INTO `mw_config` (`key`, `value`) VALUES
 ('site_desc', 'World of Warcraft Private Server'),
 ('site_email', 'admin@example.com'),
 ('emulator', 'azerothcore'),
-('templates', 'default'),
+('templates', 'wotlk'),
 ('default_lang', 'en'),
 ('available_lang', 'en'),
 ('site_armory', ''),
 ('site_forums', ''),
 ('default_realm_id', '1'),
 ('site_notice_enable', '0'),
-('site_notice_message', ''),
+('site_notice_text', ''),
 ('fp_news_enable', '1'),
 ('fp_quicklinks', '1'),
 ('fp_serverinfo', '1'),
+('fp_hide_server_ip', '0'),
 ('fp_rssfeed', '0'),
 ('fp_whoisonline', '1'),
 ('module_online_list', '1'),
@@ -56,7 +57,6 @@ INSERT INTO `mw_config` (`key`, `value`) VALUES
 ('customize_cost', '0'),
 ('racechange_cost', '0'),
 ('factionchange_cost', '0'),
-('paypal_email', ''),
 ('realmlist', '127.0.0.1'),
 ('progression_phase', '0')
 ON DUPLICATE KEY UPDATE `id` = `id`;
@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS `mw_account_extend` (
   `activation_code` varchar(64) DEFAULT '',
   `registration_ip` varchar(45) DEFAULT '',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`account_id`)
+  PRIMARY KEY (`account_id`),
+  KEY `idx_reg_ip` (`registration_ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===== News =====
@@ -140,7 +141,7 @@ CREATE TABLE IF NOT EXISTS `mw_shop_transactions` (
   `quantity` int(11) DEFAULT 1,
   `wp_cost` int(11) NOT NULL DEFAULT 0,
   `character_name` varchar(50) DEFAULT '',
-  `status` enum('completed','failed') DEFAULT 'completed',
+  `status` enum('pending','completed','failed') DEFAULT 'pending',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_account` (`account_id`)
@@ -160,7 +161,7 @@ CREATE TABLE IF NOT EXISTS `mw_donate_packages` (
 -- ===== Donate Transactions =====
 CREATE TABLE IF NOT EXISTS `mw_donate_transactions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `trans_id` varchar(100) NOT NULL DEFAULT '',
+  `trans_id` varchar(100) DEFAULT NULL,
   `account` int(11) NOT NULL,
   `item_number` varchar(100) DEFAULT '',
   `buyer_email` varchar(255) DEFAULT '',
@@ -172,6 +173,7 @@ CREATE TABLE IF NOT EXISTS `mw_donate_transactions` (
   `item_given` tinyint(1) DEFAULT 0,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_trans_id` (`trans_id`),
   KEY `idx_account` (`account`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -192,10 +194,12 @@ CREATE TABLE IF NOT EXISTS `mw_vote_sites` (
 CREATE TABLE IF NOT EXISTS `mw_voting` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_ip` varchar(45) NOT NULL,
+  `account_id` int(11) NOT NULL DEFAULT 0,
   `site` int(11) NOT NULL,
   `time` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_ip_site` (`user_ip`, `site`),
+  KEY `idx_account_site` (`account_id`, `site`, `time`),
   KEY `idx_time` (`time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -285,6 +289,20 @@ CREATE TABLE IF NOT EXISTS `mw_sessions` (
   `expires` int(11) unsigned NOT NULL,
   `data` mediumtext,
   PRIMARY KEY (`session_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===== Admin Audit Log =====
+CREATE TABLE IF NOT EXISTS `mw_admin_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL DEFAULT '',
+  `ip` varchar(45) NOT NULL DEFAULT '',
+  `action` varchar(100) NOT NULL,
+  `details` text,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_account` (`account_id`),
+  KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===== Brute Force Protection =====

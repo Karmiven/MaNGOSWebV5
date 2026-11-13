@@ -1,9 +1,10 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 /**
  * Authentication middleware.
  * Loads user from session, provides requireAuth / requireAdmin helpers.
  */
 const db = require('../config/database');
+
+const LEVEL = { USER: 1, ACTIVE: 2, ADMIN: 3, SUPER_ADMIN: 4, BANNED: 5 };
 
 async function authMiddleware(req, res, next) {
   req.user = null;
@@ -13,30 +14,35 @@ async function authMiddleware(req, res, next) {
   }
 
   try {
-    const [rows] = await db.auth.query(
-      'SELECT id, username, email, last_ip, last_login, joindate, expansion, locked, online FROM account WHERE id = ?',
-      [req.session.userId]
-    );
-    if (!rows.length) {
+    const id = req.session.userId;
+    const [[accRows], [ext], [bans]] = await Promise.all([
+      db.auth.query(
+        'SELECT id, username, email, last_ip, last_login, joindate, expansion, locked, online FROM account WHERE id = ?',
+        [id]
+      ),
+      db.cms.query('SELECT * FROM mw_account_extend WHERE account_id = ?', [id]),
+      db.auth.query(
+        `SELECT id FROM account_banned
+         WHERE id = ? AND active = 1 AND (unbandate = bandate OR unbandate > UNIX_TIMESTAMP()) LIMIT 1`,
+        [id]
+      )
+    ]);
+
+    if (!accRows.length) {
       delete req.session.userId;
       return next();
     }
 
-    const account = rows[0];
-
-    // Get CMS extended info
-    const [ext] = await db.cms.query(
-      'SELECT * FROM mw_account_extend WHERE account_id = ?',
-      [account.id]
-    );
-
-    // Check ban
-    const [bans] = await db.auth.query(
-      'SELECT id FROM account_banned WHERE id = ? AND active = 1 LIMIT 1',
-      [account.id]
-    );
-
+    const account = accRows[0];
     const extend = ext[0] || {};
+    const level = parseInt(extend.account_level, 10) || LEVEL.USER;
+    const isBanned = bans.length > 0 || level === LEVEL.BANNED;
+
+    if (isBanned) {
+      delete req.session.userId;
+      return next();
+    }
+
     req.user = {
       id: account.id,
       username: account.username,
@@ -47,7 +53,7 @@ async function authMiddleware(req, res, next) {
       expansion: account.expansion,
       locked: account.locked,
       online: account.online,
-      level: extend.account_level || 1,
+      level,
       theme: extend.theme || 0,
       webPoints: extend.web_points || 0,
       pointsEarned: extend.points_earned || 0,
@@ -55,9 +61,9 @@ async function authMiddleware(req, res, next) {
       totalDonations: extend.total_donations || '0.00',
       totalVotes: extend.total_votes || 0,
       avatar: extend.avatar || '',
-      isBanned: bans.length > 0,
-      isAdmin: (extend.account_level || 1) >= 3,
-      isSuperAdmin: (extend.account_level || 1) >= 4
+      isBanned: false,
+      isAdmin: level >= LEVEL.ADMIN && level <= LEVEL.SUPER_ADMIN,
+      isSuperAdmin: level === LEVEL.SUPER_ADMIN
     };
   } catch (err) {
     console.error('[Auth] Error loading user:', err.message);
@@ -72,17 +78,12 @@ function requireAuth(req, res, next) {
     req.flash('error', 'Please log in to access this page.');
     return res.redirect('/auth/login');
   }
-  if (req.user.isBanned) {
-    req.flash('error', 'Your account has been banned.');
-    req.session.destroy();
-    return res.redirect('/auth/login');
-  }
   next();
 }
 
-/** Require admin level >= 3 */
+/** Require admin (level 3-4, not banned) */
 function requireAdmin(req, res, next) {
-  if (!req.user || req.user.level < 3) {
+  if (!req.user || !req.user.isAdmin) {
     return res.status(403).render('pages/error', {
       title: 'Access Denied',
       message: 'You do not have permission to access this page.'
@@ -91,9 +92,9 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-/** Require super admin level >= 4 */
+/** Require super admin (level 4, not banned) */
 function requireSuperAdmin(req, res, next) {
-  if (!req.user || req.user.level < 4) {
+  if (!req.user || !req.user.isSuperAdmin) {
     return res.status(403).render('pages/error', {
       title: 'Access Denied',
       message: 'Super Admin privileges required.'
@@ -102,4 +103,4 @@ function requireSuperAdmin(req, res, next) {
   next();
 }
 
-module.exports = { authMiddleware, requireAuth, requireAdmin, requireSuperAdmin };
+module.exports = { authMiddleware, requireAuth, requireAdmin, requireSuperAdmin, LEVEL };

@@ -1,16 +1,23 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const { requireAuth } = require('../middleware/auth');
 const Account = require('../models/Account');
 const Character = require('../models/Character');
 const Donate = require('../models/Donate');
-const SoapService = require('../services/soap');
-const Realm = require('../models/Realm');
 const Shop = require('../models/Shop');
 const helpers = require('../utils/helpers');
 const { getZoneName } = require('../utils/zones');
 
 router.use(requireAuth);
+
+/** at_login flag values from AzerothCore */
+const AT_LOGIN = { RENAME: 1, CUSTOMIZE: 8, CHANGE_FACTION: 64, CHANGE_RACE: 128 };
+
+const SERVICES = {
+  rename:        { flag: AT_LOGIN.RENAME,         module: 'module_char_rename',         cost: 'rename_cost',        label: 'Rename',         prompt: 'rename' },
+  customize:     { flag: AT_LOGIN.CUSTOMIZE,      module: 'module_char_customize',      cost: 'customize_cost',     label: 'Customize',      prompt: 'customization' },
+  racechange:    { flag: AT_LOGIN.CHANGE_RACE,    module: 'module_char_race_change',    cost: 'racechange_cost',    label: 'Race change',    prompt: 'race change' },
+  factionchange: { flag: AT_LOGIN.CHANGE_FACTION, module: 'module_char_faction_change', cost: 'factionchange_cost', label: 'Faction change', prompt: 'faction change' }
+};
 
 /* GET /account — Dashboard (merged with manage) */
 router.get('/', async (req, res, next) => {
@@ -35,7 +42,8 @@ router.post('/change-password', async (req, res, next) => {
   try {
     const { current_password, new_password, confirm_password } = req.body;
 
-    if (!current_password || !new_password || !confirm_password) {
+    if (typeof current_password !== 'string' || typeof new_password !== 'string' || typeof confirm_password !== 'string'
+        || !current_password || !new_password || !confirm_password) {
       req.flash('error', 'All fields are required.');
       return res.redirect('/account#account-settings');
     }
@@ -45,19 +53,19 @@ router.post('/change-password', async (req, res, next) => {
       return res.redirect('/account#account-settings');
     }
 
-    if (new_password.length < 6) {
-      req.flash('error', 'Password must be at least 6 characters.');
+    const passErr = Account.validatePassword(new_password);
+    if (passErr) {
+      req.flash('error', passErr);
       return res.redirect('/account#account-settings');
     }
 
-    // Verify current password
     const account = await Account.findById(req.user.id);
-    if (!Account.verifyPassword(req.user.username, current_password, account.salt, account.verifier)) {
+    if (!Account.verifyPassword(account.username, current_password, account.salt, account.verifier)) {
       req.flash('error', 'Current password is incorrect.');
       return res.redirect('/account#account-settings');
     }
 
-    await Account.changePassword(req.user.id, req.user.username, new_password);
+    await Account.changePassword(req.user.id, account.username, new_password);
     req.flash('success', 'Password changed successfully.');
     res.redirect('/account#account-settings');
   } catch (err) { next(err); }
@@ -68,19 +76,25 @@ router.post('/change-email', async (req, res, next) => {
   try {
     const { password, new_email } = req.body;
 
-    if (!password || !new_email) {
+    if (typeof password !== 'string' || typeof new_email !== 'string' || !password || !new_email) {
       req.flash('error', 'All fields are required.');
       return res.redirect('/account#account-settings');
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(new_email)) {
+    if (new_email.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(new_email)) {
       req.flash('error', 'Invalid email address.');
       return res.redirect('/account#account-settings');
     }
 
     const account = await Account.findById(req.user.id);
-    if (!Account.verifyPassword(req.user.username, password, account.salt, account.verifier)) {
+    if (!Account.verifyPassword(account.username, password, account.salt, account.verifier)) {
       req.flash('error', 'Password is incorrect.');
+      return res.redirect('/account#account-settings');
+    }
+
+    const taken = await Account.findByEmail(new_email);
+    if (taken && taken.id !== req.user.id) {
+      req.flash('error', 'That email is already registered.');
       return res.redirect('/account#account-settings');
     }
 
@@ -89,7 +103,6 @@ router.post('/change-email', async (req, res, next) => {
     res.redirect('/account#account-settings');
   } catch (err) { next(err); }
 });
-
 
 /* GET /account/characters — Character services */
 router.get('/characters', async (req, res, next) => {
@@ -104,133 +117,60 @@ router.get('/characters', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* POST /account/rename */
-router.post('/rename', async (req, res, next) => {
-  try {
-    const { guid } = req.body;
-    const config = res.locals.siteConfig;
-    const cost = parseInt(config.rename_cost) || 0;
-    const isAdmin = req.user && req.user.isAdmin;
+/** Shared handler: validates, charges points, sets the at_login flag, refunds on failure */
+function serviceHandler(service) {
+  return async (req, res, next) => {
+    try {
+      const config = res.locals.siteConfig;
+      const cost = parseInt(config[service.cost], 10) || 0;
+      const isAdmin = req.user.isAdmin;
+      const back = '/account/characters';
 
-    if (!isAdmin && config.module_char_rename != '1' && config.module_char_rename !== 1) {
-      req.flash('error', 'Rename service is currently disabled.');
-      return res.redirect('/account/characters');
-    }
+      if (!isAdmin && config[service.module] != '1') {
+        req.flash('error', `${service.label} service is currently disabled.`);
+        return res.redirect(back);
+      }
 
-    const char = await Character.findByGuid(guid);
-    if (!char || (!isAdmin && char.account !== req.user.id)) {
-      req.flash('error', 'Character not found.');
-      return res.redirect('/account/characters');
-    }
+      const guid = parseInt(req.body.guid, 10);
+      const char = Number.isInteger(guid) && guid > 0 ? await Character.findByGuid(guid) : null;
+      if (!char || (!isAdmin && char.account !== req.user.id)) {
+        req.flash('error', 'Character not found.');
+        return res.redirect(back);
+      }
 
-    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
-      req.flash('error', `Not enough points. Need ${cost}.`);
-      return res.redirect('/account/characters');
-    }
+      if (char.online) {
+        req.flash('error', `${char.name} is online. Log out in game first.`);
+        return res.redirect(back);
+      }
 
-    await Character.setAtLoginFlag(guid, 1); // AT_LOGIN_RENAME
-    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
+      if ((char.at_login & service.flag) === service.flag) {
+        req.flash('error', `${char.name} already has a pending ${service.prompt}.`);
+        return res.redirect(back);
+      }
 
-    req.flash('success', `${char.name} will be prompted for rename at next login.`);
-    res.redirect('/account/characters');
-  } catch (err) { next(err); }
-});
+      const charge = !isAdmin && cost > 0;
+      if (charge && !(await Account.spendPointsIfEnough(req.user.id, cost))) {
+        req.flash('error', `Not enough points. Need ${cost}.`);
+        return res.redirect(back);
+      }
 
-/* POST /account/customize */
-router.post('/customize', async (req, res, next) => {
-  try {
-    const { guid } = req.body;
-    const config = res.locals.siteConfig;
-    const cost = parseInt(config.customize_cost) || 0;
-    const isAdmin = req.user && req.user.isAdmin;
+      try {
+        await Character.setAtLoginFlag(char.guid, service.flag);
+      } catch (err) {
+        if (charge) await Account.refundPoints(req.user.id, cost);
+        throw err;
+      }
 
-    if (!isAdmin && config.module_char_customize != '1' && config.module_char_customize !== 1) {
-      req.flash('error', 'Customize service is currently disabled.');
-      return res.redirect('/account/characters');
-    }
+      req.flash('success', `${char.name} will be prompted for ${service.prompt} at next login.`);
+      res.redirect(back);
+    } catch (err) { next(err); }
+  };
+}
 
-    const char = await Character.findByGuid(guid);
-    if (!char || (!isAdmin && char.account !== req.user.id)) {
-      req.flash('error', 'Character not found.');
-      return res.redirect('/account/characters');
-    }
-
-    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
-      req.flash('error', `Not enough points. Need ${cost}.`);
-      return res.redirect('/account/characters');
-    }
-
-    await Character.setAtLoginFlag(guid, 8); // AT_LOGIN_CUSTOMIZE
-    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
-
-    req.flash('success', `${char.name} will be prompted for customization at next login.`);
-    res.redirect('/account/characters');
-  } catch (err) { next(err); }
-});
-
-/* POST /account/racechange */
-router.post('/racechange', async (req, res, next) => {
-  try {
-    const { guid } = req.body;
-    const config = res.locals.siteConfig;
-    const cost = parseInt(config.racechange_cost) || 0;
-    const isAdmin = req.user && req.user.isAdmin;
-
-    if (!isAdmin && config.module_char_race_change != '1' && config.module_char_race_change !== 1) {
-      req.flash('error', 'Race change service is currently disabled.');
-      return res.redirect('/account/characters');
-    }
-
-    const char = await Character.findByGuid(guid);
-    if (!char || (!isAdmin && char.account !== req.user.id)) {
-      req.flash('error', 'Character not found.');
-      return res.redirect('/account/characters');
-    }
-
-    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
-      req.flash('error', `Not enough points. Need ${cost}.`);
-      return res.redirect('/account/characters');
-    }
-
-    await Character.setAtLoginFlag(guid, 128); // AT_LOGIN_CHANGE_RACE
-    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
-
-    req.flash('success', `${char.name} will be prompted for race change at next login.`);
-    res.redirect('/account/characters');
-  } catch (err) { next(err); }
-});
-
-/* POST /account/factionchange */
-router.post('/factionchange', async (req, res, next) => {
-  try {
-    const { guid } = req.body;
-    const config = res.locals.siteConfig;
-    const cost = parseInt(config.factionchange_cost) || 0;
-    const isAdmin = req.user && req.user.isAdmin;
-
-    if (!isAdmin && config.module_char_faction_change != '1' && config.module_char_faction_change !== 1) {
-      req.flash('error', 'Faction change service is currently disabled.');
-      return res.redirect('/account/characters');
-    }
-
-    const char = await Character.findByGuid(guid);
-    if (!char || (!isAdmin && char.account !== req.user.id)) {
-      req.flash('error', 'Character not found.');
-      return res.redirect('/account/characters');
-    }
-
-    if (!isAdmin && cost > 0 && req.user.webPoints < cost) {
-      req.flash('error', `Not enough points. Need ${cost}.`);
-      return res.redirect('/account/characters');
-    }
-
-    await Character.setAtLoginFlag(guid, 64); // AT_LOGIN_CHANGE_FACTION
-    if (!isAdmin && cost > 0) await Account.spendPoints(req.user.id, cost);
-
-    req.flash('success', `${char.name} will be prompted for faction change at next login.`);
-    res.redirect('/account/characters');
-  } catch (err) { next(err); }
-});
+router.post('/rename', serviceHandler(SERVICES.rename));
+router.post('/customize', serviceHandler(SERVICES.customize));
+router.post('/racechange', serviceHandler(SERVICES.racechange));
+router.post('/factionchange', serviceHandler(SERVICES.factionchange));
 
 /* GET /account/transactions */
 router.get('/transactions', async (req, res, next) => {

@@ -1,46 +1,59 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
+/**
+ * CSRF protection: signed double-submit cookie.
+ * No session is needed, so anonymous visitors don't create session rows.
+ */
 const crypto = require('crypto');
 
+const COOKIE = 'csrf_token';
+const fallbackSecret = crypto.randomBytes(32).toString('hex');
+
+function secret() {
+  return process.env.SESSION_SECRET || fallbackSecret;
+}
+
+function sign(raw) {
+  return crypto.createHmac('sha256', secret()).update(raw).digest('hex');
+}
+
+function safeEqual(a, b) {
+  const x = Buffer.from(String(a));
+  const y = Buffer.from(String(b));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+}
+
+function issueToken() {
+  const raw = crypto.randomBytes(24).toString('hex');
+  return `${raw}.${sign(raw)}`;
+}
+
+function isValidToken(token) {
+  if (typeof token !== 'string') return false;
+  const [raw, sig] = token.split('.');
+  return !!raw && !!sig && safeEqual(sign(raw), sig);
+}
+
 function csrfMiddleware(req, res, next) {
-  // Generate token if not exists
-  if (!req.session) return next();
-  if (!req.session.csrfToken) {
-    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+  let token = req.cookies && req.cookies[COOKIE];
+  if (!isValidToken(token)) {
+    token = issueToken();
+    res.cookie(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: req.secure });
   }
+  req.csrfToken = () => token;
+  res.locals.csrfToken = token;
 
-  // Provide token getter
-  req.csrfToken = () => req.session.csrfToken;
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
 
-  // Skip validation for GET, HEAD, OPTIONS
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    return next();
-  }
+  // installer posts JSON with its own access token
+  if (req.path.startsWith('/install')) return next();
 
-  // [FIXED] Skip for install routes and exact IPN path only
-  if (req.path.startsWith('/install') || req.path === '/api/ipn') {
-    return next();
-  }
-
-  // Validate
-  const token = req.body._csrf || req.headers['x-csrf-token'];
-  if (!token || token !== req.session.csrfToken) {
+  const supplied = (req.body && req.body._csrf) || req.headers['x-csrf-token'];
+  if (!supplied || !safeEqual(supplied, token)) {
     return res.status(403).render('pages/error', {
       title: 'Invalid Request',
-      message: 'Invalid or missing CSRF token. Please try again.'
+      message: 'Invalid or missing CSRF token. Please refresh the page and try again.'
     });
   }
-
   next();
 }
 
-function csrfErrorHandler(err, req, res, next) {
-  if (err.code === 'EBADCSRFTOKEN') {
-    return res.status(403).render('pages/error', {
-      title: 'Invalid Request',
-      message: 'Invalid CSRF token. Please refresh the page and try again.'
-    });
-  }
-  next(err);
-}
-
-module.exports = { csrfMiddleware, csrfErrorHandler };
+module.exports = { csrfMiddleware };

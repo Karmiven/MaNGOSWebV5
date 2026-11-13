@@ -1,5 +1,5 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 require('dotenv').config();
+const crypto = require('crypto');
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
@@ -9,15 +9,24 @@ const helmet = require('helmet');
 const expressLayouts = require('express-ejs-layouts');
 const MySQLStore = require('express-mysql-session')(session);
 const rateLimit = require('express-rate-limit');
+const { logError } = require('./src/utils/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+process.on('unhandledRejection', (reason) => logError('[unhandledRejection]', reason));
+
+/* Behind nginx/Cloudflare set TRUST_PROXY (e.g. 1 or loopback) so req.ip and secure cookies work */
+if (process.env.TRUST_PROXY) {
+  const tp = process.env.TRUST_PROXY;
+  app.set('trust proxy', tp === 'true' ? true : /^\d+$/.test(tp) ? parseInt(tp, 10) : tp);
+}
 
 /* ------------------------------------------------------------------ */
 /*  Security headers                                                   */
 /* ------------------------------------------------------------------ */
-// [FIXED] Enable CSP with sensible defaults allowing CDN assets
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -30,23 +39,34 @@ app.use(helmet({
       connectSrc: ["'self'"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
-      baseUri: ["'self'"]
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: null // would break plain-HTTP deployments
     }
   },
+  hsts: IS_PROD,
   crossOriginEmbedderPolicy: false
 }));
 
 /* ------------------------------------------------------------------ */
 /*  Body parsers                                                       */
 /* ------------------------------------------------------------------ */
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
-app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '256kb' }));
+app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());
 
 /* ------------------------------------------------------------------ */
 /*  Static files                                                       */
 /* ------------------------------------------------------------------ */
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1d' }));
+
+/* General per-IP limit for everything dynamic */
+app.use(rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false
+}));
 
 /* ------------------------------------------------------------------ */
 /*  View engine                                                        */
@@ -66,62 +86,51 @@ app.set('layout extractScripts', true);
     const db = require('./src/config/database');
     const installed = await db.init();
 
-    /* ---- Session store (MySQL) ----------------------------------- */
-    let sessionStore;
     if (installed) {
-      const sessionStoreOptions = {
-        host: process.env.CMS_DB_HOST,
-        port: parseInt(process.env.CMS_DB_PORT || '3306'),
-        user: process.env.CMS_DB_USER,
-        password: process.env.CMS_DB_PASS,
-        database: process.env.CMS_DB_NAME,
-        clearExpired: true,
-        checkExpirationInterval: 900000,
-        expiration: parseInt(process.env.SESSION_LIFETIME || '2592000000'),
-        createDatabaseTable: true,
-        schema: { tableName: 'mw_sessions' }
-      };
-      sessionStore = new MySQLStore(sessionStoreOptions);
+      await require('./src/config/migrate').run();
     }
 
-    // Expose a function to init session store after install
-    app._initSessionStore = async function() {
-      const store = new MySQLStore({
-        host: process.env.CMS_DB_HOST,
-        port: parseInt(process.env.CMS_DB_PORT || '3306'),
-        user: process.env.CMS_DB_USER,
-        password: process.env.CMS_DB_PASS,
-        database: process.env.CMS_DB_NAME,
-        clearExpired: true,
-        checkExpirationInterval: 900000,
-        expiration: parseInt(process.env.SESSION_LIFETIME || '2592000000'),
-        createDatabaseTable: true,
-        schema: { tableName: 'mw_sessions' }
+    /* ---- Session (rebuilt after the installer writes a new .env) --- */
+    const fallbackSecret = crypto.randomBytes(32).toString('hex');
+
+    function buildSession() {
+      let store;
+      if (db.isInstalled()) {
+        store = new MySQLStore({
+          host: process.env.CMS_DB_HOST,
+          port: parseInt(process.env.CMS_DB_PORT || '3306', 10),
+          user: process.env.CMS_DB_USER,
+          password: process.env.CMS_DB_PASS,
+          database: process.env.CMS_DB_NAME,
+          clearExpired: true,
+          checkExpirationInterval: 900000,
+          expiration: parseInt(process.env.SESSION_LIFETIME || '2592000000', 10),
+          createDatabaseTable: true,
+          schema: { tableName: 'mw_sessions' }
+        });
+      }
+      return session({
+        secret: process.env.SESSION_SECRET || fallbackSecret,
+        resave: false,
+        saveUninitialized: false,
+        store,
+        cookie: {
+          maxAge: parseInt(process.env.SESSION_LIFETIME || '2592000000', 10),
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: IS_PROD ? 'auto' : false
+        }
       });
-      sessionStore = store;
-    };
-
-    // [FIXED] Require SESSION_SECRET — abort startup if missing
-    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'fallback-secret') {
-      if (installed) {
-        console.error('FATAL: SESSION_SECRET environment variable is required. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
-        process.exit(1);
-      }
     }
 
-    app.use(session({
-      secret: process.env.SESSION_SECRET || require('crypto').randomBytes(32).toString('hex'),
-      resave: false,
-      saveUninitialized: false,
-      store: sessionStore || undefined,
-      cookie: {
-        maxAge: parseInt(process.env.SESSION_LIFETIME || '2592000000'),
-        httpOnly: true,
-        sameSite: 'lax',
-        // [FIXED] Set secure flag in production
-        secure: process.env.NODE_ENV === 'production'
-      }
-    }));
+    if (installed && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'fallback-secret')) {
+      console.error('FATAL: SESSION_SECRET environment variable is required. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+      process.exit(1);
+    }
+
+    let sessionMiddleware = buildSession();
+    app.locals.rebuildSession = () => { sessionMiddleware = buildSession(); };
+    app.use((req, res, next) => sessionMiddleware(req, res, next));
     app.use(flash());
 
     /* ---- Load site config from DB -------------------------------- */
@@ -134,7 +143,7 @@ app.set('layout extractScripts', true);
     const { authMiddleware } = require('./src/middleware/auth');
     const { themeMiddleware } = require('./src/middleware/theme');
     const { onlineMiddleware } = require('./src/middleware/online');
-    const { csrfMiddleware, csrfErrorHandler } = require('./src/middleware/csrf');
+    const { csrfMiddleware } = require('./src/middleware/csrf');
     const lang = require('./src/middleware/lang');
 
     app.use(authMiddleware);
@@ -151,29 +160,27 @@ app.set('layout extractScripts', true);
     app.use(async (req, res, next) => {
       res.locals.user = req.user || null;
       res.locals.siteConfig = SiteConfig.get();
-      res.locals.flash_success = req.flash('success');
-      res.locals.flash_error = req.flash('error');
-      res.locals.flash_info = req.flash('info');
+
+      // Reading flash on a session-less visitor would create a session row for them
+      const hasFlash = req.session && req.session.flash && Object.keys(req.session.flash).length > 0;
+      res.locals.flash_success = hasFlash ? req.flash('success') : [];
+      res.locals.flash_error = hasFlash ? req.flash('error') : [];
+      res.locals.flash_info = hasFlash ? req.flash('info') : [];
+
       res.locals.baseUrl = process.env.BASE_URL || `http://${HOST}:${PORT}`;
       res.locals.currentUrl = req.originalUrl;
-      res.locals.csrfToken = req.csrfToken ? req.csrfToken() : '';
 
-      // Load menus globally so every page gets the same left sidebar
       if (db.isInstalled()) {
         try {
           // Menu account_level: 1=everyone, 2=logged-in, 3=admin, 4=superadmin
           const isGuest = !req.user;
-          let menuLevel = 1; // guest
+          let menuLevel = 1;
           if (req.user) {
-            menuLevel = 2; // logged-in user
+            menuLevel = 2;
             if (req.user.isAdmin) menuLevel = 3;
             if (req.user.isSuperAdmin) menuLevel = 4;
           }
           res.locals.menus = await Menu.getGrouped(menuLevel, isGuest);
-          // Debug: log menu keys for account menu visibility
-          if (req.originalUrl === '/server/commands') {
-            console.log('[Menu Debug] user:', req.user ? req.user.username : 'guest', 'menuLevel:', menuLevel, 'isGuest:', isGuest, 'menu keys:', Object.keys(res.locals.menus));
-          }
         } catch (e) {
           console.error('[Menu] Error loading menus:', e.message);
         }
@@ -185,7 +192,6 @@ app.set('layout extractScripts', true);
     /* ---- Routes -------------------------------------------------- */
     const installRouter = require('./src/routes/install');
 
-    // [FIXED] Block install routes when already installed
     app.use((req, res, next) => {
       if (!db.isInstalled() && !req.path.startsWith('/install')) {
         return res.redirect('/install');
@@ -198,20 +204,40 @@ app.set('layout extractScripts', true);
 
     app.use('/install', installRouter);
 
-    // [FIXED] Rate limiters for sensitive endpoints
+    // Only POSTs count: login/register/restore attempts
     const authLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
-      max: 100,
+      max: 60,
+      skip: req => req.method !== 'POST',
       message: 'Too many requests, please try again later.',
       standardHeaders: true,
       legacyHeaders: false
     });
+    const sensitiveLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 10,
+      skip: req => req.method !== 'POST',
+      message: 'Too many attempts, please try again later.',
+      standardHeaders: true,
+      legacyHeaders: false
+    });
     const apiLimiter = rateLimit({
-      windowMs: 1 * 60 * 1000,
+      windowMs: 60 * 1000,
       max: 60,
       standardHeaders: true,
       legacyHeaders: false
     });
+    const actionLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      max: 30,
+      skip: req => req.method !== 'POST',
+      standardHeaders: true,
+      legacyHeaders: false
+    });
+
+    app.use('/account/change-password', sensitiveLimiter);
+    app.use('/account/change-email', sensitiveLimiter);
+    app.use(['/shop', '/vote'], actionLimiter);
 
     app.use('/', require('./src/routes/frontpage'));
     app.use('/account', require('./src/routes/account'));
@@ -225,9 +251,6 @@ app.set('layout extractScripts', true);
     app.use('/admin', require('./src/routes/admin'));
     app.use('/api', apiLimiter, require('./src/routes/api'));
 
-    /* ---- CSRF error handler -------------------------------------- */
-    app.use(csrfErrorHandler);
-
     /* ---- 404 ----------------------------------------------------- */
     app.use((req, res) => {
       res.status(404).render('pages/error', {
@@ -239,10 +262,12 @@ app.set('layout extractScripts', true);
 
     /* ---- Error handler ------------------------------------------- */
     app.use((err, req, res, _next) => {
-      console.error('[ERROR]', err.stack || err);
-      res.status(500).render('pages/error', {
-        title: 'Server Error',
-        message: 'An internal server error occurred.',
+      const status = err.status >= 400 && err.status < 500 ? err.status : 500;
+      if (status === 500) logError(`[ERROR] ${req.method} ${req.originalUrl}`, err);
+      if (res.headersSent) return;
+      res.status(status).render('pages/error', {
+        title: status === 500 ? 'Server Error' : 'Bad Request',
+        message: status === 500 ? 'An internal server error occurred.' : 'The request could not be processed.',
         layout: 'layouts/main'
       });
     });
@@ -251,12 +276,14 @@ app.set('layout extractScripts', true);
     app.listen(PORT, HOST, () => {
       console.log(`\n  MaNGOSWebV5 running at http://${HOST}:${PORT}\n`);
       if (!installed) {
-        console.log('  → Not installed yet. Visit /install to begin setup.\n');
+        console.log(db.isUnreachable()
+          ? '  → CMS database is configured but unreachable. Fix the connection, or use INSTALL_TOKEN to open /install.\n'
+          : '  → Not installed yet. Visit /install to begin setup.\n');
       }
     });
 
   } catch (err) {
-    console.error('Failed to start MaNGOSWebV5:', err);
+    logError('Failed to start MaNGOSWebV5:', err);
     process.exit(1);
   }
 })();

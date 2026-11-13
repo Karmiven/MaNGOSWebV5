@@ -1,8 +1,8 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const { requireAuth } = require('../middleware/auth');
 const Vote = require('../models/Vote');
 const Account = require('../models/Account');
+const SiteConfig = require('../models/Config');
 const db = require('../config/database');
 const helpers = require('../utils/helpers');
 
@@ -13,27 +13,23 @@ function formatCooldown(seconds) {
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0 && m > 0) return h + 'h ' + m + 'm';
   if (h > 0) return h + 'h';
-  return m + 'm';
+  return Math.max(m, 1) + 'm';
 }
 
 /* GET /vote */
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const SiteConfig = require('../models/Config');
     if (!SiteConfig.enabled('module_voting')) {
       req.flash('error', 'Voting is currently disabled.');
       return res.redirect('/');
     }
     const sites = await Vote.getSites();
-    const ip = req.ip || '0.0.0.0';
-
-    // Add cooldown info per site
+    const waits = await Vote.getRemainingSeconds(req.user.id, sites);
     for (const site of sites) {
-      site.canVote = await Vote.canVote(ip, site.id, site.reset_time);
-      if (!site.canVote) {
-        const remaining = await Vote.getNextVoteTime(ip, site.id, site.reset_time);
-        site.nextVoteIn = formatCooldown(remaining);
-      }
+      site.safeVotelink = helpers.safeUrl(site.votelink);
+      const remaining = waits[site.id] || 0;
+      site.canVote = remaining <= 0;
+      if (!site.canVote) site.nextVoteIn = formatCooldown(remaining);
     }
 
     const ext = await Account.getExtended(req.user.id);
@@ -44,54 +40,78 @@ router.get('/', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* POST /vote/:siteId — process a vote */
+/* POST /vote/:siteId — claim the reward; one claim per account per site per cooldown */
 router.post('/:siteId', requireAuth, async (req, res, next) => {
-  const SiteConfig = require('../models/Config');
-  if (!SiteConfig.enabled('module_voting')) {
-    req.flash('error', 'Voting is currently disabled.');
-    return res.redirect('/');
-  }
-  const conn = await db.cms.getConnection();
+  let conn = null;
   try {
-    await conn.beginTransaction();
+    if (!SiteConfig.enabled('module_voting')) {
+      req.flash('error', 'Voting is currently disabled.');
+      return res.redirect('/');
+    }
 
-    const siteId = parseInt(req.params.siteId);
-    const site = await Vote.findSite(siteId);
-    const ip = req.ip || '0.0.0.0';
-
-    if (!site || !site.active) {
-      await conn.rollback();
-      conn.release();
+    const siteId = parseInt(req.params.siteId, 10);
+    if (!Number.isInteger(siteId) || siteId <= 0) {
       req.flash('error', 'Vote site not found.');
       return res.redirect('/vote');
     }
 
-    if (!(await Vote.canVote(ip, siteId, site.reset_time))) {
+    const ip = req.ip || '0.0.0.0';
+    const now = Math.floor(Date.now() / 1000);
+
+    conn = await db.cms.getConnection();
+    await conn.beginTransaction();
+
+    const [siteRows] = await conn.query(
+      'SELECT * FROM mw_vote_sites WHERE id = ? AND active = 1 LIMIT 1',
+      [siteId]
+    );
+    const site = siteRows[0] || null;
+    if (!site) {
       await conn.rollback();
-      conn.release();
-      req.flash('error', 'You have already voted on this site. Please wait for cooldown.');
+      req.flash('error', 'Vote site not found.');
       return res.redirect('/vote');
     }
 
-    // Record vote and award points
-    await Vote.recordVote(ip, siteId);
-    await Vote.awardPoints(req.user.id, site.points);
+    // Serialise this account's votes; a locked row also stops parallel requests
+    await conn.query(
+      'SELECT account_id FROM mw_account_extend WHERE account_id = ? FOR UPDATE',
+      [req.user.id]
+    );
 
+    const cutoff = now - (parseInt(site.reset_time, 10) || 12) * 3600;
+    const [recentVotes] = await conn.query(
+      `SELECT id FROM mw_voting
+       WHERE site = ? AND time > ? AND account_id = ? LIMIT 1`,
+      [siteId, cutoff, req.user.id]
+    );
+    if (recentVotes.length) {
+      await conn.rollback();
+      req.flash('error', 'You have already claimed this reward. Come back after the cooldown.');
+      return res.redirect('/vote');
+    }
+
+    const points = Math.max(0, parseInt(site.points, 10) || 0);
+    await conn.query(
+      'INSERT INTO mw_voting (user_ip, account_id, site, time) VALUES (?, ?, ?, ?)',
+      [ip, req.user.id, siteId, now]
+    );
+    await conn.query(
+      `UPDATE mw_account_extend SET
+        web_points = web_points + ?,
+        points_earned = points_earned + ?,
+        total_votes = total_votes + 1
+       WHERE account_id = ?`,
+      [points, points, req.user.id]
+    );
     await conn.commit();
-    conn.release();
 
-    req.flash('success', `Vote recorded! You earned ${site.points} points.`);
-
-    // Link type: redirect to external vote link in new window (handled by frontend)
-    // Fake type: just redirect back to vote page
-    if (site.vote_type === 'link' && site.votelink) {
-      return res.redirect('/vote');
-    }
+    req.flash('success', `Reward claimed! You earned ${points} points.`);
     res.redirect('/vote');
   } catch (err) {
-    try { await conn.rollback(); } catch (_) {}
-    conn.release();
+    if (conn) { try { await conn.rollback(); } catch (_) {} }
     next(err);
+  } finally {
+    if (conn) conn.release();
   }
 });
 

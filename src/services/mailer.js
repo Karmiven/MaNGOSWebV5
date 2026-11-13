@@ -1,9 +1,7 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const nodemailer = require('nodemailer');
 
 let transporter = null;
 
-// [FIXED] Escape HTML in email content to prevent injection
 function escapeHtml(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -14,7 +12,7 @@ const Mailer = {
     if (process.env.SMTP_ENABLED !== 'true') return;
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'ssl',
       auth: {
         user: process.env.SMTP_USER,
@@ -23,14 +21,19 @@ const Mailer = {
     });
   },
 
+  isEnabled() {
+    return !!transporter;
+  },
+
   async send(to, subject, html) {
     if (!transporter) {
       console.warn('[Mailer] SMTP not configured, skipping email to', to);
       return false;
     }
     try {
+      const fromName = String(process.env.MAIL_FROM_NAME || '').replace(/["\r\n]/g, '');
       await transporter.sendMail({
-        from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_EMAIL}>`,
+        from: `"${fromName}" <${process.env.MAIL_FROM_EMAIL}>`,
         to, subject, html
       });
       return true;
@@ -41,7 +44,6 @@ const Mailer = {
   },
 
   async sendActivation(to, username, activationUrl) {
-    // [FIXED] Escape username to prevent HTML injection in emails
     const safeUser = escapeHtml(username);
     const safeUrl = escapeHtml(activationUrl);
     return this.send(to, 'Account Activation',
@@ -51,14 +53,14 @@ const Mailer = {
     );
   },
 
-  async sendPasswordReset(to, username, newPassword) {
+  async sendPasswordResetLink(to, username, resetUrl) {
     const safeUser = escapeHtml(username);
-    const safePass = escapeHtml(newPassword);
+    const safeUrl = escapeHtml(resetUrl);
     return this.send(to, 'Password Reset',
       `<h2>Password Reset</h2>
-       <p>Hello ${safeUser}, your password has been reset.</p>
-       <p>Your new password is: <strong>${safePass}</strong></p>
-       <p>Please change it after logging in.</p>`
+       <p>Hello ${safeUser}, we received a request to reset your password.</p>
+       <p><a href="${safeUrl}">Choose a new password</a> (valid for one hour).</p>
+       <p>If you did not ask for this, ignore this email, your password stays the same.</p>`
     );
   }
 };

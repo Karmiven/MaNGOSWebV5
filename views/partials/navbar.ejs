@@ -47,7 +47,7 @@
                 <li><a class="dropdown-item text-warning" href="/admin"><i class="fas fa-crown me-1"></i> Admin Panel</a></li>
               <% } %>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="fas fa-sign-out-alt me-1"></i> Logout</a></li>
+              <li><form action="/auth/logout" method="post" style="margin:0;"><input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>"><button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-1"></i> Logout</button></form></li>
             </ul>
           </li>
         <% } else { %>

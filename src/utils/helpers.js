@@ -56,6 +56,88 @@ module.exports = {
       .replace(/'/g, '&#039;');
   },
 
+  /**
+   * Admin-authored text to safe HTML. Everything is escaped except a small tag
+   * whitelist (no attributes; links only with http(s) or site-relative hrefs).
+   * Unclosed tags are closed, so one post can't break the page layout.
+   */
+  richText(str) {
+    const allowed = new Set(['b', 'strong', 'i', 'em', 'u', 'p', 'ul', 'ol', 'li', 'h3', 'h4', 'blockquote']);
+    const esc = (t) => module.exports.escapeHtml(t).replace(/\r\n|\r|\n/g, '<br>');
+    const src = String(str || '');
+    const re = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
+    const stack = [];
+    let out = '';
+    let last = 0;
+    let m;
+
+    const text = (seg) => {
+      if (/^\s*$/.test(seg) && seg.includes('\n') && (out === '' || out.endsWith('>'))) return;
+      out += esc(seg);
+    };
+    const closeTo = (tag) => {
+      const i = stack.lastIndexOf(tag);
+      if (i === -1) return;
+      while (stack.length > i) out += `</${stack.pop()}>`;
+    };
+
+    while ((m = re.exec(src))) {
+      text(src.slice(last, m.index));
+      last = re.lastIndex;
+      const closing = m[1] === '/';
+      const tag = m[2].toLowerCase();
+
+      if (tag === 'br') { if (!closing) out += '<br>'; continue; }
+      if (tag === 'a') {
+        if (closing) { closeTo('a'); continue; }
+        const href = /href\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(m[3]);
+        const url = href ? module.exports.safeUrl((href[1] || href[2] || '').replace(/&amp;/g, '&')) : '';
+        if (url) {
+          out += `<a href="${module.exports.escapeHtml(url)}" target="_blank" rel="noopener noreferrer nofollow">`;
+          stack.push('a');
+        }
+        continue;
+      }
+      if (!allowed.has(tag)) continue;
+      if (closing) closeTo(tag);
+      else { out += `<${tag}>`; stack.push(tag); }
+    }
+    text(src.slice(last));
+    while (stack.length) out += `</${stack.pop()}>`;
+    return out.trim();
+  },
+
+  /** Escape LIKE wildcards in user input */
+  escapeLike(str) {
+    return String(str || '').replace(/[\\%_]/g, '\\$&');
+  },
+
+  /** Parse an integer and clamp it; falls back to `def` when not numeric */
+  toInt(value, { min = -2147483648, max = 2147483647, def = 0 } = {}) {
+    const n = parseInt(value, 10);
+    if (!Number.isFinite(n)) return def;
+    return Math.min(max, Math.max(min, n));
+  },
+
+  /** Positive page number from a query value */
+  toPage(value) {
+    const n = parseInt(value, 10);
+    return Number.isFinite(n) && n > 0 ? Math.min(n, 100000) : 1;
+  },
+
+  /** Allow only http(s) URLs or site-relative paths; '' otherwise */
+  safeUrl(url) {
+    const s = String(url || '').trim();
+    if (!s) return '';
+    if (/^\/(?!\/)/.test(s)) return s;
+    try {
+      const u = new URL(s);
+      return ['http:', 'https:'].includes(u.protocol) ? u.href : '';
+    } catch {
+      return '';
+    }
+  },
+
   /** Truncate string */
   truncate(str, len = 100) {
     if (!str || str.length <= len) return str;

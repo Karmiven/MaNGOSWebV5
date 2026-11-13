@@ -1,10 +1,10 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const Realm = require('../models/Realm');
 const Character = require('../models/Character');
 const Playermap = require('../models/Playermap');
 const db = require('../config/database');
 const helpers = require('../utils/helpers');
+const Account = require('../models/Account');
 const { getZoneName } = require('../utils/zones');
 
 /**
@@ -12,7 +12,6 @@ const { getZoneName } = require('../utils/zones');
  * Shows: multiples of 10, first page (if cur>3), current±2, last page (if cur<=numPages-3)
  * Current page shown as [ N ]
  */
-// [FIXED] Escape HTML in pagination link targets to prevent XSS
 function escapeHtmlAttr(str) {
   return String(str).replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -21,7 +20,6 @@ function paginate(numPages, curPage, linkTo) {
   const pages = {};
   // Detect separator: if linkTo already has params after ?, use &; otherwise use empty
   const sep = linkTo.endsWith('?') ? '' : '&';
-  // [FIXED] Escape linkTo for safe HTML attribute insertion
   const safeLinkTo = escapeHtmlAttr(linkTo);
   const safeSep = escapeHtmlAttr(sep);
   if (numPages <= 1) {
@@ -118,13 +116,7 @@ router.get('/online', async (req, res, next) => {
 
     const allOnline = serverOnline ? await Character.getOnline() : [];
     // Identify bot accounts (RNDBOT*, case-insensitive)
-    let botIds = new Set();
-    if (allOnline.length) {
-      const [botAccRows] = await db.auth.query(
-        "SELECT id FROM account WHERE UPPER(username) LIKE 'RNDBOT%'"
-      );
-      botIds = new Set(botAccRows.map(r => r.id));
-    }
+    const botIds = allOnline.length ? await Account.getBotIds() : new Set();
     // Resolve zone names
     const allPlayers = allOnline.filter(r => !botIds.has(r.account)).map(p => ({
       ...p, zoneName: getZoneName(p.zone)
@@ -134,7 +126,7 @@ router.get('/online', async (req, res, next) => {
     }));
 
     // Search filter
-    const query = (req.query.q || '').trim();
+    const query = (typeof req.query.q === 'string' ? req.query.q : '').trim().slice(0, 24);
     let filteredPlayers = allPlayers;
     let filteredBots = allBots;
     if (query.length >= 2) {
@@ -149,8 +141,8 @@ router.get('/online', async (req, res, next) => {
 
     // Pagination
     const perPage = 25;
-    const page = parseInt(req.query.p) || 1;
-    const botPage = parseInt(req.query.bp) || 1;
+    const page = helpers.toPage(req.query.p);
+    const botPage = helpers.toPage(req.query.bp);
 
     const totalPlayerPages = Math.ceil(filteredPlayers.length / perPage) || 1;
     const totalBotPages = Math.ceil(filteredBots.length / perPage) || 1;
@@ -216,9 +208,8 @@ router.get('/topkills', async (req, res, next) => {
 /* GET /server/chars — Search Characters */
 router.get('/chars', async (req, res, next) => {
   try {
-    const query = req.query.q || '';
-    const page = parseInt(req.query.p) || parseInt(req.query.page) || 1;
-    // [FIXED] Whitelist sort values to prevent injection
+    const query = (typeof req.query.q === 'string' ? req.query.q : '').slice(0, 24);
+    const page = helpers.toPage(req.query.p || req.query.page);
     const allowedSorts = ['lvlasc', 'lvldesc', ''];
     const sort = allowedSorts.includes(req.query.sort || '') ? (req.query.sort || '') : '';
     const perPage = 25;
@@ -233,7 +224,7 @@ router.get('/chars', async (req, res, next) => {
       // Count total results
       const [countRows] = await db.char.query(
         'SELECT COUNT(*) as c FROM characters WHERE name LIKE ?',
-        [`%${query}%`]
+        [`%${helpers.escapeLike(query)}%`]
       );
       totalChars = countRows[0].c;
 
@@ -247,7 +238,7 @@ router.get('/chars', async (req, res, next) => {
         `SELECT guid, name, race, class, gender, level, zone, online
          FROM characters WHERE name LIKE ?
          ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
-        [`%${query}%`, perPage, offset]
+        [`%${helpers.escapeLike(query)}%`, perPage, offset]
       );
       characters = rows;
     } else if (!query) {
@@ -387,10 +378,23 @@ router.get('/playermap', async (req, res, next) => {
 });
 
 /* GET /server/playermap/data — AJAX endpoint for player positions */
+let _mapCache = null;
+let _mapCacheTime = 0;
+let _mapPending = null;
+const MAP_CACHE_TTL = 5000;
+
 router.get('/playermap/data', async (req, res, next) => {
   try {
-    const data = await Playermap.getData();
-    res.json(data);
+    const now = Date.now();
+    if (!_mapCache || now - _mapCacheTime >= MAP_CACHE_TTL) {
+      // concurrent requests share one query
+      if (!_mapPending) {
+        _mapPending = Playermap.getData().finally(() => { _mapPending = null; });
+      }
+      _mapCache = await _mapPending;
+      _mapCacheTime = Date.now();
+    }
+    res.json(_mapCache);
   } catch (err) {
     res.status(500).json({ error: 'Failed to load map data' });
   }

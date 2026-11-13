@@ -333,6 +333,12 @@
 
 <script type="text/javascript">
   var currentStep = 1;
+  var INSTALL_TOKEN = <%- JSON.stringify(typeof installToken !== 'undefined' ? installToken : '').replace(/</g, '\\u003c') %>;
+
+  function applyInstallHeaders(xhr) {
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    if (INSTALL_TOKEN) xhr.setRequestHeader('X-Install-Token', INSTALL_TOKEN);
+  }
 
   function clearValidation() {
     var els = document.querySelectorAll('.install-input');
@@ -410,7 +416,7 @@
         };
         var xhr = new XMLHttpRequest();
         xhr.open('POST', '/install/test-db', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
+        applyInstallHeaders(xhr);
         xhr.onload = function() {
           tested++;
           if (xhr.status === 200) {
@@ -518,7 +524,7 @@
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/install/run', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
+    applyInstallHeaders(xhr);
     xhr.onload = function() {
       bar.style.width = '100%';
       if (xhr.status === 200) {

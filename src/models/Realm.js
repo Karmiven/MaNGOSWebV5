@@ -1,8 +1,6 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const db = require('../config/database');
 const net = require('net');
 
-// [FIXED] Whitelist of allowed column names for mw_realm updates
 const ALLOWED_REALM_COLUMNS = new Set([
   'site_enabled', 'db_char_host', 'db_char_port', 'db_char_name',
   'db_char_user', 'db_char_pass', 'db_world_host', 'db_world_port',
@@ -56,7 +54,6 @@ const Realm = {
 
   /** Update realm CMS config */
   async updateConfig(realmId, data) {
-    // [FIXED] Only allow whitelisted column names to prevent SQL injection
     const keys = Object.keys(data).filter(k => ALLOWED_REALM_COLUMNS.has(k));
     if (!keys.length) return;
     const sets = keys.map(k => `\`${k}\` = ?`).join(', ');
@@ -73,7 +70,7 @@ const Realm = {
   STATUS_CACHE_TTL: 30000, // 30 seconds
 
   /** Check if realm is online (TCP port check) — cached */
-  async checkStatus(host, port, timeout = 800) {
+  async checkStatus(host, port, timeout = 800, forceRefresh = false) {
     // If realmlist address is localhost but auth DB is remote, use the auth DB host
     // (game server is co-located with the auth database)
     if ((host === '127.0.0.1' || host === 'localhost') && process.env.AUTH_DB_HOST && process.env.AUTH_DB_HOST !== '127.0.0.1' && process.env.AUTH_DB_HOST !== 'localhost') {
@@ -81,7 +78,7 @@ const Realm = {
     }
     const key = `${host}:${port}`;
     const now = Date.now();
-    if (this._statusCache[key] !== undefined && (now - (this._statusCacheTime[key] || 0)) < this.STATUS_CACHE_TTL) {
+    if (!forceRefresh && this._statusCache[key] !== undefined && (now - (this._statusCacheTime[key] || 0)) < this.STATUS_CACHE_TTL) {
       return this._statusCache[key];
     }
     const result = await new Promise((resolve) => {

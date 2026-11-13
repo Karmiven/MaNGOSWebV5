@@ -4,3 +4,5 @@ node_modules/
 core/logs/
 .claude/
 CLAUDE.md
+design-*.png
+local-server.*.log

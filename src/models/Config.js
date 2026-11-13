@@ -1,4 +1,3 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 /**
  * Site configuration stored in mw_config as key-value pairs.
  * Loaded once at startup, cached in memory, updateable from admin.
@@ -37,6 +36,11 @@ for (const [v5, legacy] of Object.entries(V5_TO_LEGACY)) {
   LEGACY_TO_V5[legacy] = v5;
 }
 
+const LEGACY_EXTENDABLE_KEYS = new Set([
+  'fp_hide_server_ip',
+  'templates'
+]);
+
 /** Convert a legacy-keyed row into V5 names */
 function legacyToV5(obj) {
   const out = {};
@@ -50,6 +54,15 @@ function legacyToV5(obj) {
 /** Convert a V5 key to legacy column name (if mapping exists) */
 function v5KeyToLegacy(key) {
   return V5_TO_LEGACY[key] || key;
+}
+
+async function ensureLegacyColumn(col) {
+  if (!LEGACY_EXTENDABLE_KEYS.has(col)) return false;
+
+  await db.cms.query(
+    `ALTER TABLE mw_config ADD COLUMN \`${col}\` varchar(255) DEFAULT NULL`
+  );
+  return true;
 }
 
 const SiteConfig = {
@@ -94,13 +107,21 @@ const SiteConfig = {
     } else {
       // Legacy column-based: translate V5 key to legacy column name
       const col = v5KeyToLegacy(key);
-      // [FIXED] Validate column name against actual DB columns to prevent SQL injection
       try {
         const [cols] = await db.cms.query('DESCRIBE mw_config');
         const validCols = new Set(cols.map(c => c.Field));
         if (!validCols.has(col)) {
-          console.warn(`[Config] Column '${col}' does not exist, skipping`);
-          return;
+          try {
+            if (await ensureLegacyColumn(col)) {
+              validCols.add(col);
+            } else {
+              console.warn(`[Config] Column '${col}' does not exist, skipping`);
+              return;
+            }
+          } catch (e) {
+            console.warn(`[Config] Column '${col}' does not exist, skipping`);
+            return;
+          }
         }
         await db.cms.query(
           `UPDATE mw_config SET \`${col}\` = ? LIMIT 1`,
@@ -141,6 +162,21 @@ const SiteConfig = {
       } catch (e) {
         console.error('[Config] Cannot describe mw_config:', e.message);
         return;
+      }
+
+      for (const key of keys) {
+        if (!validCols.has(key) && LEGACY_EXTENDABLE_KEYS.has(key)) {
+          try {
+            await ensureLegacyColumn(key);
+            validCols.add(key);
+          } catch (e) {
+            if (!/Duplicate column/i.test(e.message)) {
+              console.warn(`[Config] Cannot add '${key}': ${e.message}`);
+            } else {
+              validCols.add(key);
+            }
+          }
+        }
       }
 
       const validKeys = keys.filter(k => validCols.has(k));

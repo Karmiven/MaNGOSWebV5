@@ -1,4 +1,3 @@
-/* FIXED BY SECURITY AUDIT v2.0 — 2026 */
 const router = require('express').Router();
 const News = require('../models/News');
 const Account = require('../models/Account');
@@ -10,6 +9,28 @@ const SiteConfig = require('../models/Config');
 /* Server info — background refresh every 30 seconds */
 const DEFAULT_SERVER_INFO = { name: 'Realm', online: false, onlineCount: 0, onlinePlayers: 0, onlineBots: 0, address: '127.0.0.1', totalChars: 0, totalAccounts: 0, type: 'Normal', language: 'Development', population: 'Low', gamebuild: 0 };
 let cachedServerInfo = null;
+let cachedCounts = { totalChars: 0, totalAccounts: 0, expiresAt: 0 };
+const COUNTS_CACHE_TTL = 5 * 60 * 1000;
+
+async function getCachedCounts(db) {
+  const now = Date.now();
+  if (cachedCounts.expiresAt > now) {
+    return cachedCounts;
+  }
+
+  const [charResult, accResult] = await Promise.all([
+    db.char.query('SELECT COUNT(*) as cnt FROM characters').catch(() => [[{ cnt: 0 }]]),
+    db.auth.query('SELECT COUNT(*) as cnt FROM account').catch(() => [[{ cnt: 0 }]])
+  ]);
+
+  cachedCounts = {
+    totalChars: charResult[0][0].cnt,
+    totalAccounts: accResult[0][0].cnt,
+    expiresAt: now + COUNTS_CACHE_TTL
+  };
+
+  return cachedCounts;
+}
 
 async function fetchServerInfo() {
   try {
@@ -17,22 +38,19 @@ async function fetchServerInfo() {
     const realms = await Realm.getEnabled();
     if (!realms.length) return DEFAULT_SERVER_INFO;
     const r = realms[0];
-    const [isOnline, charResult, accResult] = await Promise.all([
+    const [isOnline, counts] = await Promise.all([
       Realm.checkStatus(r.address, r.port),
-      db.char.query('SELECT COUNT(*) as cnt FROM characters').catch(() => [[{ cnt: 0 }]]),
-      db.auth.query('SELECT COUNT(*) as cnt FROM account').catch(() => [[{ cnt: 0 }]])
+      getCachedCounts(db)
     ]);
-    const totalChars = charResult[0][0].cnt;
-    const totalAccounts = accResult[0][0].cnt;
+    const { totalChars, totalAccounts } = counts;
     let playersOnline = 0, onlinePlayers = 0, onlineBots = 0;
     if (isOnline) {
       try {
-        const [[onRows], [botAccRows]] = await Promise.all([
+        const [[onRows], botIds] = await Promise.all([
           db.char.query('SELECT account FROM characters WHERE online = 1'),
-          db.auth.query("SELECT id FROM account WHERE UPPER(username) LIKE 'RNDBOT%'")
+          Account.getBotIds()
         ]);
         playersOnline = onRows.length;
-        const botIds = new Set(botAccRows.map(r => r.id));
         onlineBots = onRows.filter(r => botIds.has(r.account)).length;
         onlinePlayers = playersOnline - onlineBots;
       } catch(e) { console.error('[ServerInfo] Online count error:', e.message); }
@@ -66,7 +84,7 @@ function getServerInfo() {
 /* GET / — Homepage with news */
 router.get('/', async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
+    const page = helpers.toPage(req.query.page);
     const cfg = SiteConfig.get();
     const perPage = parseInt(cfg.module_news_items) || 5;
 
