@@ -1,0 +1,23 @@
+<h3 class="mb-2"><%= title %></h3>
+<% if (hint) { %><p class="text-muted small"><%= hint %></p><% } %>
+
+<div class="table-responsive">
+  <table class="table table-dark table-hover table-sm" style="font-size:13px;">
+    <thead>
+      <tr>
+        <% columns.forEach(c => { %><th><%= c %></th><% }) %>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (rows && rows.length) { %>
+        <% rows.forEach(r => { %>
+          <tr>
+            <% r.forEach(cell => { %><td><%= cell %></td><% }) %>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="<%= columns.length %>" class="text-center text-muted">Nothing logged yet.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>

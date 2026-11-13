@@ -64,7 +64,7 @@
   %>
   <tr>
     <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= num %></b></td>
-    <td class="<%= rowClass %>" align="center"><b style="color: rgb(35, 67, 3);"><%= p.name %></b></td>
+    <td class="<%= rowClass %>" align="center"><a href="/server/character/<%= p.guid %>" style="color: rgb(35, 67, 3); font-weight:bold;"><%= p.name %></a></td>
     <td class="<%= rowClass %>" align="center">
       <img onmouseover="ddrivetip('<%= Character.raceName(p.race) %>','#ffffff')" onmouseout="hideddrivetip()"
         src="<%= tp %>/images/icon/race/<%= p.race %>-<%= p.gender || 0 %>.gif" height="18" width="18" alt=""/>
@@ -129,7 +129,7 @@
   %>
   <tr>
     <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= num %></b></td>
-    <td class="<%= rowClass %>" align="center"><b style="color: rgb(35, 67, 3);"><%= p.name %></b></td>
+    <td class="<%= rowClass %>" align="center"><a href="/server/character/<%= p.guid %>" style="color: rgb(35, 67, 3); font-weight:bold;"><%= p.name %></a></td>
     <td class="<%= rowClass %>" align="center">
       <img onmouseover="ddrivetip('<%= Character.raceName(p.race) %>','#ffffff')" onmouseout="hideddrivetip()"
         src="<%= tp %>/images/icon/race/<%= p.race %>-<%= p.gender || 0 %>.gif" height="18" width="18" alt=""/>

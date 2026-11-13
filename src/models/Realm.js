@@ -46,6 +46,17 @@ const Realm = {
     return rows[0] || null;
   },
 
+  /** SOAP connection for a realm: { host, port, user, pass } or null when not configured */
+  async getSoapConfig(realmId) {
+    const [cfg, realm] = await Promise.all([this.getRealmConfig(realmId), this.findById(realmId)]);
+    if (!cfg || !realm) return null;
+    const host = realm.address || process.env.SOAP_HOST;
+    const port = cfg.ra_port || parseInt(process.env.SOAP_PORT, 10);
+    const user = cfg.ra_user || process.env.SOAP_USER;
+    const pass = cfg.ra_pass || process.env.SOAP_PASS;
+    return host && port && user ? { host, port, user, pass } : null;
+  },
+
   /** Get all CMS realm configs */
   async getAllConfigs() {
     const [rows] = await db.cms.query('SELECT * FROM mw_realm');

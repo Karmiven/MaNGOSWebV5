@@ -1,0 +1,56 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<!-- Guilds — V4 Blizzlike Style -->
+
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px; }
+</style>
+
+<div style="padding:5px 0; margin-bottom:5px;">
+  <form method="GET" action="/server/guilds" style="display:inline;">
+    <input type="text" name="q" placeholder="Search guild name..." value="<%= search %>" maxlength="24" style="padding:3px; width:200px;">
+    <input type="submit" value="Search" class="btn-blizz">
+  </form>
+</div>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="left" colspan="5">Pages: <%- pagesStr %> &nbsp;(<%= total %> guilds)</td>
+  </tr>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="30">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Guild</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Leader</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="70">Members</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="110">Founded</td>
+  </tr>
+  <tr>
+    <td colspan="5" style="background:url('<%= tp %>/images/shadow.gif');"><img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""></td>
+  </tr>
+  <% if (guilds.length) { %>
+    <% guilds.forEach(function(g, i) {
+      var rc = (i % 2) + 1;
+      var faction = g.leaderRace ? Character.factionForRace(g.leaderRace).toLowerCase() : '';
+    %>
+    <tr>
+      <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= (page - 1) * perPage + i + 1 %></b></td>
+      <td class="serverStatus<%= rc %>">
+        <% if (faction) { %><img src="<%= tp %>/images/icon/faction/<%= faction %>.gif" height="16" width="16" alt="" style="vertical-align:middle;"> <% } %>
+        <a href="/server/guild/<%= g.guildid %>" style="color:rgb(35,67,3); font-weight:bold;"><%= g.name %></a>
+      </td>
+      <td class="serverStatus<%= rc %>" align="center"><%= g.leaderName || '-' %></td>
+      <td class="serverStatus<%= rc %>" align="center"><b style="color:#1e4378;"><%= g.members %></b></td>
+      <td class="serverStatus<%= rc %>" align="center"><%= g.createdate ? helpers.formatDate(g.createdate) : '-' %></td>
+    </tr>
+    <% }); %>
+  <% } else { %>
+    <tr><td class="serverStatus1" colspan="5" align="center" style="padding:15px;">No guilds found.</td></tr>
+  <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>

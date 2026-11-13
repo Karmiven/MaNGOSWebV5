@@ -41,15 +41,73 @@ router.use((req, res, next) => {
 });
 
 /* ================================================================== */
+/*  Dashboard data                                                     */
+/* ================================================================== */
+
+/** New accounts per day for the last `days` days (oldest first, gaps filled with 0) */
+async function registrationSeries(days) {
+  const [rows] = await db.auth.query(
+    `SELECT DATE(joindate) AS d, COUNT(*) AS c FROM account
+     WHERE joindate >= (NOW() - INTERVAL ? DAY) GROUP BY DATE(joindate)`,
+    [days]
+  );
+  const byDay = {};
+  rows.forEach(r => {
+    const key = r.d instanceof Date ? r.d.toISOString().slice(0, 10) : String(r.d).slice(0, 10);
+    byDay[key] = r.c;
+  });
+  const series = [];
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - i));
+    const key = day.toISOString().slice(0, 10);
+    series.push({ day: key, count: byDay[key] || 0 });
+  }
+  return series;
+}
+
+/** One card per realm: reachable, uptime, population */
+async function realmStatusCards() {
+  try {
+    let realms = await Realm.getEnabled();
+    if (!realms.length) realms = await Realm.getAll();
+    return await Promise.all(realms.map(async r => {
+      const online = await Realm.checkStatus(r.address, r.port);
+      const uptime = online ? await Realm.getUptime(r.id) : 0;
+      return {
+        id: r.id, name: r.name, online,
+        uptime: Realm.formatUptime(uptime),
+        type: Realm.typeName(r.icon)
+      };
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Things an admin should look at */
+async function dashboardCounters() {
+  const [[pending], [failedSoap], [shopToday]] = await Promise.all([
+    db.cms.query("SELECT COUNT(*) AS c FROM mw_shop_transactions WHERE status = 'pending'"),
+    db.cms.query('SELECT COUNT(*) AS c FROM mw_soap_log WHERE success = 0 AND created_at > (NOW() - INTERVAL 1 DAY)').catch(() => [[{ c: 0 }]]),
+    db.cms.query("SELECT COUNT(*) AS c FROM mw_shop_transactions WHERE status = 'completed' AND created_at > (NOW() - INTERVAL 1 DAY)")
+  ]);
+  return { pendingPurchases: pending[0].c, failedSoap: failedSoap[0].c, purchasesToday: shopToday[0].c };
+}
+
+/* ================================================================== */
 /*  Dashboard                                                          */
 /* ================================================================== */
 router.get('/', async (req, res, next) => {
   try {
-    const [[totalAccounts], totalChars, [totalNews], onlineStats] = await Promise.all([
+    const [[totalAccounts], totalChars, [totalNews], onlineStats, registrations, realmCards, counters] = await Promise.all([
       db.auth.query('SELECT COUNT(*) as c FROM account'),
       Character.countTotal(),
       db.cms.query('SELECT COUNT(*) as c FROM mw_news'),
-      Character.getOnlinePlayers()
+      Character.getOnlinePlayers(),
+      registrationSeries(30),
+      realmStatusCards(),
+      dashboardCounters()
     ]);
 
     res.render('pages/admin/dashboard', {
@@ -58,6 +116,7 @@ router.get('/', async (req, res, next) => {
       totalAccounts: totalAccounts[0].c,
       totalChars, onlinePlayers: onlineStats.total,
       totalNews: totalNews[0].c,
+      registrations, realmCards, counters,
       onlineStats, helpers, Character
     });
   } catch (err) { next(err); }
@@ -287,7 +346,7 @@ router.post('/siteconfig', async (req, res, next) => {
       'site_notice_enable', 'site_notice_text',
       'fp_serverinfo', 'fp_hide_server_ip', 'fp_realm_status', 'fp_players_online',
       'fp_vote_banner', 'fp_newbie_guide', 'fp_hitcounter',
-      'module_online_list', 'module_voting',
+      'module_online_list', 'module_voting', 'shop_gold_enabled',
       'module_fp_ssotd', 'module_news_items', 'module_news_open',
       'enable_debugging',
       'reg_enabled', 'reg_activation', 'reg_key_enable',
@@ -326,6 +385,7 @@ function shopFields(body) {
     quantity: toInt(body.quantity, { min: 1, max: 1000, def: 1 }),
     desc,
     wp_cost: toInt(body.wp_cost, { min: 0, max: 10000000 }),
+    gold_price: Math.min(2147483646, Math.max(0, Math.round((parseFloat(body.gold_price_g) || 0) * 10000))),
     realms: toInt(body.realms, { min: 0, max: 1000 })
   };
 }
@@ -383,42 +443,56 @@ router.get('/shop/pending', async (req, res, next) => {
 });
 
 router.post('/shop/pending/resolve', async (req, res, next) => {
-  let conn = null;
   try {
     const id = parseInt(req.body.id, 10);
     const action = req.body.action;
+    const back = '/admin/shop/pending';
     if (!Number.isInteger(id) || !['complete', 'refund'].includes(action)) {
       req.flash('error', 'Invalid request.');
-      return res.redirect('/admin/shop/pending');
+      return res.redirect(back);
     }
 
-    conn = await db.cms.getConnection();
-    await conn.beginTransaction();
-    const [rows] = await conn.query(
-      "SELECT account_id, wp_cost FROM mw_shop_transactions WHERE id = ? AND status = 'pending' FOR UPDATE",
+    const [rows] = await db.cms.query(
+      "SELECT * FROM mw_shop_transactions WHERE id = ? AND status = 'pending'",
       [id]
     );
     if (!rows.length) {
-      await conn.rollback();
       req.flash('error', 'Purchase is no longer pending.');
-      return res.redirect('/admin/shop/pending');
+      return res.redirect(back);
     }
-    await conn.query(
-      'UPDATE mw_shop_transactions SET status = ? WHERE id = ?',
+    const purchase = rows[0];
+
+    // Claim the row first so a double click can't refund twice
+    const [claim] = await db.cms.query(
+      "UPDATE mw_shop_transactions SET status = ? WHERE id = ? AND status = 'pending'",
       [action === 'complete' ? 'completed' : 'failed', id]
     );
-    if (action === 'refund') {
-      await Account.refundPoints(rows[0].account_id, rows[0].wp_cost, conn);
+    if (claim.affectedRows !== 1) {
+      req.flash('error', 'Purchase is no longer pending.');
+      return res.redirect(back);
     }
-    await conn.commit();
+
+    if (action === 'refund') {
+      try {
+        if (purchase.currency === 'gold') {
+          const realmId = parseInt(SiteConfig.get('default_realm_id'), 10) || 1;
+          const soap = await Realm.getSoapConfig(realmId);
+          if (!soap) throw new Error('SOAP is not configured for the default realm.');
+          await SoapService.creditGold(soap.host, soap.port, soap.user, soap.pass,
+            purchase.character_name, purchase.gold_cost, `refund-${id}`);
+        } else {
+          await Account.refundPoints(purchase.account_id, purchase.wp_cost);
+        }
+      } catch (err) {
+        await db.cms.query("UPDATE mw_shop_transactions SET status = 'pending' WHERE id = ?", [id]);
+        req.flash('error', `Refund failed: ${err.message}`);
+        return res.redirect(back);
+      }
+    }
+
     req.flash('success', action === 'refund' ? 'Purchase refunded.' : 'Purchase marked as delivered.');
-    res.redirect('/admin/shop/pending');
-  } catch (err) {
-    if (conn) { try { await conn.rollback(); } catch (_) {} }
-    next(err);
-  } finally {
-    if (conn) conn.release();
-  }
+    res.redirect(back);
+  } catch (err) { next(err); }
 });
 
 /* ================================================================== */
@@ -812,6 +886,19 @@ router.post('/soap-test', async (req, res) => {
   }
 });
 
+/* POST /admin/gold-test — check the Eluna gold bridge answers */
+router.post('/gold-test', async (req, res) => {
+  try {
+    const realmId = parseInt(SiteConfig.get('default_realm_id'), 10) || 1;
+    const soap = await Realm.getSoapConfig(realmId);
+    if (!soap) return res.json({ success: false, message: 'SOAP is not configured for the default realm.' });
+    await SoapService.pingGold(soap.host, soap.port, soap.user, soap.pass);
+    res.json({ success: true, message: 'Gold bridge is loaded and answering.' });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
 router.post('/gamemail', async (req, res) => {
   try {
     const { character, subject, message } = req.body;
@@ -860,6 +947,63 @@ router.post('/progression', async (req, res, next) => {
     }
     req.flash('success', 'Progression timeline updated.');
     res.redirect('/admin/progression');
+  } catch (err) { next(err); }
+});
+
+/* ================================================================== */
+/*  Log pages                                                          */
+/* ================================================================== */
+async function usernamesFor(ids) {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (!unique.length) return {};
+  const [rows] = await db.auth.query(
+    `SELECT id, username FROM account WHERE id IN (${unique.map(() => '?').join(',')})`,
+    unique
+  );
+  const map = {};
+  rows.forEach(r => { map[r.id] = r.username; });
+  return map;
+}
+
+function renderLog(res, title, hint, columns, rows) {
+  res.render('pages/admin/logtable', { title, layout: 'layouts/admin', hint, columns, rows });
+}
+
+router.get('/logs/votes', async (req, res, next) => {
+  try {
+    const [rows] = await db.cms.query(
+      `SELECT v.id, v.time, v.user_ip, v.account_id, s.hostname
+       FROM mw_voting v LEFT JOIN mw_vote_sites s ON s.id = v.site
+       ORDER BY v.id DESC LIMIT 300`
+    );
+    const names = await usernamesFor(rows.map(r => r.account_id));
+    renderLog(res, 'Daily Reward Log', 'Last 300 claims. Claims made before accounts were recorded show no account.',
+      ['#', 'When', 'Account', 'IP', 'Reward'],
+      rows.map(r => [r.id, helpers.formatDate(r.time), names[r.account_id] || (r.account_id ? '#' + r.account_id : '-'), r.user_ip, r.hostname || '-']));
+  } catch (err) { next(err); }
+});
+
+router.get('/logs/soap', async (req, res, next) => {
+  try {
+    const [rows] = await db.cms.query('SELECT * FROM mw_soap_log ORDER BY id DESC LIMIT 300');
+    renderLog(res, 'SOAP Log', 'Last 300 commands sent to the game server, kept for 30 days.',
+      ['#', 'When', 'Command', 'Result', 'ms'],
+      rows.map(r => [r.id, helpers.formatDate(r.created_at), r.command, r.success ? 'OK' : 'Failed: ' + r.error, r.duration_ms]));
+  } catch (err) { next(err); }
+});
+
+router.get('/logs/purchases', async (req, res, next) => {
+  try {
+    const [rows] = await db.cms.query('SELECT * FROM mw_shop_transactions ORDER BY id DESC LIMIT 300');
+    const names = await usernamesFor(rows.map(r => r.account_id));
+    renderLog(res, 'Purchase Log', 'Last 300 shop purchases, points and gold.',
+      ['#', 'When', 'Account', 'Character', 'Item', 'Paid', 'Status'],
+      rows.map(r => [
+        r.id, helpers.formatDate(r.created_at), names[r.account_id] || '#' + r.account_id, r.character_name,
+        (r.item_desc || r.item_number) + (r.quantity > 1 ? ' x' + r.quantity : ''),
+        r.currency === 'gold' ? helpers.formatMoney(r.gold_cost) : r.wp_cost + ' pts',
+        r.status
+      ]));
   } catch (err) { next(err); }
 });
 

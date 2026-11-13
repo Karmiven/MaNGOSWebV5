@@ -17,10 +17,10 @@ const Shop = {
 
   async create(data) {
     const [result] = await db.cms.query(
-      `INSERT INTO mw_shop_items (item_number, itemset, gold, quantity, \`desc\`, wp_cost, realms)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO mw_shop_items (item_number, itemset, gold, quantity, \`desc\`, wp_cost, gold_price, realms)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [data.item_number, data.itemset || 0, data.gold || 0, data.quantity || 1,
-       data.desc, data.wp_cost, data.realms || 0]
+       data.desc, data.wp_cost, data.gold_price || 0, data.realms || 0]
     );
     return result.insertId;
   },
@@ -28,9 +28,9 @@ const Shop = {
   async update(id, data) {
     await db.cms.query(
       `UPDATE mw_shop_items SET item_number = ?, itemset = ?, gold = ?, quantity = ?,
-       \`desc\` = ?, wp_cost = ?, realms = ? WHERE id = ?`,
+       \`desc\` = ?, wp_cost = ?, gold_price = ?, realms = ? WHERE id = ?`,
       [data.item_number, data.itemset || 0, data.gold || 0, data.quantity || 1,
-       data.desc, data.wp_cost, data.realms || 0, id]
+       data.desc, data.wp_cost, data.gold_price || 0, data.realms || 0, id]
     );
   },
 
@@ -39,12 +39,15 @@ const Shop = {
   },
 
   /** Record a shop purchase */
-  async recordPurchase(accountId, item, characterName, status = 'completed', conn = null) {
+  async recordPurchase(accountId, item, characterName, status = 'completed', conn = null, pay = {}) {
     const pool = conn || db.cms;
+    const gold = pay.currency === 'gold';
     const [result] = await pool.query(
-      `INSERT INTO mw_shop_transactions (account_id, shop_item_id, item_desc, item_number, quantity, wp_cost, character_name, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [accountId, item.id, item.desc || '', item.item_number || '', item.quantity || 1, item.wp_cost, characterName, status]
+      `INSERT INTO mw_shop_transactions (account_id, shop_item_id, item_desc, item_number, quantity, wp_cost, currency, gold_cost, character_name, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [accountId, item.id, item.desc || '', item.item_number || '', item.quantity || 1,
+       gold ? 0 : item.wp_cost, gold ? 'gold' : 'points', gold ? (pay.goldCost || 0) : 0,
+       characterName, status]
     );
     return result.insertId;
   },

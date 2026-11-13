@@ -18,10 +18,11 @@ src/
   config/database.js   — pools (cms, auth, char, world)
   config/migrate.js    — idempotent schema upgrades, run at startup
   middleware/          — auth, csrf, lang, online, theme
-  models/              — Account, Character, Config, Donate, FAQ, Menu, News, Playermap, Realm, Shop, Vote
+  models/              — Account, Armory, Character, Config, Donate, FAQ, Menu, News, Playermap, Realm, Shop, Vote
   routes/              — account, admin, api, auth, donate, frontpage, install, news, server, shop, support, vote
   services/            — soap, srp6, mailer
   utils/               — helpers, logger, zones
+eluna/                 — worldserver Lua script (gold bridge)
 test/                  — node:test suite
 views/
   layouts/             — main.ejs (public), admin.ejs, install.ejs
@@ -112,7 +113,8 @@ td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica
 - `/` frontpage; `/auth/{login,register,logout,restore,reset}`; `/account/*`
 - `/server/{stats,online,topkills,progression,commands,playermap}`
 - `/vote` daily reward: one claim per account per site per `reset_time`, points for pressing the button
-- `/shop` pays Web Points, delivers by SOAP
+- `/shop` pays Web Points or character gold (`gold_price`, needs `shop_gold_enabled` and the Eluna script), delivers by SOAP
+- `/server/{chars,character/:guid,guilds,guild/:id,tops}` armory; GM and bot accounts stay out of lists
 - `/donate` placeholder, no payment gateway
 - `/admin/*` requires admin
 
@@ -132,5 +134,6 @@ Port from `.env` (default 3000). Behind a proxy set `TRUST_PROXY`.
 - Every POST form needs `<input type="hidden" name="_csrf" value="<%= csrfToken %>">`
 - Validate `req.body`/`req.query` as strings and ranges (`helpers.toInt`, `toPage`, `safeUrl`); admin-entered text shown to users goes through `helpers.richText`
 - Wrap async handlers in try/catch → `next(err)`; open DB connections inside the `try`
+- Gold is charged only through `SoapService.chargeGold/creditGold` (`mwgold` command in `eluna/mangosweb_gold.lua`); never write `characters.money` from the CMS
 - Money paths (points, shop): spend atomically (`Account.spendPointsIfEnough`), refund only when `err.definitive` from `services/soap.js` says the command never ran
 - `themePath` is set by theme middleware; shared icons live in `public/images/`

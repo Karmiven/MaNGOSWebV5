@@ -40,6 +40,7 @@ async function _trackOnline(userId, userName, userIp, now, url) {
     }
     await db.cms.query('DELETE FROM mw_online WHERE logged < ?', [now - 86400]);
     await Account.purgeFailedLogins();
+    await db.cms.query('DELETE FROM mw_soap_log WHERE created_at < (NOW() - INTERVAL 30 DAY)').catch(() => {});
   }
 
   const where = userId > 0 ? 'user_id = ?' : 'user_id = 0 AND user_ip = ?';

@@ -20,7 +20,8 @@ router.get('/', requireAuth, async (req, res, next) => {
     ]);
     res.render('pages/shop/index', {
       title: 'Item Shop',
-      items, ext, characters, helpers
+      items, ext, characters, helpers,
+      goldEnabled: SiteConfig.enabled('shop_gold_enabled')
     });
   } catch (err) { next(err); }
 });
@@ -39,12 +40,32 @@ async function resolveEntries(item) {
     .map(e => ({ entry: e, count }));
 }
 
+/** Take points inside a transaction. Returns the purchase id, or null when the balance is too low. */
+async function chargePoints(accountId, item, charName, cost) {
+  const conn = await db.cms.getConnection();
+  try {
+    await conn.beginTransaction();
+    if (!(await Account.spendPointsIfEnough(accountId, cost, conn))) {
+      await conn.rollback();
+      return null;
+    }
+    const purchaseId = await Shop.recordPurchase(accountId, item, charName, 'pending', conn);
+    await conn.commit();
+    return purchaseId;
+  } catch (err) {
+    try { await conn.rollback(); } catch (_) {}
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 /* POST /shop/buy */
 router.post('/buy', requireAuth, async (req, res, next) => {
-  let conn = null;
   try {
     const itemId = parseInt(req.body.item_id, 10);
     const requestedName = typeof req.body.character === 'string' ? req.body.character.trim() : '';
+    const payWithGold = req.body.pay === 'gold';
     if (!Number.isInteger(itemId) || itemId <= 0 || !requestedName) {
       req.flash('error', 'Choose an item and a character.');
       return res.redirect('/shop');
@@ -56,6 +77,18 @@ router.post('/buy', requireAuth, async (req, res, next) => {
       return res.redirect('/shop');
     }
 
+    const pointsCost = Math.max(0, parseInt(item.wp_cost, 10) || 0);
+    const goldCost = Math.max(0, parseInt(item.gold_price, 10) || 0);
+    if (payWithGold) {
+      if (!SiteConfig.enabled('shop_gold_enabled') || goldCost <= 0) {
+        req.flash('error', 'This item cannot be bought with gold.');
+        return res.redirect('/shop');
+      }
+    } else if (pointsCost <= 0 && goldCost > 0) {
+      req.flash('error', 'This item is sold for gold only.');
+      return res.redirect('/shop');
+    }
+
     const char = await Character.findByName(requestedName);
     if (!char || char.account !== req.user.id) {
       req.flash('error', 'Character not found or does not belong to you.');
@@ -63,21 +96,14 @@ router.post('/buy', requireAuth, async (req, res, next) => {
     }
 
     const realmId = parseInt(SiteConfig.get('default_realm_id'), 10) || 1;
-    const [realmConfig, realm] = await Promise.all([
-      Realm.getRealmConfig(realmId),
-      Realm.findById(realmId)
-    ]);
-    if (!realmConfig || !realm) {
+    const soap = await Realm.getSoapConfig(realmId);
+    if (!soap) {
       req.flash('error', 'Realm not configured.');
       return res.redirect('/shop');
     }
+    const { host, port, user, pass } = soap;
 
-    const soapHost = realm.address || process.env.SOAP_HOST;
-    const soapPort = realmConfig.ra_port || parseInt(process.env.SOAP_PORT, 10);
-    const soapUser = realmConfig.ra_user || process.env.SOAP_USER;
-    const soapPass = realmConfig.ra_pass || process.env.SOAP_PASS;
-
-    // Resolve what to deliver before taking any points
+    // Resolve what to deliver before taking anything
     const entries = await resolveEntries(item);
     const copper = parseInt(item.gold, 10) || 0;
     if (!entries.length && copper <= 0) {
@@ -85,59 +111,68 @@ router.post('/buy', requireAuth, async (req, res, next) => {
       return res.redirect('/shop');
     }
 
-    const cost = Math.max(0, parseInt(item.wp_cost, 10) || 0);
+    /* ---- Payment ---- */
     let purchaseId;
-    conn = await db.cms.getConnection();
-    try {
-      await conn.beginTransaction();
-      if (!(await Account.spendPointsIfEnough(req.user.id, cost, conn))) {
-        await conn.rollback();
+    if (payWithGold) {
+      purchaseId = await Shop.recordPurchase(req.user.id, item, char.name, 'pending', null,
+        { currency: 'gold', goldCost });
+      try {
+        await SoapService.chargeGold(host, port, user, pass, char.name, goldCost, `shop-${purchaseId}`);
+      } catch (err) {
+        logError(`[Shop] gold charge, purchase #${purchaseId}`, err);
+        if (err.definitive) {
+          await Shop.updatePurchaseStatus(purchaseId, 'failed');
+          req.flash('error', err.message);
+        } else {
+          req.flash('error', 'The gold payment could not be confirmed. The purchase is pending admin review, do not buy it again.');
+        }
+        return res.redirect('/shop');
+      }
+    } else {
+      purchaseId = await chargePoints(req.user.id, item, char.name, pointsCost);
+      if (purchaseId === null) {
         req.flash('error', 'Not enough points.');
         return res.redirect('/shop');
       }
-      purchaseId = await Shop.recordPurchase(req.user.id, item, char.name, 'pending', conn);
-      await conn.commit();
-    } catch (err) {
-      try { await conn.rollback(); } catch (_) {}
-      throw err;
-    } finally {
-      conn.release();
-      conn = null;
     }
 
+    /* ---- Delivery ---- */
     let deliveredAny = false;
     try {
       if (entries.length) {
-        await SoapService.sendItems(
-          soapHost, soapPort, soapUser, soapPass,
-          char.name, 'Shop Purchase', item.desc || 'Item Shop', entries
-        );
+        await SoapService.sendItems(host, port, user, pass, char.name, 'Shop Purchase', item.desc || 'Item Shop', entries);
         deliveredAny = true;
       }
       if (copper > 0) {
-        await SoapService.sendMoney(
-          soapHost, soapPort, soapUser, soapPass,
-          char.name, 'Shop Purchase', 'Gold from shop', copper
-        );
+        await SoapService.sendMoney(host, port, user, pass, char.name, 'Shop Purchase', 'Gold from shop', copper);
         deliveredAny = true;
       }
       await Shop.updatePurchaseStatus(purchaseId, 'completed');
       req.flash('success', `Purchase complete! Items sent to ${char.name}.`);
     } catch (soapErr) {
       logError(`[Shop] delivery problem, purchase #${purchaseId}`, soapErr);
-      // Only refund when the game server certainly did not run the command
       if (deliveredAny || !soapErr.definitive) {
         req.flash('error', 'Delivery could not be confirmed. Your purchase is pending admin review, do not buy it again.');
         return res.redirect('/shop');
       }
-      await Account.refundPoints(req.user.id, cost);
-      await Shop.updatePurchaseStatus(purchaseId, 'failed');
-      req.flash('error', `Failed to deliver items: ${soapErr.message}. Your points were returned.`);
+
+      // Nothing was delivered: give the payment back
+      try {
+        if (payWithGold) {
+          await SoapService.creditGold(host, port, user, pass, char.name, goldCost, `refund-${purchaseId}`);
+        } else {
+          await Account.refundPoints(req.user.id, pointsCost);
+        }
+        await Shop.updatePurchaseStatus(purchaseId, 'failed');
+        req.flash('error', `Failed to deliver items: ${soapErr.message}. Your ${payWithGold ? 'gold' : 'points'} were returned.`);
+      } catch (refundErr) {
+        logError(`[Shop] refund failed, purchase #${purchaseId}`, refundErr);
+        req.flash('error', 'Delivery failed and the refund could not be confirmed. The purchase is pending admin review.');
+      }
     }
 
     res.redirect('/shop');
   } catch (err) {
-    if (conn) conn.release();
     next(err);
   }
 });

@@ -9,6 +9,7 @@ try { fs.mkdirSync(LOG_DIR, { recursive: true }); } catch { /* read-only fs */ }
 
 /** Append an error to logs/error.log; rotates once past 1 MB. Never throws. */
 function logError(label, err) {
+  if (process.env.NODE_TEST_CONTEXT) return; // keep test runs out of the real log
   const detail = err && err.stack ? err.stack : String(err);
   const line = `[${new Date().toISOString()}] ${label} ${detail}\n`;
   console.error(line.trimEnd());

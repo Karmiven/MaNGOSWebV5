@@ -43,11 +43,15 @@
       <b><%= item.quantity || 1 %></b>
     </td>
     <td class="<%= rowClass %>" align="center">
-      <b style="color:#1e4378;"><%= item.wp_cost %> pts</b>
+<% var wp = parseInt(item.wp_cost) || 0, gp = parseInt(item.gold_price) || 0, canGold = goldEnabled && gp > 0, canPoints = wp > 0 || gp === 0; %>
+      <% if (canPoints) { %><b style="color:#1e4378;"><%= wp %> pts</b><% } %>
+      <% if (canPoints && canGold) { %><br><% } %>
+      <% if (canGold) { %><b style="color:#b8860b;"><%= helpers.formatMoney(gp) %></b><% } %>
+      <% if (!canPoints && !canGold) { %><span style="color:#888; font-size:10px;">Unavailable</span><% } %>
     </td>
     <td class="<%= rowClass %>" align="center">
       <% if (typeof characters !== 'undefined' && characters && characters.length > 0) { %>
-        <form method="POST" action="/shop/buy" style="display:inline;" onsubmit="return confirm('Buy &quot;<%= (item.desc || 'this item').replace(/'/g, '') %>&quot; for <%= item.wp_cost %> points?');">
+        <form method="POST" action="/shop/buy" style="display:inline;" onsubmit="return confirm('Buy &quot;<%= (item.desc || 'this item').replace(/'/g, '') %>&quot;?');">
           <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
           <input type="hidden" name="item_id" value="<%= item.id %>">
           <select name="character" required style="font-size:11px; border:1px solid #8e7c56; padding:2px 4px; background:#f0e6cd;">
@@ -56,8 +60,17 @@
               <option value="<%= ch.name %>"><%= ch.name %> (Lv.<%= ch.level %>)</option>
             <% }); %>
           </select>
-          <% if (points < parseInt(item.wp_cost)) { %>
-            <span style="color:#cc2200; font-size:10px; font-weight:bold;">Need <%= parseInt(item.wp_cost) - points %> more pts</span>
+          <% if (canPoints && canGold) { %>
+            <select name="pay" style="font-size:11px; border:1px solid #8e7c56; padding:2px 4px; background:#f0e6cd;">
+              <option value="points"><%= wp %> pts</option>
+              <option value="gold"><%= helpers.formatMoney(gp) %></option>
+            </select>
+          <% } else if (canGold) { %>
+            <input type="hidden" name="pay" value="gold">
+          <% } %>
+          <% if (!canPoints && !canGold) { %>
+          <% } else if (canPoints && !canGold && points < wp) { %>
+            <span style="color:#cc2200; font-size:10px; font-weight:bold;">Need <%= wp - points %> more pts</span>
           <% } else { %>
             <button type="submit" class="btn-blizz" style="padding:2px 12px; font-size:11px; margin-left:4px;">Buy</button>
           <% } %>

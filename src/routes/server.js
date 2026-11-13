@@ -5,6 +5,7 @@ const Playermap = require('../models/Playermap');
 const db = require('../config/database');
 const helpers = require('../utils/helpers');
 const Account = require('../models/Account');
+const Armory = require('../models/Armory');
 const { getZoneName } = require('../utils/zones');
 
 /**
@@ -194,13 +195,73 @@ router.get('/online', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/* GET /server/topkills — Top Kills */
-router.get('/topkills', async (req, res, next) => {
+/* GET /server/topkills — kept for old links */
+router.get('/topkills', (req, res) => res.redirect('/server/tops?board=pvp'));
+
+/* GET /server/tops — top lists */
+const BOARDS = {
+  pvp: { title: 'Top PvP', column: 'Honorable Kills' },
+  pve: { title: 'Top PvE', column: 'Achievements' },
+  voters: { title: 'Top Voters', column: 'Rewards Claimed' }
+};
+
+router.get('/tops', async (req, res, next) => {
   try {
-    const players = await Character.getTopKills(50);
-    res.render('pages/server/topkills', {
-      title: 'Top Kills',
-      players, Character, helpers
+    const board = Object.prototype.hasOwnProperty.call(BOARDS, req.query.board) ? req.query.board : 'pvp';
+    const rows = await Armory.getBoard(board, 25);
+    res.render('pages/server/tops', {
+      title: BOARDS[board].title,
+      board, boards: BOARDS, rows, Character, helpers
+    });
+  } catch (err) { next(err); }
+});
+
+/* GET /server/character/:guid — character profile */
+router.get('/character/:guid', async (req, res, next) => {
+  try {
+    const guid = parseInt(req.params.guid, 10);
+    const ch = Number.isInteger(guid) && guid > 0 ? await Armory.getCharacter(guid) : null;
+    if (!ch) {
+      req.flash('error', 'Character not found.');
+      return res.redirect('/server/chars');
+    }
+    ch.zoneName = getZoneName(ch.zone);
+    res.render('pages/server/character', {
+      title: ch.name,
+      ch, Armory, Character, helpers
+    });
+  } catch (err) { next(err); }
+});
+
+/* GET /server/guilds — guild list */
+router.get('/guilds', async (req, res, next) => {
+  try {
+    const search = (typeof req.query.q === 'string' ? req.query.q : '').trim().slice(0, 24);
+    const page = helpers.toPage(req.query.p);
+    const perPage = 25;
+    const { guilds, total } = await Armory.listGuilds(page, perPage, search);
+    const linkTo = '/server/guilds?' + (search ? `q=${encodeURIComponent(search)}` : '');
+    res.render('pages/server/guilds', {
+      title: 'Guilds',
+      guilds, total, search, page, perPage, Character, helpers,
+      pagesStr: paginate(Math.ceil(total / perPage), page, linkTo)
+    });
+  } catch (err) { next(err); }
+});
+
+/* GET /server/guild/:id — guild roster */
+router.get('/guild/:id', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const guild = Number.isInteger(id) && id > 0 ? await Armory.getGuild(id) : null;
+    if (!guild) {
+      req.flash('error', 'Guild not found.');
+      return res.redirect('/server/guilds');
+    }
+    guild.members.forEach(m => { m.zoneName = getZoneName(m.zone); });
+    res.render('pages/server/guild', {
+      title: guild.name,
+      guild, Character, helpers
     });
   } catch (err) { next(err); }
 });

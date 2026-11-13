@@ -1,0 +1,54 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+%>
+<!-- Top Lists — V4 Blizzlike Style -->
+
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px; }
+  a.topTab { display: inline-block; padding: 3px 14px; margin-right: 4px; font-size: 11px; font-weight: bold; color: #C7C7C7; background: #2E2D2B; border: 1px solid #5D5D5D; text-decoration: none; }
+  a.topTab:hover { color: #f4c400; }
+  a.topTab.active { color: #2E2D2B; background: #d0a803; border-color: #8a6d0b; }
+</style>
+
+<div style="padding:5px 0 8px 0;">
+  <% Object.keys(boards).forEach(function(key) { %>
+    <a class="topTab<%= key === board ? ' active' : '' %>" href="/server/tops?board=<%= key %>"><%= boards[key].title %></a>
+  <% }); %>
+</div>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="30">#</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="50">Level</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="130"><%= boards[board].column %></td>
+  </tr>
+  <tr>
+    <td colspan="6" style="background:url('<%= tp %>/images/shadow.gif');"><img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""></td>
+  </tr>
+  <% if (rows.length) { %>
+    <% rows.forEach(function(p, i) { var rc = (i % 2) + 1; %>
+    <tr>
+      <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= i + 1 %></b></td>
+      <td class="serverStatus<%= rc %>" align="center">
+        <img src="<%= tp %>/images/icon/faction/<%= Character.factionForRace(p.race).toLowerCase() %>.gif" height="14" width="14" alt="" style="vertical-align:middle;">
+        <a href="/server/character/<%= p.guid %>" style="color:rgb(35,67,3); font-weight:bold;"><%= p.name %></a>
+      </td>
+      <td class="serverStatus<%= rc %>" align="center"><%= Character.raceName(p.race) %></td>
+      <td class="serverStatus<%= rc %>" align="center"><%= Character.className(p.class) %></td>
+      <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= p.level %></b></td>
+      <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(35,67,3);"><%= Number(p.value).toLocaleString('en-US') %></b></td>
+    </tr>
+    <% }); %>
+  <% } else { %>
+    <tr><td class="serverStatus1" colspan="6" align="center" style="padding:15px;">Nothing to show yet.</td></tr>
+  <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>

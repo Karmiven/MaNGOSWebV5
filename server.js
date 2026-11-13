@@ -90,6 +90,14 @@ app.set('layout extractScripts', true);
       await require('./src/config/migrate').run();
     }
 
+    require('./src/services/soap').logger = (e) => {
+      if (!db.isInstalled()) return;
+      db.cms.query(
+        'INSERT INTO mw_soap_log (command, success, error, duration_ms) VALUES (?, ?, ?, ?)',
+        [e.command, e.success ? 1 : 0, e.error, e.ms]
+      ).catch(() => {});
+    };
+
     /* ---- Session (rebuilt after the installer writes a new .env) --- */
     const fallbackSecret = crypto.randomBytes(32).toString('hex');
 

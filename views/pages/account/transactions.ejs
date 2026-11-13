@@ -45,10 +45,10 @@
       <% if (p.item_number) { %><span style="color:#888; font-size:10px;"> (ID: <%= p.item_number %>)</span><% } %>
     </td>
     <td class="<%= rowClass %>" align="center"><%= p.quantity || 1 %></td>
-    <td class="<%= rowClass %>" align="center"><b style="color:#1e4378;"><%= p.wp_cost %> pts</b></td>
+    <td class="<%= rowClass %>" align="center"><b style="color:#1e4378;"><%= p.currency === 'gold' ? helpers.formatMoney(p.gold_cost) : p.wp_cost + ' pts' %></b></td>
     <td class="<%= rowClass %>" align="center"><b><%= p.character_name %></b></td>
     <td class="<%= rowClass %>" align="center">
-      <span class="status-<%= p.status %>"><%= p.status === 'completed' ? 'Delivered' : 'Failed' %></span>
+      <span class="status-<%= p.status %>"><%= p.status === 'completed' ? 'Delivered' : (p.status === 'pending' ? 'Pending review' : 'Failed') %></span>
     </td>
     <td class="<%= rowClass %>" align="center" style="font-size:10px;">
       <%= p.created_at ? new Date(p.created_at).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-' %>
@@ -58,48 +58,6 @@
 <% } else { %>
   <tr>
     <td class="txRow1" colspan="7" align="center" style="padding:15px; color:#888;">No shop purchases yet.</td>
-  </tr>
-<% } %>
-</tbody>
-</table>
-<%- include('../../partials/metalborder_footer') %>
-
-<br>
-
-<!-- Donation Transactions -->
-<%- include('../../partials/subheader', { subheader: 'Donation Transactions (' + _transactions.length + ')' }) %>
-
-<%- include('../../partials/metalborder_header') %>
-<table cellpadding="3" cellspacing="0" width="100%">
-<tbody>
-  <tr>
-    <td class="rankingHeader" align="center" nowrap="nowrap">#</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap">Transaction ID</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap">Amount</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap">Status</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap">Delivered</td>
-    <td class="rankingHeader" align="center" nowrap="nowrap">Date</td>
-  </tr>
-<% if (_transactions.length) { %>
-  <% _transactions.forEach(function(t, idx) {
-    var rowClass = (idx % 2 === 0) ? 'txRow1' : 'txRow2';
-  %>
-  <tr>
-    <td class="<%= rowClass %>" align="center"><%= idx + 1 %></td>
-    <td class="<%= rowClass %>" style="font-size:10px;"><%= t.trans_id %></td>
-    <td class="<%= rowClass %>" align="center"><b style="color:#1e4378;">$<%= t.amount %></b></td>
-    <td class="<%= rowClass %>" align="center">
-      <span class="status-<%= t.payment_status === 'Completed' ? 'completed' : 'failed' %>"><%= t.payment_status %></span>
-    </td>
-    <td class="<%= rowClass %>" align="center"><%= t.item_given ? 'Yes' : 'Pending' %></td>
-    <td class="<%= rowClass %>" align="center" style="font-size:10px;">
-      <%= t.created_at ? new Date(t.created_at).toLocaleString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-' %>
-    </td>
-  </tr>
-  <% }); %>
-<% } else { %>
-  <tr>
-    <td class="txRow1" colspan="6" align="center" style="padding:15px; color:#888;">No donation transactions yet.</td>
   </tr>
 <% } %>
 </tbody>

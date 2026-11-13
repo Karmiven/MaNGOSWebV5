@@ -13,6 +13,12 @@
       <i class="fas fa-heartbeat me-1"></i>Test Connection
     </button>
     <span id="soap-test-result" class="ms-3" style="font-size:13px;"></span>
+    <hr class="border-secondary">
+    <p class="text-muted mb-2" style="font-size:13px;">Gold bridge: the Eluna/ALE script <code>eluna/mangosweb_gold.lua</code> must be loaded on the worldserver for gold payments.</p>
+    <button type="button" id="gold-test-btn" class="btn btn-sm btn-outline-warning" onclick="testGold()">
+      <i class="fas fa-coins me-1"></i>Test Gold Bridge
+    </button>
+    <span id="gold-test-result" class="ms-3" style="font-size:13px;"></span>
   </div>
 </div>
 
@@ -44,6 +50,24 @@ function esc(s) {
   var d = document.createElement('div');
   d.textContent = String(s);
   return d.innerHTML;
+}
+
+function testGold() {
+  var btn = document.getElementById('gold-test-btn');
+  var result = document.getElementById('gold-test-result');
+  btn.disabled = true;
+  result.textContent = 'Testing...';
+  fetch('/admin/gold-test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<%= csrfToken %>' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    result.className = 'ms-3 ' + (data.success ? 'text-success' : 'text-danger');
+    result.textContent = data.message;
+  })
+  .catch(function(e) { result.className = 'ms-3 text-danger'; result.textContent = e.message; })
+  .finally(function() { btn.disabled = false; });
 }
 
 function testSoap() {

@@ -56,7 +56,7 @@
   %>
   <tr>
     <td class="<%= rowClass %>" align="center"><b style="color: rgb(102, 13, 2);"><%= num %></b></td>
-    <td class="<%= rowClass %>"><b style="color: rgb(35, 67, 3);"><center><%= item.name %></center></b></td>
+    <td class="<%= rowClass %>"><center><a href="/server/character/<%= item.guid %>" style="color: rgb(35, 67, 3); font-weight:bold;"><%= item.name %></a></center></td>
     <td class="<%= rowClass %>" align="center">
       <img onmouseover="ddrivetip('<%= Character.raceName(item.race) %>','#ffffff')" onmouseout="hideddrivetip()"
         src="<%= tp %>/images/icon/race/<%= item.race %>-<%= item.gender || 0 %>.gif" height="18" width="18" alt=""/>

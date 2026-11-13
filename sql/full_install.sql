@@ -58,6 +58,7 @@ INSERT INTO `mw_config` (`key`, `value`) VALUES
 ('racechange_cost', '0'),
 ('factionchange_cost', '0'),
 ('realmlist', '127.0.0.1'),
+('shop_gold_enabled', '0'),
 ('progression_phase', '0')
 ON DUPLICATE KEY UPDATE `id` = `id`;
 
@@ -126,6 +127,7 @@ CREATE TABLE IF NOT EXISTS `mw_shop_items` (
   `quantity` int(11) DEFAULT 1,
   `desc` varchar(255) DEFAULT '',
   `wp_cost` int(11) NOT NULL DEFAULT 0,
+  `gold_price` int(10) unsigned NOT NULL DEFAULT 0,
   `realms` int(11) DEFAULT 0,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
@@ -140,6 +142,8 @@ CREATE TABLE IF NOT EXISTS `mw_shop_transactions` (
   `item_number` varchar(100) DEFAULT '',
   `quantity` int(11) DEFAULT 1,
   `wp_cost` int(11) NOT NULL DEFAULT 0,
+  `currency` varchar(10) NOT NULL DEFAULT 'points',
+  `gold_cost` int(10) unsigned NOT NULL DEFAULT 0,
   `character_name` varchar(50) DEFAULT '',
   `status` enum('pending','completed','failed') DEFAULT 'pending',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -235,7 +239,8 @@ INSERT INTO `mw_menu_items` (`menu_id`, `link_title`, `link`, `order`, `account_
 (2, 'Characters', '/account/characters', 2, 2, 0),
 (2, 'Transactions', '/account/transactions', 3, 2, 0),
 (2, 'Admin Panel', '/admin', 4, 3, 0),
-(4, 'Top Kills', '/server/topkills', 1, 1, 0),
+(4, 'Top Lists', '/server/tops', 1, 1, 0),
+(4, 'Guilds', '/server/guilds', 6, 1, 0),
 (4, 'Characters', '/server/chars', 2, 1, 0),
 (4, 'Players Online', '/server/online', 3, 1, 0),
 (4, 'Server Statistics', '/server/stats', 4, 1, 0),
@@ -289,6 +294,18 @@ CREATE TABLE IF NOT EXISTS `mw_sessions` (
   `expires` int(11) unsigned NOT NULL,
   `data` mediumtext,
   PRIMARY KEY (`session_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===== SOAP Log =====
+CREATE TABLE IF NOT EXISTS `mw_soap_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `command` varchar(255) NOT NULL,
+  `success` tinyint(1) NOT NULL DEFAULT 0,
+  `error` varchar(255) NOT NULL DEFAULT '',
+  `duration_ms` int(11) NOT NULL DEFAULT 0,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===== Admin Audit Log =====

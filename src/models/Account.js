@@ -11,6 +11,8 @@ const USER_FAIL_LIMIT = 5;
 
 let _botIds = null;
 let _botIdsTime = 0;
+let _gmIds = null;
+let _gmIdsTime = 0;
 
 const Account = {
   PASSWORD_MAX,
@@ -377,6 +379,16 @@ const Account = {
     _botIds = new Set(rows.map(r => r.id));
     _botIdsTime = now;
     return _botIds;
+  },
+
+  /** Ids of accounts with any GM level, cached for a minute */
+  async getGmIds() {
+    const now = Date.now();
+    if (_gmIds && now - _gmIdsTime < 60000) return _gmIds;
+    const [rows] = await db.auth.query('SELECT DISTINCT AccountID FROM account_access WHERE SecurityLevel > 0');
+    _gmIds = new Set(rows.map(r => r.AccountID));
+    _gmIdsTime = now;
+    return _gmIds;
   },
 
   /** Visitors seen in the last 5 minutes */

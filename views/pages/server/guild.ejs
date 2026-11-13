@@ -1,0 +1,60 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var online = guild.members.filter(function(m) { return m.online; }).length;
+%>
+<!-- Guild Roster — V4 Blizzlike Style -->
+
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; }
+  td.serverStatus2 { font-size: 0.8em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px; }
+</style>
+
+<div style="padding:5px 0 8px 0; font-size:12px;">
+  <a href="/server/guilds" style="color:#1e4378;">&laquo; All guilds</a>
+</div>
+
+<%- include('../../partials/subheader', { subheader: guild.name }) %>
+
+<div style="padding:6px 10px; margin:0 0 8px; font-size:12px; background:#e8dcc0; border:1px solid #c5a96a;">
+  Leader: <b style="color:rgb(35,67,3);"><%= guild.leaderName || '-' %></b>
+  &nbsp;|&nbsp; Members: <b style="color:#1e4378;"><%= guild.members.length %></b> (<b style="color:#234303;"><%= online %></b> online)
+  <% if (guild.createdate) { %>&nbsp;|&nbsp; Founded: <%= helpers.formatDate(guild.createdate) %><% } %>
+  <% if (guild.motd) { %><br><i>Message of the day:</i> <%= guild.motd %><% } %>
+  <% if (guild.info) { %><br><i>Info:</i> <%= guild.info %><% } %>
+</div>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Name</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Rank</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Race</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Class</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap" width="50">Level</td>
+    <td class="rankingHeader" align="center" nowrap="nowrap">Zone</td>
+  </tr>
+  <tr>
+    <td colspan="6" style="background:url('<%= tp %>/images/shadow.gif');"><img src="<%= tp %>/images/pixel.gif" height="1" width="1" alt=""></td>
+  </tr>
+  <% if (guild.members.length) { %>
+    <% guild.members.forEach(function(m, i) { var rc = (i % 2) + 1; %>
+    <tr>
+      <td class="serverStatus<%= rc %>" align="center">
+        <a href="/server/character/<%= m.guid %>" style="color:rgb(35,67,3); font-weight:bold;"><%= m.name %></a>
+        <% if (m.online) { %><span style="color:#234303; font-size:9px;">&bull; online</span><% } %>
+      </td>
+      <td class="serverStatus<%= rc %>" align="center"><%= m.rankName || m.rankId %></td>
+      <td class="serverStatus<%= rc %>" align="center"><%= Character.raceName(m.race) %></td>
+      <td class="serverStatus<%= rc %>" align="center"><%= Character.className(m.class) %></td>
+      <td class="serverStatus<%= rc %>" align="center"><b style="color:rgb(102,13,2);"><%= m.level %></b></td>
+      <td class="serverStatus<%= rc %>" align="center"><%= m.zoneName || 'Unknown zone' %></td>
+    </tr>
+    <% }); %>
+  <% } else { %>
+    <tr><td class="serverStatus1" colspan="6" align="center" style="padding:12px;">No members.</td></tr>
+  <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>

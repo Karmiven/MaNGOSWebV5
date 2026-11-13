@@ -22,14 +22,14 @@
             <td><%= p.character_name %></td>
             <td><%= p.item_desc %> <code><%= p.item_number %></code></td>
             <td><%= p.quantity %></td>
-            <td><%= p.wp_cost %></td>
+            <td><%= p.currency === 'gold' ? helpers.formatMoney(p.gold_cost) : p.wp_cost + ' pts' %></td>
             <td><%= p.created_at ? helpers.formatDate(p.created_at) : '' %></td>
             <td>
               <form method="POST" action="/admin/shop/pending/resolve" class="d-inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="hidden" name="id" value="<%= p.id %>">
                 <button name="action" value="complete" class="btn btn-sm btn-outline-success">Delivered</button>
-                <button name="action" value="refund" class="btn btn-sm btn-outline-warning" onclick="return confirm('Refund <%= p.wp_cost %> points to account <%= p.account_id %>?')">Refund</button>
+                <button name="action" value="refund" class="btn btn-sm btn-outline-warning" onclick="return confirm('Refund <%= p.currency === 'gold' ? helpers.formatMoney(p.gold_cost) + ' to ' + p.character_name : p.wp_cost + ' points to account ' + p.account_id %>?')">Refund</button>
               </form>
             </td>
           </tr>

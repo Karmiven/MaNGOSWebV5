@@ -74,6 +74,62 @@ const STEPS = [
     }
   },
   {
+    name: 'mw_shop_items.gold_price',
+    async run() {
+      if (await columnExists('mw_shop_items', 'gold_price')) return;
+      await db.cms.query('ALTER TABLE mw_shop_items ADD COLUMN gold_price int(10) unsigned NOT NULL DEFAULT 0');
+    }
+  },
+  {
+    name: 'mw_shop_transactions.currency',
+    async run() {
+      if (await columnExists('mw_shop_transactions', 'currency')) return;
+      await db.cms.query("ALTER TABLE mw_shop_transactions ADD COLUMN currency varchar(10) NOT NULL DEFAULT 'points'");
+    }
+  },
+  {
+    name: 'mw_shop_transactions.gold_cost',
+    async run() {
+      if (await columnExists('mw_shop_transactions', 'gold_cost')) return;
+      await db.cms.query('ALTER TABLE mw_shop_transactions ADD COLUMN gold_cost int(10) unsigned NOT NULL DEFAULT 0');
+    }
+  },
+  {
+    name: 'mw_soap_log',
+    async run() {
+      if (await tableExists('mw_soap_log')) return;
+      await db.cms.query(
+        `CREATE TABLE mw_soap_log (
+           id int(11) NOT NULL AUTO_INCREMENT,
+           command varchar(255) NOT NULL,
+           success tinyint(1) NOT NULL DEFAULT 0,
+           error varchar(255) NOT NULL DEFAULT '',
+           duration_ms int(11) NOT NULL DEFAULT 0,
+           created_at datetime DEFAULT CURRENT_TIMESTAMP,
+           PRIMARY KEY (id),
+           KEY idx_created (created_at)
+         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+      );
+    }
+  },
+  {
+    name: 'menu: top lists and guilds',
+    async run() {
+      await db.cms.query("UPDATE mw_menu_items SET link = '/server/tops', link_title = 'Top Lists' WHERE link = '/server/topkills'");
+      await db.cms.query(
+        "INSERT INTO mw_menu_items (menu_id, link_title, link, `order`, account_level, guest_only) " +
+        "SELECT 4, 'Guilds', '/server/guilds', 6, 1, 0 FROM DUAL " +
+        "WHERE NOT EXISTS (SELECT 1 FROM mw_menu_items WHERE link = '/server/guilds')"
+      );
+    }
+  },
+  {
+    name: 'shop_gold_enabled config',
+    async run() {
+      await db.cms.query("INSERT IGNORE INTO mw_config (`key`, `value`) VALUES ('shop_gold_enabled', '0')");
+    }
+  },
+  {
     name: 'mw_admin_log',
     async run() {
       if (await tableExists('mw_admin_log')) return;

@@ -1,0 +1,79 @@
+<%
+  var tp = typeof themePath !== 'undefined' ? themePath : '/themes/wotlk';
+  var faction = Character.factionForRace(ch.race);
+  var gender = ch.gender || 0;
+  var qualityColor = ['#7d7d7d', '#3a3a3a', '#1a7a00', '#0b4fb3', '#7a2bb5', '#c25d00', '#8a6d0b', '#8a6d0b'];
+%>
+<!-- Character Profile — V4 Blizzlike Style -->
+
+<style type="text/css">
+  td.serverStatus1 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; padding: 5px 8px; }
+  td.serverStatus2 { font-size: 0.85em; border-style: solid; border-width: 0px 1px 1px 0px; border-color: #D8BF95; background-color: #C3AD89; padding: 5px 8px; }
+  td.rankingHeader { color: #C7C7C7; font-size: 10pt; font-family: arial,helvetica,sans-serif; font-weight: bold; background-color: #2E2D2B; border-style: solid; border-width: 1px; border-color: #5D5D5D #5D5D5D #1E1D1C #1E1D1C; padding: 3px; }
+  td.armKey { width: 38%; color: #5a4a2a; }
+</style>
+
+<div style="padding:5px 0 8px 0; font-size:12px;">
+  <a href="/server/chars" style="color:#1e4378;">&laquo; Character search</a>
+</div>
+
+<%- include('../../partials/subheader', { subheader: ch.name }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr><td class="rankingHeader" colspan="2" align="center">Character</td></tr>
+  <%
+    var guildCell = ch.guild
+      ? '<a href="/server/guild/' + ch.guild.guildid + '" style="color:#1e4378;font-weight:bold;">' + helpers.escapeHtml(ch.guild.name) + '</a>' + (ch.guild.rankName ? ' <span style="color:#777;">(' + helpers.escapeHtml(ch.guild.rankName) + ')</span>' : '')
+      : '<span style="color:#888;">No guild</span>';
+    var rows = [
+      ['Race', '<img src="' + tp + '/images/icon/race/' + ch.race + '-' + gender + '.gif" height="18" width="18" alt="" style="vertical-align:middle;"> ' + helpers.escapeHtml(Character.raceName(ch.race))],
+      ['Class', '<img src="' + tp + '/images/icon/class/' + ch.class + '.gif" height="18" width="18" alt="" style="vertical-align:middle;"> ' + helpers.escapeHtml(Character.className(ch.class))],
+      ['Level', '<b style="color:rgb(102,13,2);">' + ch.level + '</b>'],
+      ['Faction', '<img src="' + tp + '/images/icon/faction/' + faction.toLowerCase() + '.gif" height="18" width="18" alt="" style="vertical-align:middle;"> ' + faction],
+      ['Guild', guildCell],
+      ['Location', helpers.escapeHtml(ch.zoneName || 'Unknown zone')],
+      ['Status', ch.online ? '<b style="color:#234303;">Online</b>' : 'Offline' + (ch.logout_time ? ' <span style="color:#777;">(last seen ' + helpers.formatDate(ch.logout_time) + ')</span>' : '')],
+      ['Time played', Armory.formatPlayed(ch.totaltime)],
+      ['Honorable kills', '<b style="color:#234303;">' + Number(ch.totalKills || 0).toLocaleString('en-US') + '</b>'],
+      ['Honor / Arena points', Number(ch.totalHonorPoints || 0).toLocaleString('en-US') + ' / ' + Number(ch.arenaPoints || 0).toLocaleString('en-US')],
+      ['Achievements', ch.achievements]
+    ];
+  %>
+  <% rows.forEach(function(r, i) { var rc = (i % 2) + 1; %>
+  <tr>
+    <td class="serverStatus<%= rc %> armKey"><%= r[0] %></td>
+    <td class="serverStatus<%= rc %>"><%- r[1] %></td>
+  </tr>
+  <% }); %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
+
+<br>
+
+<%- include('../../partials/subheader', { subheader: 'Equipment' }) %>
+
+<%- include('../../partials/metalborder_header') %>
+<table cellpadding="3" cellspacing="0" width="100%">
+<tbody>
+  <tr>
+    <td class="rankingHeader" align="center" width="110">Slot</td>
+    <td class="rankingHeader" align="center">Item</td>
+    <td class="rankingHeader" align="center" width="70">Item Level</td>
+  </tr>
+  <% if (ch.equipment.length) { %>
+    <% ch.equipment.forEach(function(it, i) { var rc = (i % 2) + 1; %>
+    <tr>
+      <td class="serverStatus<%= rc %>" style="color:#5a4a2a;"><%= it.slotName %></td>
+      <td class="serverStatus<%= rc %>"><b style="color:<%= qualityColor[it.quality] || qualityColor[1] %>;"><%= it.name %></b></td>
+      <td class="serverStatus<%= rc %>" align="center"><%= it.itemLevel || '-' %></td>
+    </tr>
+    <% }); %>
+  <% } else { %>
+    <tr><td class="serverStatus1" colspan="3" align="center" style="padding:12px; color:#666;">No equipped items.</td></tr>
+  <% } %>
+</tbody>
+</table>
+<%- include('../../partials/metalborder_footer') %>
